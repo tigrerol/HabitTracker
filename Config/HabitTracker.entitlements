@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Basic iOS entitlements for a habit tracking app -->
+	<!-- Add additional entitlements as needed for features like:
+	     - HealthKit: com.apple.developer.healthkit
+	     - CloudKit: com.apple.developer.icloud-services
+	     - Push Notifications: aps-environment
+	     - Background Modes: com.apple.developer.background-modes
+	-->
+</dict>
+</plist>

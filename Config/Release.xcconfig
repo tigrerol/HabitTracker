@@ -1,0 +1,15 @@
+// Release Configuration Settings
+
+#include "Shared.xcconfig"
+
+// Build Configuration
+SWIFT_OPTIMIZATION_LEVEL = -O
+SWIFT_COMPILATION_MODE = wholemodule
+
+// Code Signing
+CODE_SIGN_IDENTITY = Apple Distribution
+
+// Other Release Settings
+ENABLE_TESTABILITY = NO
+DEBUG_INFORMATION_FORMAT = dwarf-with-dsym
+VALIDATE_PRODUCT = YES
