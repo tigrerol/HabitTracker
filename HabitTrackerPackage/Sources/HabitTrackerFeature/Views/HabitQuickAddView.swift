@@ -109,11 +109,25 @@ struct HabitQuickAddView: View {
             return .restTimer(targetDuration: duration)
         }
         
-        // App detection
-        if lowercased.contains("open") || lowercased.contains("launch") || lowercased.contains("app") {
-            // Extract app name and try to match
-            if lowercased.contains("morpheus") {
-                return .appLaunch(bundleId: "com.morpheus.app", appName: "Morpheus")
+        // Shortcuts detection
+        if lowercased.contains("shortcut") || lowercased.contains("run") || lowercased.contains("open") || lowercased.contains("launch") {
+            // Extract potential shortcut name
+            let words = text.components(separatedBy: .whitespacesAndNewlines.union(.punctuationCharacters))
+                .filter { !$0.isEmpty }
+                .filter { !["run", "open", "launch", "shortcut", "the", "my", "a", "an"].contains($0.lowercased()) }
+            
+            if let shortcutName = words.first {
+                return .appLaunch(bundleId: shortcutName, appName: shortcutName.capitalized)
+            }
+        }
+        
+        // URL scheme detection
+        if lowercased.contains("://") {
+            // Extract URL scheme
+            if let schemeRange = text.range(of: "://") {
+                let urlScheme = String(text[..<schemeRange.upperBound])
+                let appName = urlScheme.replacingOccurrences(of: "://", with: "").capitalized
+                return .appLaunch(bundleId: urlScheme, appName: appName)
             }
         }
         
@@ -318,7 +332,7 @@ struct HabitQuickAddView: View {
         case .restTimer:
             return "Rest Period"
         case .appLaunch:
-            return "Open App"
+            return "Run Shortcut"
         case .website:
             return "Visit Website"
         case .counter:
@@ -387,12 +401,12 @@ private struct HabitTypePickerView: View {
                 
                 Section {
                     TypeOptionRow(
-                        icon: "app.badge",
-                        title: "Launch App",
-                        description: "Open another app",
+                        icon: "shortcuts",
+                        title: "Run Shortcut",
+                        description: "Execute a Shortcuts shortcut or open app via URL",
                         color: .red
                     ) {
-                        onSelect(.appLaunch(bundleId: "", appName: "App"))
+                        onSelect(.appLaunch(bundleId: "", appName: "Shortcut"))
                         dismiss()
                     }
                     

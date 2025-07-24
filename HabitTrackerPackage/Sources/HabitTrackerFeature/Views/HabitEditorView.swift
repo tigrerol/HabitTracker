@@ -44,6 +44,8 @@ public struct HabitEditorView: View {
         case .appLaunch(let bundleId, let name):
             self._appBundleId = State(initialValue: bundleId)
             self._appName = State(initialValue: name)
+            // Determine launch method based on bundleId format
+            self._launchMethod = State(initialValue: bundleId.contains("://") ? .urlScheme : .shortcut)
         case .website(let url, let title):
             self._websiteURL = State(initialValue: url.absoluteString)
             self._websiteTitle = State(initialValue: title)
@@ -267,13 +269,53 @@ public struct HabitEditorView: View {
     
     // App launch settings
     private var appLaunchSettings: some View {
-        Group {
-            TextField("App Name", text: $appName)
-            TextField("Bundle ID (optional)", text: $appBundleId)
-                .textInputAutocapitalization(.never)
-                .autocorrectionDisabled()
+        VStack(alignment: .leading, spacing: 12) {
+            TextField("Display Name", text: $appName)
+                .textFieldStyle(.roundedBorder)
+            
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Launch Method")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                
+                Picker("Launch Method", selection: $launchMethod) {
+                    Text("Shortcut").tag(LaunchMethod.shortcut)
+                    Text("URL Scheme").tag(LaunchMethod.urlScheme)
+                }
+                .pickerStyle(.segmented)
+                
+                if launchMethod == .shortcut {
+                    VStack(alignment: .leading, spacing: 4) {
+                        TextField("Shortcut Name", text: $appBundleId)
+                            .textFieldStyle(.roundedBorder)
+                        
+                        Text("Enter the exact name of your shortcut")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                } else {
+                    VStack(alignment: .leading, spacing: 4) {
+                        TextField("URL Scheme", text: $appBundleId)
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled()
+                            .textFieldStyle(.roundedBorder)
+                        
+                        Text("Examples: instagram://, spotify://, todoist://")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
         }
     }
+    
+    // Launch method enum
+    private enum LaunchMethod {
+        case shortcut
+        case urlScheme
+    }
+    
+    @State private var launchMethod: LaunchMethod = .shortcut
     
     // Website settings
     private var websiteSettings: some View {

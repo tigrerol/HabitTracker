@@ -265,27 +265,32 @@ struct TimerHabitView: View {
 /// App launch habit interaction
 struct AppLaunchHabitView: View {
     let habit: Habit
-    let bundleId: String
+    let bundleId: String  // This will now be either a shortcut name or URL scheme
     let appName: String
     let onComplete: (TimeInterval?, String?) -> Void
     
     @State private var hasLaunchedApp = false
     @State private var startTime: Date?
     
+    private var isShortcut: Bool {
+        // Check if this is a shortcut (doesn't contain :// URL scheme format)
+        !bundleId.contains("://")
+    }
+    
     var body: some View {
         VStack(spacing: 24) {
             VStack(spacing: 12) {
-                Image(systemName: "app.badge")
+                Image(systemName: isShortcut ? "shortcuts" : "app.badge")
                     .font(.system(size: 60))
                     .foregroundStyle(habit.swiftUIColor)
                 
                 if hasLaunchedApp {
-                    Text("Return here when finished with \(appName)")
+                    Text("Return here when finished")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
                 } else {
-                    Text("Tap to launch \(appName)")
+                    Text(isShortcut ? "Tap to run shortcut" : "Tap to launch \(appName)")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
@@ -295,7 +300,7 @@ struct AppLaunchHabitView: View {
                 Button {
                     launchApp()
                 } label: {
-                    Text("Launch \(appName)")
+                    Text(isShortcut ? "Run Shortcut" : "Launch \(appName)")
                         .font(.headline)
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity)
@@ -319,17 +324,28 @@ struct AppLaunchHabitView: View {
     }
     
     private func launchApp() {
-        guard let url = URL(string: bundleId) else { return }
+        let urlString: String
         
-        if UIApplication.shared.canOpenURL(url) {
-            hasLaunchedApp = true
-            startTime = Date()
-            UIApplication.shared.open(url)
+        if isShortcut {
+            // Format as shortcuts URL scheme
+            let encodedShortcutName = bundleId.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? bundleId
+            urlString = "shortcuts://run-shortcut?name=\(encodedShortcutName)"
         } else {
-            // Fallback to App Store or show error
-            // For now, just mark as launched
-            hasLaunchedApp = true
-            startTime = Date()
+            // Use the provided URL scheme directly
+            urlString = bundleId
+        }
+        
+        guard let url = URL(string: urlString) else {
+            print("Failed to create URL from: \(urlString)")
+            return
+        }
+        
+        hasLaunchedApp = true
+        startTime = Date()
+        UIApplication.shared.open(url) { success in
+            if !success {
+                print("Failed to open URL: \(urlString)")
+            }
         }
     }
 }
