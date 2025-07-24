@@ -32,26 +32,39 @@ public struct HabitInteractionView: View {
     }
 }
 
-/// Simple checkbox habit interaction
+/// Simple checkbox habit interaction with quick actions
 struct CheckboxHabitView: View {
     let habit: Habit
     let onComplete: (TimeInterval?, String?) -> Void
     
+    @State private var isCompleting = false
+    
     var body: some View {
         VStack(spacing: 24) {
+            // Large tap target for quick completion
             Button {
-                onComplete(nil, nil)
+                completeHabit()
             } label: {
-                VStack(spacing: 12) {
-                    Image(systemName: "checkmark.circle")
-                        .font(.system(size: 60))
-                        .foregroundStyle(habit.swiftUIColor)
+                VStack(spacing: 16) {
+                    Image(systemName: isCompleting ? "checkmark.circle.fill" : "circle")
+                        .font(.system(size: 80))
+                        .foregroundStyle(isCompleting ? .green : habit.swiftUIColor)
+                        .scaleEffect(isCompleting ? 1.2 : 1.0)
                     
-                    Text("Mark Complete")
+                    Text(isCompleting ? "Completed!" : "Tap to Complete")
                         .font(.headline)
+                        .foregroundStyle(isCompleting ? .green : .primary)
                 }
+                .padding(.vertical, 20)
+                .frame(maxWidth: .infinity)
+                .background(
+                    RoundedRectangle(cornerRadius: 20)
+                        .fill(.regularMaterial)
+                        .stroke(isCompleting ? .green : habit.swiftUIColor.opacity(0.3), lineWidth: 2)
+                )
             }
             .buttonStyle(.plain)
+            .disabled(isCompleting)
             
             if let notes = habit.notes {
                 Text(notes)
@@ -59,6 +72,21 @@ struct CheckboxHabitView: View {
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
             }
+        }
+    }
+    
+    private func completeHabit() {
+        withAnimation(.bouncy) {
+            isCompleting = true
+        }
+        
+        // Haptic feedback
+        let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
+        impactFeedback.impactOccurred()
+        
+        // Complete after brief delay for animation
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            onComplete(nil, nil)
         }
     }
 }
@@ -94,41 +122,61 @@ struct TimerHabitView: View {
                     .scaleEffect(y: 3)
             }
             
-            // Timer controls
-            HStack(spacing: 20) {
+            // Timer controls with quick actions
+            VStack(spacing: 16) {
                 if !isRunning {
-                    Button {
-                        startTimer()
-                    } label: {
-                        Label("Start", systemImage: "play.fill")
+                    HStack(spacing: 12) {
+                        Button {
+                            startTimer()
+                        } label: {
+                            HStack {
+                                Image(systemName: "play.fill")
+                                Text("Start")
+                            }
                             .font(.headline)
                             .foregroundStyle(.white)
+                            .frame(maxWidth: .infinity)
                             .padding()
                             .background(habit.swiftUIColor, in: RoundedRectangle(cornerRadius: 12))
-                    }
-                } else {
-                    Button {
-                        if isPaused {
-                            resumeTimer()
-                        } else {
-                            pauseTimer()
                         }
-                    } label: {
-                        Label(isPaused ? "Resume" : "Pause", systemImage: isPaused ? "play.fill" : "pause.fill")
-                            .font(.headline)
-                            .foregroundStyle(.white)
-                            .padding()
-                            .background(habit.swiftUIColor, in: RoundedRectangle(cornerRadius: 12))
                     }
                     
-                    Button {
-                        stopTimer()
-                    } label: {
-                        Label("Stop", systemImage: "stop.fill")
+                    // Quick timer shortcuts
+                    HStack(spacing: 8) {
+                        quickTimerButton(seconds: 30, label: "30s")
+                        quickTimerButton(seconds: 60, label: "1m")
+                        quickTimerButton(seconds: 120, label: "2m")
+                    }
+                    .opacity(0.8)
+                } else {
+                    HStack(spacing: 12) {
+                        Button {
+                            if isPaused {
+                                resumeTimer()
+                            } else {
+                                pauseTimer()
+                            }
+                        } label: {
+                            HStack {
+                                Image(systemName: isPaused ? "play.fill" : "pause.fill")
+                                Text(isPaused ? "Resume" : "Pause")
+                            }
                             .font(.headline)
                             .foregroundStyle(.white)
+                            .frame(maxWidth: .infinity)
                             .padding()
-                            .background(.red, in: RoundedRectangle(cornerRadius: 12))
+                            .background(habit.swiftUIColor, in: RoundedRectangle(cornerRadius: 12))
+                        }
+                        
+                        Button {
+                            stopTimer()
+                        } label: {
+                            Image(systemName: "stop.fill")
+                                .font(.headline)
+                                .foregroundStyle(.white)
+                                .frame(width: 50, height: 50)
+                                .background(.red, in: RoundedRectangle(cornerRadius: 12))
+                        }
                     }
                 }
             }
@@ -148,6 +196,22 @@ struct TimerHabitView: View {
         .onDisappear {
             timer?.invalidate()
         }
+    }
+    
+    @ViewBuilder
+    private func quickTimerButton(seconds: TimeInterval, label: String) -> some View {
+        Button {
+            onComplete(seconds, "Quick \(label) completion")
+        } label: {
+            Text(label)
+                .font(.caption)
+                .fontWeight(.medium)
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(.regularMaterial, in: Capsule())
+        }
+        .buttonStyle(.plain)
     }
     
     private func startTimer() {
@@ -174,11 +238,13 @@ struct TimerHabitView: View {
     
     private func createTimer() {
         timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
-            if timeRemaining > 0 {
-                timeRemaining -= 1
-            } else {
-                timer?.invalidate()
-                onComplete(defaultDuration, nil)
+            Task { @MainActor in
+                if timeRemaining > 0 {
+                    timeRemaining -= 1
+                } else {
+                    timer?.invalidate()
+                    onComplete(defaultDuration, nil)
+                }
             }
         }
     }

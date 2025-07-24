@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 
 /// Represents a morning routine template (Office, Home Office, etc.)
 public struct RoutineTemplate: Identifiable, Codable, Hashable, Sendable {
@@ -49,6 +50,11 @@ extension RoutineTemplate {
         return "\(minutes) min"
     }
     
+    /// SwiftUI Color from hex string
+    public var swiftUIColor: Color {
+        Color(hex: color) ?? .green
+    }
+    
     /// Add a habit to the template
     public mutating func addHabit(_ habit: Habit) {
         var newHabit = habit
@@ -61,7 +67,7 @@ extension RoutineTemplate {
     public mutating func removeHabit(withId id: UUID) {
         habits.removeAll { $0.id == id }
         // Reorder remaining habits
-        for (index, habit) in habits.enumerated() {
+        for (index, _) in habits.enumerated() {
             habits[index].order = index
         }
     }

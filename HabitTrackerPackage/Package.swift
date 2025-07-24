@@ -1,29 +1,29 @@
-// swift-tools-version: 6.0
+// swift-tools-version: 6.1
+// The swift-tools-version declares the minimum version of Swift required to build this package.
+
 import PackageDescription
 
 let package = Package(
-    name: "HabitTrackerPackage",
-    platforms: [
-        .iOS(.v18)
-    ],
+    name: "HabitTrackerFeature",
+    platforms: [.iOS(.v18)],
     products: [
+        // Products define the executables and libraries a package produces, making them visible to other packages.
         .library(
             name: "HabitTrackerFeature",
             targets: ["HabitTrackerFeature"]
         ),
     ],
-    dependencies: [],
     targets: [
+        // Targets are the basic building blocks of a package, defining a module or a test suite.
+        // Targets can depend on other targets in this package and products from dependencies.
         .target(
-            name: "HabitTrackerFeature",
-            dependencies: [],
-            swiftSettings: [
-                .enableExperimentalFeature("StrictConcurrency")
-            ]
+            name: "HabitTrackerFeature"
         ),
         .testTarget(
             name: "HabitTrackerFeatureTests",
-            dependencies: ["HabitTrackerFeature"]
+            dependencies: [
+                "HabitTrackerFeature"
+            ]
         ),
     ]
 )

@@ -1,84 +1,125 @@
-# HabitTracker
+# HabitTracker - iOS App
 
-A modern iOS habit tracking app built with SwiftUI and Swift 6, designed to help users build and maintain positive habits through an intuitive, clean interface.
+A modern iOS application using a **workspace + SPM package** architecture for clean separation between app shell and feature code.
 
-## Features
+## AI Assistant Rules Files
 
-- 📝 **Custom Habit Creation** - Create personalized habits with descriptions and target frequencies
-- ✅ **Daily Tracking** - Simple check-off interface for marking habits complete
-- 📊 **Progress Visualization** - Charts and streaks showing habit completion over time
-- 🏷️ **Categories** - Organize habits by categories (health, productivity, personal, etc.)
-- 🔔 **Smart Reminders** - Optional local notifications to keep you on track
-- 📈 **Detailed Statistics** - Weekly, monthly, and yearly views of your progress
+This template includes **opinionated rules files** for popular AI coding assistants. These files establish coding standards, architectural patterns, and best practices for modern iOS development using the latest APIs and Swift features.
 
-## Technical Details
+### Included Rules Files
+- **Claude Code**: `CLAUDE.md` - Claude Code rules
+- **Cursor**: `.cursor/*.mdc` - Cursor-specific rules
+- **GitHub Copilot**: `.github/copilot-instructions.md` - GitHub Copilot rules
 
-- **Platform:** iOS 18.0+
-- **Language:** Swift 6.1+
-- **UI Framework:** SwiftUI
-- **Architecture:** Model-View (MV) pattern with native SwiftUI state management
-- **Concurrency:** Swift Concurrency (async/await, actors)
-- **Data Persistence:** SwiftData
-- **Testing:** Swift Testing framework
+### Customization Options
+These rules files are **starting points** - feel free to:
+- ✅ **Edit them** to match your team's coding standards
+- ✅ **Delete them** if you prefer different approaches
+- ✅ **Add your own** rules for other AI tools
+- ✅ **Update them** as new iOS APIs become available
 
-## Project Structure
+### What Makes These Rules Opinionated
+- **No ViewModels**: Embraces pure SwiftUI state management patterns
+- **Swift 6+ Concurrency**: Enforces modern async/await over legacy patterns
+- **Latest APIs**: Recommends iOS 18+ features with optional iOS 26 guidelines
+- **Testing First**: Promotes Swift Testing framework over XCTest
+- **Performance Focus**: Emphasizes @Observable over @Published for better performance
 
-This project uses a **workspace + Swift Package Manager** architecture:
+**Note for AI assistants**: You MUST read the relevant rules files before making changes to ensure consistency with project standards.
 
-- **HabitTracker.xcworkspace** - Main workspace container
-- **HabitTracker.xcodeproj** - Minimal app shell
-- **HabitTrackerPackage** - All features and business logic
-- **Config/** - XCConfig build settings and entitlements
+## Project Architecture
 
-## Getting Started
+```
+HabitTracker/
+├── HabitTracker.xcworkspace/              # Open this file in Xcode
+├── HabitTracker.xcodeproj/                # App shell project
+├── HabitTracker/                          # App target (minimal)
+│   ├── Assets.xcassets/                # App-level assets (icons, colors)
+│   ├── HabitTrackerApp.swift              # App entry point
+│   └── HabitTracker.xctestplan            # Test configuration
+├── HabitTrackerPackage/                   # 🚀 Primary development area
+│   ├── Package.swift                   # Package configuration
+│   ├── Sources/HabitTrackerFeature/       # Your feature code
+│   └── Tests/HabitTrackerFeatureTests/    # Unit tests
+└── HabitTrackerUITests/                   # UI automation tests
+```
 
-### Prerequisites
+## Key Architecture Points
 
-- Xcode 16.0+
-- iOS 18.0+ Simulator or Device
-- macOS 15.0+
+### Workspace + SPM Structure
+- **App Shell**: `HabitTracker/` contains minimal app lifecycle code
+- **Feature Code**: `HabitTrackerPackage/Sources/HabitTrackerFeature/` is where most development happens
+- **Separation**: Business logic lives in the SPM package, app target just imports and displays it
 
-### Building the Project
+### Buildable Folders (Xcode 16)
+- Files added to the filesystem automatically appear in Xcode
+- No need to manually add files to project targets
+- Reduces project file conflicts in teams
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/tigrerol/HabitTracker.git
-   cd HabitTracker
-   ```
+## Development Notes
 
-2. Open the workspace:
-   ```bash
-   open HabitTracker.xcworkspace
-   ```
+### Code Organization
+Most development happens in `HabitTrackerPackage/Sources/HabitTrackerFeature/` - organize your code as you prefer.
 
-3. Build and run the project using Xcode or XcodeBuildMCP tools
+### Public API Requirements
+Types exposed to the app target need `public` access:
+```swift
+public struct NewView: View {
+    public init() {}
+    
+    public var body: some View {
+        // Your view code
+    }
+}
+```
 
-### Development
+### Adding Dependencies
+Edit `HabitTrackerPackage/Package.swift` to add SPM dependencies:
+```swift
+dependencies: [
+    .package(url: "https://github.com/example/SomePackage", from: "1.0.0")
+],
+targets: [
+    .target(
+        name: "HabitTrackerFeature",
+        dependencies: ["SomePackage"]
+    ),
+]
+```
 
-All feature development should be done in the **HabitTrackerPackage** Swift Package, not in the app project. The app project is just a thin wrapper.
+### Test Structure
+- **Unit Tests**: `HabitTrackerPackage/Tests/HabitTrackerFeatureTests/` (Swift Testing framework)
+- **UI Tests**: `HabitTrackerUITests/` (XCUITest framework)
+- **Test Plan**: `HabitTracker.xctestplan` coordinates all tests
 
-## Architecture
+## Configuration
 
-HabitTracker follows modern SwiftUI patterns:
+### XCConfig Build Settings
+Build settings are managed through **XCConfig files** in `Config/`:
+- `Config/Shared.xcconfig` - Common settings (bundle ID, versions, deployment target)
+- `Config/Debug.xcconfig` - Debug-specific settings  
+- `Config/Release.xcconfig` - Release-specific settings
+- `Config/Tests.xcconfig` - Test-specific settings
 
-- **No ViewModels** - Uses pure SwiftUI state management with @State, @Observable, @Environment
-- **Value Types** - Leverages Swift structs and enums for data modeling
-- **Dependency Injection** - Services injected via SwiftUI's Environment system
-- **Strict Concurrency** - All async work properly isolated with Swift 6 concurrency
+### Entitlements Management
+App capabilities are managed through a **declarative entitlements file**:
+- `Config/HabitTracker.entitlements` - All app entitlements and capabilities
+- AI agents can safely edit this XML file to add HealthKit, CloudKit, Push Notifications, etc.
+- No need to modify complex Xcode project files
 
-## Contributing
+### Asset Management
+- **App-Level Assets**: `HabitTracker/Assets.xcassets/` (app icon, accent color)
+- **Feature Assets**: Add `Resources/` folder to SPM package if needed
 
-1. Fork the repository
-2. Create your feature branch
-3. Make changes in the HabitTrackerPackage
-4. Add tests using Swift Testing
-5. Ensure all tests pass
-6. Submit a pull request
+### SPM Package Resources
+To include assets in your feature package:
+```swift
+.target(
+    name: "HabitTrackerFeature",
+    dependencies: [],
+    resources: [.process("Resources")]
+)
+```
 
-## License
-
-[Add your license information here]
-
-## Contact
-
-[Add your contact information here]
+### Generated with XcodeBuildMCP
+This project was scaffolded using [XcodeBuildMCP](https://github.com/cameroncooke/XcodeBuildMCP), which provides tools for AI-assisted iOS development workflows.

@@ -2,8 +2,9 @@ import Foundation
 import SwiftUI
 
 /// Service for managing routine templates and sessions
+@MainActor
 @Observable
-public final class RoutineService: Sendable {
+public final class RoutineService {
     public private(set) var templates: [RoutineTemplate] = []
     public private(set) var currentSession: RoutineSession?
     public private(set) var moodRatings: [MoodRating] = []

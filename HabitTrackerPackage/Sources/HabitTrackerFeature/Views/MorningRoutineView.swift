@@ -1,6 +1,7 @@
 import SwiftUI
 
 /// Main coordination view for the morning routine feature
+@MainActor
 public struct MorningRoutineView: View {
     @State private var routineService = RoutineService()
     
@@ -11,7 +12,7 @@ public struct MorningRoutineView: View {
             if routineService.currentSession != nil {
                 RoutineExecutionView()
             } else {
-                TemplateSelectionView()
+                SmartTemplateSelectionView()
             }
         }
         .environment(routineService)

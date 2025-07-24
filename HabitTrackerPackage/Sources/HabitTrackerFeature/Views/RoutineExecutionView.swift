@@ -3,7 +3,6 @@ import SwiftUI
 /// Main view for executing a morning routine
 public struct RoutineExecutionView: View {
     @Environment(RoutineService.self) private var routineService
-    @State private var showingMoodRating = false
     
     private var session: RoutineSession? {
         routineService.currentSession
@@ -27,11 +26,6 @@ public struct RoutineExecutionView: View {
             }
             .navigationTitle(session?.template.name ?? "Routine")
             .navigationBarTitleDisplayMode(.inline)
-            .sheet(isPresented: $showingMoodRating) {
-                if let session {
-                    MoodRatingView(sessionId: session.id)
-                }
-            }
         }
     }
     
@@ -41,9 +35,30 @@ public struct RoutineExecutionView: View {
             // Progress header
             progressHeader(session)
             
-            // Current habit
+            // Current habit with swipe gestures
             if let currentHabit = session.currentHabit {
                 currentHabitView(currentHabit, session: session)
+                    .gesture(
+                        DragGesture()
+                            .onEnded { value in
+                                let threshold: CGFloat = 50
+                                if value.translation.width > threshold && session.currentHabitIndex > 0 {
+                                    // Swipe right = go back
+                                    withAnimation(.bouncy) {
+                                        session.goToPreviousHabit()
+                                    }
+                                    let impactFeedback = UIImpactFeedbackGenerator(style: .light)
+                                    impactFeedback.impactOccurred()
+                                } else if value.translation.width < -threshold {
+                                    // Swipe left = skip
+                                    withAnimation(.easeInOut) {
+                                        session.skipCurrentHabit()
+                                    }
+                                    let impactFeedback = UIImpactFeedbackGenerator(style: .soft)
+                                    impactFeedback.impactOccurred()
+                                }
+                            }
+                    )
             }
             
             // Navigation controls
@@ -106,43 +121,54 @@ public struct RoutineExecutionView: View {
     }
     
     private func navigationControls(_ session: RoutineSession) -> some View {
-        VStack(spacing: 16) {
-            // Primary actions
-            HStack(spacing: 16) {
-                // Skip button
-                Button {
-                    session.skipCurrentHabit()
-                } label: {
-                    Text("Skip")
-                        .font(.headline)
-                        .foregroundStyle(.orange)
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(.orange, lineWidth: 2)
-                        )
-                }
-                
-                // Back button (if not first habit)
+        VStack(spacing: 12) {
+            // Habit overview (moved to top for better visibility)
+            habitOverview(session)
+            
+            // Streamlined actions
+            HStack(spacing: 12) {
+                // Back button
                 if session.currentHabitIndex > 0 {
                     Button {
-                        session.goToPreviousHabit()
+                        withAnimation(.bouncy) {
+                            session.goToPreviousHabit()
+                        }
+                        let impactFeedback = UIImpactFeedbackGenerator(style: .light)
+                        impactFeedback.impactOccurred()
                     } label: {
-                        Image(systemName: "arrow.left")
-                            .font(.headline)
+                        Image(systemName: "chevron.left")
+                            .font(.title3)
+                            .fontWeight(.semibold)
                             .foregroundStyle(.blue)
-                            .frame(width: 50, height: 50)
-                            .background(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .stroke(.blue, lineWidth: 2)
-                            )
+                            .frame(width: 44, height: 44)
+                            .background(.regularMaterial, in: Circle())
                     }
+                    .buttonStyle(.plain)
                 }
+                
+                Spacer()
+                
+                // Skip button (more subtle)
+                Button {
+                    withAnimation(.easeInOut) {
+                        session.skipCurrentHabit()
+                    }
+                    let impactFeedback = UIImpactFeedbackGenerator(style: .soft)
+                    impactFeedback.impactOccurred()
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "forward.fill")
+                        Text("Skip")
+                    }
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                    .foregroundStyle(.orange)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    .background(.regularMaterial, in: Capsule())
+                }
+                .buttonStyle(.plain)
             }
-            
-            // Habit overview
-            habitOverview(session)
         }
         .padding()
         .background(.regularMaterial)
@@ -183,55 +209,42 @@ public struct RoutineExecutionView: View {
     
     @ViewBuilder
     private func completionView(_ session: RoutineSession) -> some View {
-        VStack(spacing: 32) {
+        VStack(spacing: 24) {
             Spacer()
             
             // Celebration
             VStack(spacing: 16) {
                 Text("🎉")
-                    .font(.system(size: 80))
+                    .font(.system(size: 60))
                 
                 Text("Routine Complete!")
-                    .font(.largeTitle)
+                    .font(.title)
                     .fontWeight(.bold)
                 
-                Text("You completed \(session.completions.filter { !$0.isSkipped }.count) of \(session.activeHabits.count) habits")
+                Text("You completed \(session.completions.filter { !$0.isSkipped }.count) of \(session.activeHabits.count) habits in \(session.duration.formattedDuration)")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
-                
-                Text("Duration: \(session.duration.formattedDuration)")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
             }
+            
+            // Inline Mood Rating
+            InlineMoodRatingView(sessionId: session.id)
             
             Spacer()
             
-            // Actions
-            VStack(spacing: 16) {
-                Button {
-                    showingMoodRating = true
-                } label: {
-                    Text("Rate Your Mood")
-                        .font(.headline)
-                        .foregroundStyle(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color(hex: session.template.color) ?? .blue, in: RoundedRectangle(cornerRadius: 12))
+            // Quick Finish
+            Button {
+                routineService.completeCurrentSession()
+            } label: {
+                HStack {
+                    Image(systemName: "checkmark.circle.fill")
+                    Text("All Done!")
                 }
-                
-                Button {
-                    routineService.completeCurrentSession()
-                } label: {
-                    Text("Finish")
-                        .font(.headline)
-                        .foregroundStyle(.blue)
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(.blue, lineWidth: 2)
-                        )
-                }
+                .font(.headline)
+                .foregroundStyle(.white)
+                .frame(maxWidth: .infinity)
+                .padding()
+                .background(Color(hex: session.template.color) ?? .blue, in: RoundedRectangle(cornerRadius: 12))
             }
         }
         .padding()

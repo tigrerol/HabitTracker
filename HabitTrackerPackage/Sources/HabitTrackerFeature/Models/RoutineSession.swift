@@ -1,8 +1,9 @@
 import Foundation
 
 /// Represents an active morning routine session
+@MainActor
 @Observable
-public final class RoutineSession: Sendable {
+public final class RoutineSession {
     public let id: UUID
     public let template: RoutineTemplate
     public let startedAt: Date
