@@ -16,8 +16,14 @@ public struct HabitInteractionView: View {
             case .checkbox:
                 CheckboxHabitView(habit: habit, onComplete: onComplete)
                 
+            case .checkboxWithSubtasks(let subtasks):
+                SubtasksHabitView(habit: habit, subtasks: subtasks, onComplete: onComplete)
+                
             case .timer(let defaultDuration):
                 TimerHabitView(habit: habit, defaultDuration: defaultDuration, onComplete: onComplete)
+                
+            case .restTimer(let targetDuration):
+                RestTimerHabitView(habit: habit, targetDuration: targetDuration, onComplete: onComplete)
                 
             case .appLaunch(let bundleId, let appName):
                 AppLaunchHabitView(habit: habit, bundleId: bundleId, appName: appName, onComplete: onComplete)
@@ -27,6 +33,12 @@ public struct HabitInteractionView: View {
                 
             case .counter(let items):
                 CounterHabitView(habit: habit, items: items, onComplete: onComplete)
+                
+            case .measurement(let unit, let targetValue):
+                MeasurementHabitView(habit: habit, unit: unit, targetValue: targetValue, onComplete: onComplete)
+                
+            case .guidedSequence(let steps):
+                GuidedSequenceHabitView(habit: habit, steps: steps, onComplete: onComplete)
             }
         }
     }
@@ -117,7 +129,7 @@ struct TimerHabitView: View {
                     .font(.system(size: 48, weight: .bold, design: .monospaced))
                     .foregroundStyle(habit.swiftUIColor)
                 
-                ProgressView(value: 1.0 - (timeRemaining / defaultDuration))
+                ProgressView(value: defaultDuration > 0 ? max(0, min(1, 1.0 - (timeRemaining / defaultDuration))) : 0)
                     .tint(habit.swiftUIColor)
                     .scaleEffect(y: 3)
             }
@@ -458,6 +470,414 @@ extension TimeInterval {
         let minutes = Int(self) / 60
         let seconds = Int(self) % 60
         return String(format: "%d:%02d", minutes, seconds)
+    }
+}
+
+/// Subtasks habit interaction
+struct SubtasksHabitView: View {
+    let habit: Habit
+    let subtasks: [Subtask]
+    let onComplete: (TimeInterval?, String?) -> Void
+    
+    @State private var completedSubtasks: Set<UUID> = []
+    
+    var body: some View {
+        VStack(spacing: 16) {
+            VStack(alignment: .leading, spacing: 12) {
+                ForEach(subtasks) { subtask in
+                    Button {
+                        withAnimation(.easeInOut) {
+                            if completedSubtasks.contains(subtask.id) {
+                                completedSubtasks.remove(subtask.id)
+                            } else {
+                                completedSubtasks.insert(subtask.id)
+                                
+                                // Haptic feedback
+                                let impactFeedback = UIImpactFeedbackGenerator(style: .light)
+                                impactFeedback.impactOccurred()
+                            }
+                        }
+                    } label: {
+                        HStack {
+                            Image(systemName: completedSubtasks.contains(subtask.id) ? "checkmark.circle.fill" : "circle")
+                                .font(.title3)
+                                .foregroundStyle(completedSubtasks.contains(subtask.id) ? .green : .secondary)
+                            
+                            Text(subtask.name)
+                                .font(.body)
+                                .foregroundStyle(.primary)
+                                .strikethrough(completedSubtasks.contains(subtask.id))
+                            
+                            Spacer()
+                            
+                            if subtask.isOptional {
+                                Text("Optional")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 2)
+                                    .background(.regularMaterial, in: Capsule())
+                            }
+                        }
+                        .padding(.vertical, 8)
+                        .padding(.horizontal, 12)
+                        .background(
+                            RoundedRectangle(cornerRadius: 10)
+                                .fill(.regularMaterial)
+                                .stroke(completedSubtasks.contains(subtask.id) ? Color.green.opacity(0.5) : Color.clear, lineWidth: 1)
+                        )
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            
+            Button {
+                let notes = "Completed \(completedSubtasks.count) of \(subtasks.count) subtasks"
+                onComplete(nil, notes)
+            } label: {
+                Text("Complete")
+                    .font(.headline)
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(
+                        (completedSubtasks.count == subtasks.filter { !$0.isOptional }.count ? habit.swiftUIColor : .gray),
+                        in: RoundedRectangle(cornerRadius: 12)
+                    )
+            }
+            .disabled(completedSubtasks.count < subtasks.filter { !$0.isOptional }.count)
+        }
+    }
+}
+
+/// Rest timer habit interaction (counts up)
+struct RestTimerHabitView: View {
+    let habit: Habit
+    let targetDuration: TimeInterval?
+    let onComplete: (TimeInterval?, String?) -> Void
+    
+    @State private var elapsedTime: TimeInterval = 0
+    @State private var isRunning = false
+    @State private var timer: Timer?
+    
+    var body: some View {
+        VStack(spacing: 24) {
+            // Timer display
+            VStack(spacing: 8) {
+                Text(elapsedTime.formattedMinutesSeconds)
+                    .font(.system(size: 48, weight: .bold, design: .monospaced))
+                    .foregroundStyle(habit.swiftUIColor)
+                
+                if let target = targetDuration {
+                    ProgressView(value: target > 0 ? max(0, min(1, elapsedTime / target)) : 0)
+                        .tint(habit.swiftUIColor)
+                        .scaleEffect(y: 3)
+                    
+                    Text("Target: \(target.formattedMinutesSeconds)")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            
+            // Controls
+            HStack(spacing: 12) {
+                if !isRunning {
+                    Button {
+                        startTimer()
+                    } label: {
+                        HStack {
+                            Image(systemName: "play.fill")
+                            Text("Start Rest")
+                        }
+                        .font(.headline)
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(habit.swiftUIColor, in: RoundedRectangle(cornerRadius: 12))
+                    }
+                } else {
+                    Button {
+                        stopTimer()
+                    } label: {
+                        HStack {
+                            Image(systemName: "stop.fill")
+                            Text("End Rest")
+                        }
+                        .font(.headline)
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(habit.swiftUIColor, in: RoundedRectangle(cornerRadius: 12))
+                    }
+                }
+            }
+        }
+        .onDisappear {
+            timer?.invalidate()
+        }
+    }
+    
+    private func startTimer() {
+        isRunning = true
+        timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
+            Task { @MainActor in
+                elapsedTime += 1
+                
+                // Auto-complete at target if set
+                if let target = targetDuration, elapsedTime >= target {
+                    stopTimer()
+                }
+            }
+        }
+    }
+    
+    private func stopTimer() {
+        timer?.invalidate()
+        isRunning = false
+        onComplete(elapsedTime, targetDuration != nil ? "Target \(elapsedTime >= targetDuration! ? "reached" : "not reached")" : nil)
+    }
+}
+
+/// Measurement input habit
+struct MeasurementHabitView: View {
+    let habit: Habit
+    let unit: String
+    let targetValue: Double?
+    let onComplete: (TimeInterval?, String?) -> Void
+    
+    @State private var inputValue: String = ""
+    @FocusState private var isInputFocused: Bool
+    
+    var body: some View {
+        VStack(spacing: 24) {
+            VStack(spacing: 12) {
+                Text("Enter \(unit)")
+                    .font(.headline)
+                    .foregroundStyle(.secondary)
+                
+                HStack {
+                    TextField("0", text: $inputValue)
+                        .font(.system(size: 48, weight: .bold, design: .monospaced))
+                        .multilineTextAlignment(.center)
+                        .keyboardType(.decimalPad)
+                        .focused($isInputFocused)
+                    
+                    Text(unit)
+                        .font(.title2)
+                        .foregroundStyle(.secondary)
+                }
+                
+                if let target = targetValue {
+                    Text("Target: \(target, specifier: "%.1f") \(unit)")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            
+            Button {
+                if let value = Double(inputValue) {
+                    let notes = targetValue != nil ? "Measured: \(value) \(unit) (target: \(targetValue!))" : "Measured: \(value) \(unit)"
+                    onComplete(nil, notes)
+                }
+            } label: {
+                Text("Record")
+                    .font(.headline)
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(
+                        inputValue.isEmpty ? .gray : habit.swiftUIColor,
+                        in: RoundedRectangle(cornerRadius: 12)
+                    )
+            }
+            .disabled(inputValue.isEmpty)
+        }
+        .onAppear {
+            isInputFocused = true
+        }
+    }
+}
+
+
+/// Guided sequence habit
+struct GuidedSequenceHabitView: View {
+    let habit: Habit
+    let steps: [SequenceStep]
+    let onComplete: (TimeInterval?, String?) -> Void
+    
+    @State private var currentStepIndex = 0
+    @State private var timeRemaining: TimeInterval = 0
+    @State private var isRunning = false
+    @State private var isPaused = false
+    @State private var timer: Timer?
+    @State private var totalElapsed: TimeInterval = 0
+    
+    private var currentStep: SequenceStep? {
+        guard currentStepIndex < steps.count else { return nil }
+        return steps[currentStepIndex]
+    }
+    
+    var body: some View {
+        VStack(spacing: 24) {
+            if let step = currentStep {
+                // Step info
+                VStack(spacing: 8) {
+                    Text("Step \(currentStepIndex + 1) of \(steps.count)")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    
+                    Text(step.name)
+                        .font(.title2)
+                        .fontWeight(.semibold)
+                        .multilineTextAlignment(.center)
+                    
+                    if let instructions = step.instructions {
+                        Text(instructions)
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.center)
+                    }
+                }
+                
+                // Timer display
+                VStack(spacing: 8) {
+                    Text(timeRemaining.formattedMinutesSeconds)
+                        .font(.system(size: 48, weight: .bold, design: .monospaced))
+                        .foregroundStyle(habit.swiftUIColor)
+                    
+                    ProgressView(value: step.duration > 0 ? max(0, min(1, 1.0 - (timeRemaining / step.duration))) : 0)
+                        .tint(habit.swiftUIColor)
+                        .scaleEffect(y: 3)
+                }
+                
+                // Controls
+                HStack(spacing: 12) {
+                    if !isRunning {
+                        Button {
+                            startStep()
+                        } label: {
+                            HStack {
+                                Image(systemName: "play.fill")
+                                Text("Start")
+                            }
+                            .font(.headline)
+                            .foregroundStyle(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(habit.swiftUIColor, in: RoundedRectangle(cornerRadius: 12))
+                        }
+                    } else {
+                        Button {
+                            if isPaused {
+                                resumeStep()
+                            } else {
+                                pauseStep()
+                            }
+                        } label: {
+                            HStack {
+                                Image(systemName: isPaused ? "play.fill" : "pause.fill")
+                                Text(isPaused ? "Resume" : "Pause")
+                            }
+                            .font(.headline)
+                            .foregroundStyle(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(habit.swiftUIColor, in: RoundedRectangle(cornerRadius: 12))
+                        }
+                    }
+                    
+                    Button {
+                        nextStep()
+                    } label: {
+                        Text("Skip")
+                            .font(.headline)
+                            .foregroundStyle(.orange)
+                            .padding()
+                            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+                    }
+                }
+            } else {
+                // Completion view
+                VStack(spacing: 16) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 60))
+                        .foregroundStyle(.green)
+                    
+                    Text("Sequence Complete!")
+                        .font(.title2)
+                        .fontWeight(.semibold)
+                    
+                    Text("Total time: \(totalElapsed.formattedMinutesSeconds)")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                    
+                    Button {
+                        onComplete(totalElapsed, "Completed all \(steps.count) steps")
+                    } label: {
+                        Text("Done")
+                            .font(.headline)
+                            .foregroundStyle(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(.green, in: RoundedRectangle(cornerRadius: 12))
+                    }
+                }
+            }
+        }
+        .onAppear {
+            if let firstStep = currentStep {
+                timeRemaining = firstStep.duration
+            }
+        }
+        .onDisappear {
+            timer?.invalidate()
+        }
+    }
+    
+    private func startStep() {
+        isRunning = true
+        isPaused = false
+        createTimer()
+    }
+    
+    private func pauseStep() {
+        isPaused = true
+        timer?.invalidate()
+    }
+    
+    private func resumeStep() {
+        isPaused = false
+        createTimer()
+    }
+    
+    private func nextStep() {
+        timer?.invalidate()
+        
+        // Add elapsed time
+        if let step = currentStep {
+            totalElapsed += step.duration - timeRemaining
+        }
+        
+        // Move to next
+        currentStepIndex += 1
+        if let nextStep = currentStep {
+            timeRemaining = nextStep.duration
+            isRunning = false
+            isPaused = false
+        }
+    }
+    
+    private func createTimer() {
+        timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
+            Task { @MainActor in
+                if timeRemaining > 0 {
+                    timeRemaining -= 1
+                } else {
+                    // Auto advance to next step
+                    nextStep()
+                }
+            }
+        }
     }
 }
 

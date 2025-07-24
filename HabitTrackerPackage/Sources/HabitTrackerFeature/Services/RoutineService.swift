@@ -58,6 +58,42 @@ public final class RoutineService {
     public var defaultTemplate: RoutineTemplate? {
         templates.first { $0.isDefault }
     }
+    
+    /// Add a new template
+    public func addTemplate(_ template: RoutineTemplate) {
+        templates.append(template)
+        
+        // If this is the first template or marked as default, make it default
+        if templates.count == 1 || template.isDefault {
+            // Unset other defaults if this is default
+            if template.isDefault {
+                for index in templates.indices {
+                    if templates[index].id != template.id {
+                        templates[index].isDefault = false
+                    }
+                }
+            }
+        }
+    }
+    
+    /// Update an existing template
+    public func updateTemplate(_ template: RoutineTemplate) {
+        if let index = templates.firstIndex(where: { $0.id == template.id }) {
+            templates[index] = template
+            
+            // Handle default status
+            if template.isDefault {
+                for i in templates.indices where i != index {
+                    templates[i].isDefault = false
+                }
+            }
+        }
+    }
+    
+    /// Delete a template
+    public func deleteTemplate(withId id: UUID) {
+        templates.removeAll { $0.id == id }
+    }
 }
 
 // MARK: - Sample Templates

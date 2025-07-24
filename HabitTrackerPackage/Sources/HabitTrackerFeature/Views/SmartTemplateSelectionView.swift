@@ -5,6 +5,7 @@ struct SmartTemplateSelectionView: View {
     @Environment(RoutineService.self) private var routineService
     @State private var selectedTemplate: RoutineTemplate?
     @State private var showAllTemplates = false
+    @State private var showingRoutineBuilder = false
     
     var body: some View {
         NavigationStack {
@@ -26,9 +27,27 @@ struct SmartTemplateSelectionView: View {
             .padding()
             .navigationTitle("Good Morning!")
             .navigationBarTitleDisplayMode(.large)
+            .safeAreaInset(edge: .bottom) {
+                Text("Build: 2024.12.24.1847")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .padding(.bottom, 8)
+            }
+            .toolbar {
+                ToolbarItem(placement: .primaryAction) {
+                    Button {
+                        showingRoutineBuilder = true
+                    } label: {
+                        Image(systemName: "plus")
+                    }
+                }
+            }
         }
         .onAppear {
             selectSmartTemplate()
+        }
+        .sheet(isPresented: $showingRoutineBuilder) {
+            RoutineBuilderView()
         }
     }
     
