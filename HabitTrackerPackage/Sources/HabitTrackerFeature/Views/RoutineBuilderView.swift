@@ -19,7 +19,11 @@ public struct RoutineBuilderView: View {
         case review
     }
     
-    public init() {}
+    private let editingTemplate: RoutineTemplate?
+    
+    public init(editingTemplate: RoutineTemplate? = nil) {
+        self.editingTemplate = editingTemplate
+    }
     
     public var body: some View {
         NavigationStack {
@@ -33,7 +37,7 @@ public struct RoutineBuilderView: View {
                     reviewStepView
                 }
             }
-            .navigationTitle("Create Routine")
+            .navigationTitle(editingTemplate != nil ? "Edit Routine" : "Create Routine")
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -48,6 +52,16 @@ public struct RoutineBuilderView: View {
                     .foregroundStyle(.secondary)
                     .padding(.trailing, 16)
                     .padding(.top, 4)
+            }
+        }
+        .onAppear {
+            if let template = editingTemplate {
+                // Initialize with existing template data
+                templateName = template.name
+                templateColor = template.color
+                habits = template.habits
+                isDefault = template.isDefault
+                currentStep = .review // Skip to review for editing
             }
         }
     }
@@ -435,7 +449,7 @@ public struct RoutineBuilderView: View {
                     Button {
                         saveTemplate()
                     } label: {
-                        Text("Save Routine")
+                        Text(editingTemplate != nil ? "Update Routine" : "Save Routine")
                             .font(.headline)
                             .foregroundStyle(.white)
                             .frame(maxWidth: .infinity)
@@ -467,14 +481,27 @@ public struct RoutineBuilderView: View {
     private func saveTemplate() {
         updateHabitOrder()
         
-        let template = RoutineTemplate(
-            name: templateName,
-            habits: habits,
-            color: templateColor,
-            isDefault: isDefault
-        )
+        if let existingTemplate = editingTemplate {
+            // Update existing template
+            var updatedTemplate = existingTemplate
+            updatedTemplate.name = templateName
+            updatedTemplate.habits = habits
+            updatedTemplate.color = templateColor
+            updatedTemplate.isDefault = isDefault
+            
+            routineService.updateTemplate(updatedTemplate)
+        } else {
+            // Create new template
+            let template = RoutineTemplate(
+                name: templateName,
+                habits: habits,
+                color: templateColor,
+                isDefault: isDefault
+            )
+            
+            routineService.addTemplate(template)
+        }
         
-        routineService.addTemplate(template)
         dismiss()
     }
 }

@@ -6,6 +6,9 @@ struct SmartTemplateSelectionView: View {
     @State private var selectedTemplate: RoutineTemplate?
     @State private var showAllTemplates = false
     @State private var showingRoutineBuilder = false
+    @State private var editingTemplate: RoutineTemplate?
+    @State private var templateToDelete: RoutineTemplate?
+    @State private var showingDeleteAlert = false
     
     var body: some View {
         NavigationStack {
@@ -49,6 +52,25 @@ struct SmartTemplateSelectionView: View {
         .sheet(isPresented: $showingRoutineBuilder) {
             RoutineBuilderView()
         }
+        .sheet(item: $editingTemplate) { template in
+            RoutineBuilderView(editingTemplate: template)
+        }
+        .alert("Delete Routine", isPresented: $showingDeleteAlert) {
+            Button("Cancel", role: .cancel) { }
+            Button("Delete", role: .destructive) {
+                if let template = templateToDelete {
+                    routineService.deleteTemplate(withId: template.id)
+                    // Update selected template if it was deleted
+                    if selectedTemplate?.id == template.id {
+                        selectSmartTemplate()
+                    }
+                }
+            }
+        } message: {
+            if let template = templateToDelete {
+                Text("Are you sure you want to delete \"\(template.name)\"? This action cannot be undone.")
+            }
+        }
     }
     
     private var headerView: some View {
@@ -85,9 +107,20 @@ struct SmartTemplateSelectionView: View {
                         
                         Spacer()
                         
-                        Image(systemName: "play.circle.fill")
-                            .font(.system(size: 32))
-                            .foregroundStyle(template.swiftUIColor)
+                        HStack(spacing: 8) {
+                            Button {
+                                editingTemplate = template
+                            } label: {
+                                Image(systemName: "pencil.circle.fill")
+                                    .font(.system(size: 24))
+                                    .foregroundStyle(.secondary)
+                            }
+                            .buttonStyle(.plain)
+                            
+                            Image(systemName: "play.circle.fill")
+                                .font(.system(size: 32))
+                                .foregroundStyle(template.swiftUIColor)
+                        }
                     }
                     
                     HStack {
@@ -140,10 +173,25 @@ struct SmartTemplateSelectionView: View {
             ForEach(routineService.templates) { template in
                 CompactTemplateCard(
                     template: template,
-                    isSelected: selectedTemplate?.id == template.id
-                ) {
-                    selectedTemplate = template
-                    startRoutine(with: template)
+                    isSelected: selectedTemplate?.id == template.id,
+                    onTap: {
+                        selectedTemplate = template
+                        startRoutine(with: template)
+                    },
+                    onEdit: {
+                        editingTemplate = template
+                    },
+                    onDelete: {
+                        templateToDelete = template
+                        showingDeleteAlert = true
+                    }
+                )
+            }
+            .onDelete { indexSet in
+                for index in indexSet {
+                    let template = routineService.templates[index]
+                    templateToDelete = template
+                    showingDeleteAlert = true
                 }
             }
         }
@@ -167,6 +215,8 @@ private struct CompactTemplateCard: View {
     let template: RoutineTemplate
     let isSelected: Bool
     let onTap: () -> Void
+    let onEdit: () -> Void
+    let onDelete: () -> Void
     
     var body: some View {
         Button(action: onTap) {
@@ -184,8 +234,29 @@ private struct CompactTemplateCard: View {
                 
                 Spacer()
                 
-                Image(systemName: "play.circle.fill")
-                    .foregroundStyle(template.swiftUIColor)
+                HStack(spacing: 8) {
+                    Image(systemName: "play.circle.fill")
+                        .foregroundStyle(template.swiftUIColor)
+                    
+                    Menu {
+                        Button {
+                            onEdit()
+                        } label: {
+                            Label("Edit", systemImage: "pencil")
+                        }
+                        
+                        Button(role: .destructive) {
+                            onDelete()
+                        } label: {
+                            Label("Delete", systemImage: "trash")
+                        }
+                    } label: {
+                        Image(systemName: "ellipsis")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .frame(width: 24, height: 24)
+                    }
+                }
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
