@@ -8,6 +8,7 @@ public struct ConditionalHabitEditorView: View {
     @State private var options: [ConditionalOption]
     @State private var color: String
     @State private var selectedOptionForBuilder: ConditionalOption?
+    @State private var selectedOptionForHabitPicker: ConditionalOption?
     @State private var showingDeleteAlert = false
     @State private var optionToDelete: ConditionalOption?
     
@@ -48,67 +49,9 @@ public struct ConditionalHabitEditorView: View {
     public var body: some View {
         NavigationStack {
             Form {
-                Section("Habit Details") {
-                    TextField("Habit Name", text: $habitName)
-                    TextField("Question", text: $question)
-                    // Color picker using predefined colors (similar to HabitEditorView)
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Color")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                        
-                        HStack(spacing: 12) {
-                            ForEach(["#34C759", "#007AFF", "#FF9500", "#FF3B30", "#AF52DE", "#5AC8FA", "#FFD60A", "#FF2D55"], id: \.self) { colorHex in
-                                Circle()
-                                    .fill(Color(hex: colorHex) ?? .blue)
-                                    .frame(width: 32, height: 32)
-                                    .overlay {
-                                        if color == colorHex {
-                                            Image(systemName: "checkmark")
-                                                .font(.caption)
-                                                .fontWeight(.bold)
-                                                .foregroundStyle(.white)
-                                        }
-                                    }
-                                    .onTapGesture {
-                                        color = colorHex
-                                    }
-                            }
-                        }
-                    }
-                }
-                
-                Section("Options") {
-                    ForEach(Array(options.enumerated()), id: \.element.id) { index, option in
-                        OptionCard(
-                            option: option,
-                            onTap: {
-                                print("🔍 OptionCard: onTap called for index: \(index), option: \(option.text)")
-                                selectedOptionForBuilder = option
-                                print("🔍 OptionCard: Set selectedOptionForBuilder to \(selectedOptionForBuilder?.text ?? "nil")")
-                            },
-                            onDelete: {
-                                optionToDelete = option
-                                showingDeleteAlert = true
-                            }
-                        )
-                    }
-                    
-                    if options.count < 4 {
-                        Button {
-                            addNewOption()
-                        } label: {
-                            Label("Add Option", systemImage: "plus.circle.fill")
-                        }
-                    }
-                }
-                
-                if existingConditionalDepth >= 2 {
-                    Section {
-                        Label("Maximum nesting depth reached", systemImage: "exclamationmark.triangle")
-                            .foregroundStyle(.orange)
-                    }
-                }
+                habitDetailsSection
+                optionsSection
+                depthWarningSection
             }
             .navigationTitle(existingHabit == nil ? "New Question" : "Edit Question")
             .navigationBarTitleDisplayMode(.inline)
@@ -131,7 +74,7 @@ public struct ConditionalHabitEditorView: View {
                 if let index = options.firstIndex(where: { $0.id == option.id }) {
                     let _ = print("🔍 Sheet: Found option at index \(index), showing PathBuilderView")
                     PathBuilderView(
-                        option: binding(for: index),
+                        option: optionBinding(for: index),
                         habitLibrary: habitLibrary,
                         existingConditionalDepth: existingConditionalDepth + 1
                     )
@@ -149,6 +92,30 @@ public struct ConditionalHabitEditorView: View {
                     .padding()
                 }
             }
+            .sheet(item: $selectedOptionForHabitPicker) { option in
+                if let index = options.firstIndex(where: { $0.id == option.id }) {
+                    HabitPickerView(
+                        habitLibrary: habitLibrary,
+                        existingConditionalDepth: existingConditionalDepth,
+                        onSelect: { habit in
+                            // Add habit to the specific option
+                            let newHabit = Habit(
+                                id: UUID(),
+                                name: habit.name,
+                                type: habit.type,
+                                isOptional: habit.isOptional,
+                                notes: habit.notes,
+                                color: habit.color,
+                                order: options[index].habits.count,
+                                isActive: habit.isActive
+                            )
+                            var updatedOption = options[index]
+                            updatedOption.habits.append(newHabit)
+                            options[index] = updatedOption
+                        }
+                    )
+                }
+            }
             .alert("Delete Option", isPresented: $showingDeleteAlert) {
                 Button("Delete", role: .destructive) {
                     if let option = optionToDelete {
@@ -157,6 +124,9 @@ public struct ConditionalHabitEditorView: View {
                         if selectedOptionForBuilder?.id == option.id {
                             selectedOptionForBuilder = nil
                         }
+                        if selectedOptionForHabitPicker?.id == option.id {
+                            selectedOptionForHabitPicker = nil
+                        }
                     }
                 }
                 Button("Cancel", role: .cancel) {}
@@ -164,6 +134,95 @@ public struct ConditionalHabitEditorView: View {
                 Text("Are you sure you want to delete this option? This will also delete all habits in its path.")
             }
         }
+    }
+    
+    // MARK: - View Sections
+    
+    @ViewBuilder
+    private var habitDetailsSection: some View {
+        Section("Habit Details") {
+            TextField("Habit Name", text: $habitName)
+            TextField("Question", text: $question)
+            colorPickerView
+        }
+    }
+    
+    @ViewBuilder
+    private var colorPickerView: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Color")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            
+            HStack(spacing: 12) {
+                ForEach(colorOptions, id: \.self) { colorHex in
+                    Circle()
+                        .fill(Color(hex: colorHex) ?? .blue)
+                        .frame(width: 32, height: 32)
+                        .overlay {
+                            if color == colorHex {
+                                Image(systemName: "checkmark")
+                                    .font(.caption)
+                                    .fontWeight(.bold)
+                                    .foregroundStyle(.white)
+                            }
+                        }
+                        .onTapGesture {
+                            color = colorHex
+                        }
+                }
+            }
+        }
+    }
+    
+    @ViewBuilder
+    private var optionsSection: some View {
+        Section("Options") {
+            ForEach(Array(options.enumerated()), id: \.element.id) { index, option in
+                OptionCard(
+                    option: optionBinding(for: index),
+                    onDelete: {
+                        optionToDelete = option
+                        showingDeleteAlert = true
+                    },
+                    onAddHabit: {
+                        selectedOptionForHabitPicker = option
+                    },
+                    onEditPath: {
+                        selectedOptionForBuilder = option
+                    }
+                )
+            }
+            
+            if options.count < 4 {
+                Button {
+                    addNewOption()
+                } label: {
+                    Label("Add Option", systemImage: "plus.circle.fill")
+                }
+            }
+        }
+    }
+    
+    @ViewBuilder
+    private var depthWarningSection: some View {
+        if existingConditionalDepth >= 2 {
+            Section {
+                Label("Maximum nesting depth reached", systemImage: "exclamationmark.triangle")
+                    .foregroundStyle(.orange)
+            }
+        }
+    }
+    
+    private var colorOptions: [String] {
+        ["#34C759", "#007AFF", "#FF9500", "#FF3B30", "#AF52DE", "#5AC8FA", "#FFD60A", "#FF2D55"]
+    }
+    
+    private func optionBinding(for index: Int) -> Binding<ConditionalOption> {
+        Binding(
+            get: { options[index] },
+            set: { options[index] = $0 }
+        )
     }
     
     private var isValid: Bool {
@@ -178,24 +237,6 @@ public struct ConditionalHabitEditorView: View {
         options.append(newOption)
     }
     
-    private func binding(for index: Int) -> Binding<ConditionalOption> {
-        Binding(
-            get: { 
-                guard index < options.count else { 
-                    return ConditionalOption(text: "Error", habits: [])
-                }
-                return options[index] 
-            },
-            set: { newValue in
-                guard index < options.count else { return }
-                options[index] = newValue
-                // Update selectedOptionForBuilder if it's the same one being modified
-                if selectedOptionForBuilder?.id == newValue.id {
-                    selectedOptionForBuilder = newValue
-                }
-            }
-        )
-    }
     
     private func saveHabit() {
         let conditionalInfo = ConditionalHabitInfo(
@@ -220,32 +261,159 @@ public struct ConditionalHabitEditorView: View {
 }
 
 private struct OptionCard: View {
-    let option: ConditionalOption
-    let onTap: () -> Void
+    @Binding var option: ConditionalOption
+    let onDelete: () -> Void
+    let onAddHabit: () -> Void
+    let onEditPath: () -> Void
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            // Header with editable text and delete button
+            HStack {
+                TextField("Option text", text: Binding(
+                    get: { option.text },
+                    set: { option.text = $0 }
+                ))
+                .font(.headline)
+                .textFieldStyle(.plain)
+                
+                Spacer()
+                
+                Button(action: onDelete) {
+                    Image(systemName: "trash")
+                        .foregroundStyle(.red)
+                }
+                .buttonStyle(.plain)
+            }
+            
+            // Habits preview and actions
+            if option.habits.isEmpty {
+                VStack(spacing: 8) {
+                    Text("No habits yet")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity)
+                    
+                    HStack(spacing: 12) {
+                        QuickHabitButton(title: "Timer", icon: "timer") {
+                            addQuickHabit(.timer(defaultDuration: 300))
+                        }
+                        QuickHabitButton(title: "Task", icon: "checkmark.square") {
+                            addQuickHabit(.checkbox)
+                        }
+                        QuickHabitButton(title: "More...", icon: "plus.circle") {
+                            onAddHabit()
+                        }
+                    }
+                }
+            } else {
+                VStack(alignment: .leading, spacing: 6) {
+                    // Compact habit list
+                    ForEach(Array(option.habits.enumerated()), id: \.element.id) { index, habit in
+                        CompactHabitRow(
+                            habit: Binding(
+                                get: { option.habits[index] },
+                                set: { newHabit in
+                                    var updatedOption = option
+                                    updatedOption.habits[index] = newHabit
+                                    option = updatedOption
+                                }
+                            )
+                        ) {
+                            // Delete habit
+                            var updatedOption = option
+                            updatedOption.habits.remove(at: index)
+                            option = updatedOption
+                        }
+                    }
+                    
+                    // Add more button
+                    HStack {
+                        Button {
+                            onAddHabit()
+                        } label: {
+                            HStack(spacing: 4) {
+                                Image(systemName: "plus.circle.fill")
+                                Text("Add Habit")
+                            }
+                            .font(.caption)
+                            .foregroundStyle(.blue)
+                        }
+                        
+                        Spacer()
+                        
+                        Button("Edit Path") {
+                            onEditPath()
+                        }
+                        .font(.caption)
+                        .foregroundStyle(.blue)
+                    }
+                }
+            }
+        }
+        .padding()
+        .background(Color(.systemGray6), in: RoundedRectangle(cornerRadius: 8))
+    }
+    
+    private func addQuickHabit(_ type: HabitType) {
+        let habit = Habit(
+            name: type.quickName,
+            type: type,
+            order: option.habits.count
+        )
+        var updatedOption = option
+        updatedOption.habits.append(habit)
+        option = updatedOption
+    }
+}
+
+// MARK: - Supporting Views
+
+private struct QuickHabitButton: View {
+    let title: String
+    let icon: String
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 2) {
+                Image(systemName: icon)
+                    .font(.caption)
+                Text(title)
+                    .font(.caption2)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 6)
+            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 6))
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+private struct CompactHabitRow: View {
+    @Binding var habit: Habit
     let onDelete: () -> Void
     
     var body: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(option.text)
-                    .font(.headline)
-                
-                if option.habits.isEmpty {
-                    Text("No habits - continues to next")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                } else {
-                    Text("\(option.habits.count) habit\(option.habits.count == 1 ? "" : "s")")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .contentShape(Rectangle())
-            .onTapGesture(perform: onTap)
+        HStack(spacing: 8) {
+            Circle()
+                .fill(Color(hex: habit.color) ?? .blue)
+                .frame(width: 6, height: 6)
+            
+            TextField("Habit name", text: $habit.name)
+                .font(.caption)
+                .textFieldStyle(.plain)
+                .lineLimit(1)
+            
+            Spacer()
+            
+            Text(habit.type.description)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
             
             Button(action: onDelete) {
-                Image(systemName: "trash")
+                Image(systemName: "minus.circle.fill")
+                    .font(.caption)
                     .foregroundStyle(.red)
             }
             .buttonStyle(.plain)
@@ -291,7 +459,12 @@ struct PathBuilderView: View {
                         )
                     } else {
                         ForEach(Array(habits.enumerated()), id: \.element.id) { index, habit in
-                            HabitRow(habit: habit) {
+                            HabitRow(
+                                habit: Binding(
+                                    get: { habits[index] },
+                                    set: { habits[index] = $0; saveChanges() }
+                                )
+                            ) {
                                 // Delete habit
                                 habits.remove(at: index)
                                 saveChanges()
@@ -361,7 +534,7 @@ struct PathBuilderView: View {
 
 // MARK: - Habit Row
 struct HabitRow: View {
-    let habit: Habit
+    @Binding var habit: Habit
     let onDelete: () -> Void
     
     var body: some View {
@@ -372,7 +545,9 @@ struct HabitRow: View {
                 .frame(width: 8, height: 8)
             
             VStack(alignment: .leading) {
-                Text(habit.name.isEmpty ? "EMPTY NAME" : habit.name)
+                TextField("Habit name", text: $habit.name)
+                    .font(.subheadline)
+                    .textFieldStyle(.plain)
                 Text(habit.type.description.isEmpty ? "EMPTY DESCRIPTION" : habit.type.description)
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -386,6 +561,7 @@ struct HabitRow: View {
             }
             .buttonStyle(.plain)
         }
+        .padding(.vertical, 4)
         .background(Color.gray.opacity(0.1))
         .cornerRadius(8)
     }

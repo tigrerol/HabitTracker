@@ -5,10 +5,10 @@ public struct ConditionalOption: Identifiable, Codable, Hashable, Sendable {
     public let id: UUID
     
     /// The text displayed for this option
-    public let text: String
+    public var text: String
     
     /// The habits to execute when this option is selected
-    public let habits: [Habit]
+    public var habits: [Habit]
     
     public init(id: UUID = UUID(), text: String, habits: [Habit] = []) {
         self.id = id

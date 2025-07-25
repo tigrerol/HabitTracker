@@ -125,4 +125,30 @@ extension HabitType {
             return "questionmark.circle"
         }
     }
+    
+    /// Quick default name for creating habits fast
+    public var quickName: String {
+        switch self {
+        case .checkbox:
+            return "New Task"
+        case .checkboxWithSubtasks:
+            return "New Checklist"
+        case .timer:
+            return "New Timer"
+        case .restTimer:
+            return "Rest Timer"
+        case .appLaunch:
+            return "New App"
+        case .website:
+            return "New Website"
+        case .counter:
+            return "New Counter"
+        case .measurement:
+            return "New Measurement"
+        case .guidedSequence:
+            return "New Sequence"
+        case .conditional:
+            return "New Question"
+        }
+    }
 }
