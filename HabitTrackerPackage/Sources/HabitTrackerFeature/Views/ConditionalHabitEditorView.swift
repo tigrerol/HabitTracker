@@ -185,9 +185,6 @@ public struct ConditionalHabitEditorView: View {
                         optionToDelete = option
                         showingDeleteAlert = true
                     },
-                    onAddHabit: {
-                        selectedOptionForHabitPicker = option
-                    },
                     onEditPath: {
                         selectedOptionForBuilder = option
                     }
@@ -263,7 +260,6 @@ public struct ConditionalHabitEditorView: View {
 private struct OptionCard: View {
     @Binding var option: ConditionalOption
     let onDelete: () -> Void
-    let onAddHabit: () -> Void
     let onEditPath: () -> Void
     
     var body: some View {
@@ -301,8 +297,8 @@ private struct OptionCard: View {
                         QuickHabitButton(title: "Task", icon: "checkmark.square") {
                             addQuickHabit(.checkbox)
                         }
-                        QuickHabitButton(title: "More...", icon: "plus.circle") {
-                            onAddHabit()
+                        QuickHabitButton(title: "Counter", icon: "list.bullet") {
+                            addQuickHabit(.counter(items: ["Item 1"]))
                         }
                     }
                 }
@@ -327,19 +323,8 @@ private struct OptionCard: View {
                         }
                     }
                     
-                    // Add more button
+                    // Edit path button
                     HStack {
-                        Button {
-                            onAddHabit()
-                        } label: {
-                            HStack(spacing: 4) {
-                                Image(systemName: "plus.circle.fill")
-                                Text("Add Habit")
-                            }
-                            .font(.caption)
-                            .foregroundStyle(.blue)
-                        }
-                        
                         Spacer()
                         
                         Button("Edit Path") {

@@ -244,22 +244,6 @@ public struct RoutineBuilderView: View {
             
             ScrollView {
                 VStack(spacing: 20) {
-                    // Prominent quick add section
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Add a habit")
-                            .font(.headline)
-                            .fontWeight(.semibold)
-                            .padding(.horizontal)
-                        
-                        HabitQuickAddView { habit in
-                            withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
-                                habits.append(habit)
-                            }
-                        }
-                        .padding(.horizontal)
-                    }
-                    .padding(.top)
-                    
                     // Current habits section
                     if !habits.isEmpty {
                         VStack(alignment: .leading, spacing: 12) {
@@ -298,6 +282,7 @@ public struct RoutineBuilderView: View {
                     
                     // Habit types section
                     suggestedHabitsSection
+                        .padding(.top, habits.isEmpty ? 20 : 0)
                         .padding(.bottom, 100) // Space for bottom buttons
                 }
             }
@@ -365,42 +350,45 @@ public struct RoutineBuilderView: View {
             }
             .padding(.horizontal)
             
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 12) {
-                    ForEach(habitTypeOptions, id: \.type) { habitType in
-                        Button {
-                            withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
-                                let newHabit = createHabitFromType(habitType.type)
-                                habits.append(newHabit)
-                            }
-                        } label: {
-                            VStack(spacing: 6) {
-                                Image(systemName: habitType.type.iconName)
-                                    .font(.title3)
-                                    .foregroundStyle(habitType.color)
-                                    .frame(width: 32, height: 32)
-                                
+            LazyVGrid(columns: [
+                GridItem(.flexible()),
+                GridItem(.flexible())
+            ], spacing: 12) {
+                ForEach(habitTypeOptions, id: \.type) { habitType in
+                    Button {
+                        withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                            let newHabit = createHabitFromType(habitType.type)
+                            habits.append(newHabit)
+                        }
+                    } label: {
+                        HStack(spacing: 12) {
+                            Image(systemName: habitType.type.iconName)
+                                .font(.title2)
+                                .foregroundStyle(habitType.color)
+                                .frame(width: 32, height: 32)
+                            
+                            VStack(alignment: .leading, spacing: 2) {
                                 Text(habitType.name)
-                                    .font(.caption)
+                                    .font(.subheadline)
                                     .fontWeight(.medium)
-                                    .multilineTextAlignment(.center)
-                                    .lineLimit(2)
+                                    .multilineTextAlignment(.leading)
                                 
                                 Text(habitType.description)
-                                    .font(.caption2)
+                                    .font(.caption)
                                     .foregroundStyle(.secondary)
-                                    .multilineTextAlignment(.center)
-                                    .lineLimit(1)
+                                    .multilineTextAlignment(.leading)
                             }
-                            .frame(width: 80)
-                            .padding(.vertical, 12)
-                            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+                            
+                            Spacer()
                         }
-                        .buttonStyle(.plain)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
+                        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
                     }
+                    .buttonStyle(.plain)
                 }
-                .padding(.horizontal)
             }
+            .padding(.horizontal)
         }
     }
     
