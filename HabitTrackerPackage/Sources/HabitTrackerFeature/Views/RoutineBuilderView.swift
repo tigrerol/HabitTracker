@@ -31,12 +31,25 @@ public struct RoutineBuilderView: View {
                 switch currentStep {
                 case .naming:
                     namingStepView
+                        .transition(.asymmetric(
+                            insertion: .move(edge: .trailing).combined(with: .opacity),
+                            removal: .move(edge: .leading).combined(with: .opacity)
+                        ))
                 case .building:
                     buildingStepView
+                        .transition(.asymmetric(
+                            insertion: .move(edge: .trailing).combined(with: .opacity),
+                            removal: .move(edge: .leading).combined(with: .opacity)
+                        ))
                 case .review:
                     reviewStepView
+                        .transition(.asymmetric(
+                            insertion: .move(edge: .trailing).combined(with: .opacity),
+                            removal: .move(edge: .leading).combined(with: .opacity)
+                        ))
                 }
             }
+            .animation(.easeInOut(duration: 0.3), value: currentStep)
             .navigationTitle(editingTemplate != nil ? "Edit Routine" : "Create Routine")
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
@@ -71,6 +84,21 @@ public struct RoutineBuilderView: View {
     private var namingStepView: some View {
         VStack(spacing: 32) {
             VStack(spacing: 16) {
+                // Step indicator
+                HStack(spacing: 4) {
+                    Circle()
+                        .fill(.blue)
+                        .frame(width: 8, height: 8)
+                    Circle()
+                        .fill(.gray.opacity(0.3))
+                        .frame(width: 8, height: 8)
+                    Circle()
+                        .fill(.gray.opacity(0.3))
+                        .frame(width: 8, height: 8)
+                }
+                .accessibilityLabel("Step 1 of 3: Naming routine")
+                .padding(.bottom, 8)
+                
                 Text("Let's name your routine")
                     .font(.title2)
                     .fontWeight(.semibold)
@@ -114,23 +142,27 @@ public struct RoutineBuilderView: View {
                         .foregroundStyle(.secondary)
                     
                     HStack(spacing: 12) {
-                        ForEach(["#34C759", "#007AFF", "#FF9500", "#FF3B30", "#AF52DE", "#5AC8FA"], id: \.self) { color in
-                            Circle()
-                                .fill(Color(hex: color) ?? .blue)
-                                .frame(width: 36, height: 36)
-                                .overlay {
-                                    if templateColor == color {
-                                        Image(systemName: "checkmark")
-                                            .font(.caption)
-                                            .fontWeight(.bold)
-                                            .foregroundStyle(.white)
-                                    }
+                        ForEach(Array(zip(["#34C759", "#007AFF", "#FF9500", "#FF3B30", "#AF52DE", "#5AC8FA"], ["Green", "Blue", "Orange", "Red", "Purple", "Light Blue"])), id: \.0) { color, colorName in
+                            Button {
+                                withAnimation(.easeInOut) {
+                                    templateColor = color
                                 }
-                                .onTapGesture {
-                                    withAnimation(.easeInOut) {
-                                        templateColor = color
+                            } label: {
+                                Circle()
+                                    .fill(Color(hex: color) ?? .blue)
+                                    .frame(width: 36, height: 36)
+                                    .overlay {
+                                        if templateColor == color {
+                                            Image(systemName: "checkmark")
+                                                .font(.caption)
+                                                .fontWeight(.bold)
+                                                .foregroundStyle(.white)
+                                        }
                                     }
-                                }
+                            }
+                            .accessibilityLabel("\(colorName) color")
+                            .accessibilityValue(templateColor == color ? "Selected" : "Not selected")
+                            .accessibilityAddTraits(templateColor == color ? .isSelected : [])
                         }
                     }
                 }
@@ -139,7 +171,7 @@ public struct RoutineBuilderView: View {
             Spacer()
             
             Button {
-                withAnimation(.easeInOut) {
+                withAnimation(.easeInOut(duration: 0.3)) {
                     currentStep = .building
                 }
             } label: {
@@ -152,8 +184,10 @@ public struct RoutineBuilderView: View {
                         RoundedRectangle(cornerRadius: 12)
                             .fill(templateName.isEmpty ? Color.gray : Color(hex: templateColor) ?? .blue)
                     )
+                    .scaleEffect(templateName.isEmpty ? 0.95 : 1.0)
             }
             .disabled(templateName.isEmpty)
+            .animation(.easeInOut(duration: 0.2), value: templateName.isEmpty)
         }
         .padding()
     }
@@ -162,67 +196,109 @@ public struct RoutineBuilderView: View {
     
     private var buildingStepView: some View {
         VStack(spacing: 0) {
-            // Progress header
-            VStack(spacing: 12) {
+            // Enhanced progress header
+            VStack(spacing: 16) {
                 HStack {
-                    Text(templateName)
-                        .font(.headline)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(templateName)
+                            .font(.title2)
+                            .fontWeight(.semibold)
+                        
+                        if habits.isEmpty {
+                            Text("What's the first thing you do?")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                        } else {
+                            Text("\(habits.count) habits • \(totalDuration.formattedDuration) total")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
                     
                     Spacer()
                     
-                    if !habits.isEmpty {
-                        Text("\(totalDuration.formattedDuration) total")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
+                    // Step indicator
+                    HStack(spacing: 4) {
+                        Circle()
+                            .fill(.green)
+                            .frame(width: 8, height: 8)
+                        Circle()
+                            .fill(.blue)
+                            .frame(width: 8, height: 8)
+                        Circle()
+                            .fill(.gray.opacity(0.3))
+                            .frame(width: 8, height: 8)
                     }
+                    .accessibilityLabel("Step 2 of 3: Building routine")
                 }
                 
-                if habits.isEmpty {
-                    Text("What's the first thing you do?")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                } else {
-                    Text("Add another habit or continue")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                if !habits.isEmpty {
+                    Text("Keep adding habits or continue to review")
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
             .padding()
             .background(.regularMaterial)
             
             ScrollView {
-                VStack(spacing: 12) {
-                    // Quick add bar
-                    HabitQuickAddView { habit in
-                        withAnimation(.easeInOut) {
-                            habits.append(habit)
-                        }
-                    }
-                    .padding(.horizontal)
-                    .padding(.top)
-                    
-                    // Current habits
-                    if !habits.isEmpty {
-                        VStack(spacing: 8) {
-                            ForEach(habits) { habit in
-                                HabitRowView(habit: habit) {
-                                    print("🔍 RoutineBuilderView: Edit closure called for habit: \(habit.name)")
-                                    editingHabit = habit
-                                    print("🔍 RoutineBuilderView: Set editingHabit to \(habit.name)")
-                                } onDelete: {
-                                    withAnimation(.easeInOut) {
-                                        habits.removeAll { $0.id == habit.id }
-                                    }
-                                }
+                VStack(spacing: 20) {
+                    // Prominent quick add section
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Add a habit")
+                            .font(.headline)
+                            .fontWeight(.semibold)
+                            .padding(.horizontal)
+                        
+                        HabitQuickAddView { habit in
+                            withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                                habits.append(habit)
                             }
                         }
                         .padding(.horizontal)
                     }
+                    .padding(.top)
                     
-                    // Suggested habits
-                    if habits.count < 3 {
-                        suggestedHabitsSection
+                    // Current habits section
+                    if !habits.isEmpty {
+                        VStack(alignment: .leading, spacing: 12) {
+                            HStack {
+                                Text("Your routine")
+                                    .font(.headline)
+                                    .fontWeight(.semibold)
+                                
+                                Spacer()
+                                
+                                Text("\(habits.count) habit\(habits.count == 1 ? "" : "s")")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 4)
+                                    .background(.regularMaterial, in: Capsule())
+                            }
+                            .padding(.horizontal)
+                            
+                            VStack(spacing: 8) {
+                                ForEach(habits) { habit in
+                                    HabitRowView(habit: habit) {
+                                        print("🔍 RoutineBuilderView: Edit closure called for habit: \(habit.name)")
+                                        editingHabit = habit
+                                        print("🔍 RoutineBuilderView: Set editingHabit to \(habit.name)")
+                                    } onDelete: {
+                                        withAnimation(.easeInOut) {
+                                            habits.removeAll { $0.id == habit.id }
+                                        }
+                                    }
+                                }
+                            }
+                            .padding(.horizontal)
+                        }
                     }
+                    
+                    // Habit types section
+                    suggestedHabitsSection
+                        .padding(.bottom, 100) // Space for bottom buttons
                 }
             }
             
@@ -270,41 +346,57 @@ public struct RoutineBuilderView: View {
         }
         .sheet(item: $editingHabit) { habit in
             let _ = print("🔍 RoutineBuilderView: Sheet presenting with habit: \(habit.name), type: \(habit.type)")
-            HabitEditorView(habit: habit) { updatedHabit in
-                if let index = habits.firstIndex(where: { $0.id == habit.id }) {
-                    habits[index] = updatedHabit
-                }
-            }
+            habitEditorView(for: habit)
         }
     }
     
     private var suggestedHabitsSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Common habits")
-                .font(.headline)
-                .padding(.horizontal)
-                .padding(.top)
+            HStack {
+                Text("Add habit type")
+                    .font(.headline)
+                    .fontWeight(.semibold)
+                
+                Spacer()
+                
+                Text("Tap to create")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.horizontal)
             
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 12) {
-                    ForEach(suggestedHabits, id: \.name) { suggestion in
+                    ForEach(habitTypeOptions, id: \.type) { habitType in
                         Button {
-                            withAnimation(.easeInOut) {
-                                habits.append(suggestion)
+                            withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                                let newHabit = createHabitFromType(habitType.type)
+                                habits.append(newHabit)
                             }
                         } label: {
-                            HStack {
-                                Image(systemName: suggestion.type.iconName)
+                            VStack(spacing: 6) {
+                                Image(systemName: habitType.type.iconName)
+                                    .font(.title3)
+                                    .foregroundStyle(habitType.color)
+                                    .frame(width: 32, height: 32)
+                                
+                                Text(habitType.name)
                                     .font(.caption)
-                                Text(suggestion.name)
-                                    .font(.subheadline)
+                                    .fontWeight(.medium)
+                                    .multilineTextAlignment(.center)
+                                    .lineLimit(2)
+                                
+                                Text(habitType.description)
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                                    .multilineTextAlignment(.center)
+                                    .lineLimit(1)
                             }
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 8)
-                            .background(.regularMaterial, in: Capsule())
+                            .frame(width: 80)
+                            .padding(.vertical, 12)
+                            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
                         }
                         .buttonStyle(.plain)
-                        .disabled(habits.contains(where: { $0.name == suggestion.name }))
                     }
                 }
                 .padding(.horizontal)
@@ -312,37 +404,133 @@ public struct RoutineBuilderView: View {
         }
     }
     
-    private var suggestedHabits: [Habit] {
-        var suggestions: [Habit] = []
+    private struct HabitTypeOption {
+        let name: String
+        let description: String
+        let type: HabitType
+        let color: Color
+    }
+    
+    private var habitTypeOptions: [HabitTypeOption] {
+        [
+            HabitTypeOption(
+                name: "Task",
+                description: "Simple checkbox",
+                type: .checkbox,
+                color: .green
+            ),
+            HabitTypeOption(
+                name: "Checklist",
+                description: "Multiple steps",
+                type: .checkboxWithSubtasks(subtasks: []),
+                color: .green
+            ),
+            HabitTypeOption(
+                name: "Timer",
+                description: "Timed activity",
+                type: .timer(defaultDuration: 300),
+                color: .blue
+            ),
+            HabitTypeOption(
+                name: "Rest Timer",
+                description: "Track rest time",
+                type: .restTimer(targetDuration: 120),
+                color: .blue
+            ),
+            HabitTypeOption(
+                name: "App/Shortcut",
+                description: "Launch app",
+                type: .appLaunch(bundleId: "", appName: ""),
+                color: .red
+            ),
+            HabitTypeOption(
+                name: "Website",
+                description: "Open URL",
+                type: .website(url: URL(string: "https://example.com")!, title: ""),
+                color: .orange
+            ),
+            HabitTypeOption(
+                name: "Counter",
+                description: "Track items",
+                type: .counter(items: ["Item 1"]),
+                color: .yellow
+            ),
+            HabitTypeOption(
+                name: "Measurement",
+                description: "Record value",
+                type: .measurement(unit: "value", targetValue: nil),
+                color: .purple
+            ),
+            HabitTypeOption(
+                name: "Sequence",
+                description: "Guided steps",
+                type: .guidedSequence(steps: []),
+                color: .cyan
+            ),
+            HabitTypeOption(
+                name: "Question",
+                description: "Conditional path",
+                type: .conditional(ConditionalHabitInfo(question: "", options: [])),
+                color: .indigo
+            )
+        ]
+    }
+    
+    private func createHabitFromType(_ type: HabitType) -> Habit {
+        let name = getDefaultNameForType(type)
+        let color = getColorForType(type)
         
-        // Context-aware suggestions
-        if habits.isEmpty {
-            suggestions.append(Habit(name: "Wake up routine", type: .checkboxWithSubtasks(subtasks: [
-                Subtask(name: "Turn off alarm"),
-                Subtask(name: "Open curtains"),
-                Subtask(name: "Drink water")
-            ])))
-            suggestions.append(Habit(name: "Check HRV", type: .appLaunch(bundleId: "com.morpheus.app", appName: "Morpheus")))
+        return Habit(
+            name: name,
+            type: type,
+            color: color
+        )
+    }
+    
+    private func getDefaultNameForType(_ type: HabitType) -> String {
+        switch type {
+        case .checkbox:
+            return "New Task"
+        case .checkboxWithSubtasks:
+            return "Task with Steps"
+        case .timer:
+            return "Timed Activity"
+        case .restTimer:
+            return "Rest Period"
+        case .appLaunch:
+            return "Run App"
+        case .website:
+            return "Visit Website"
+        case .counter:
+            return "Track Items"
+        case .measurement:
+            return "Record Measurement"
+        case .guidedSequence:
+            return "Guided Activity"
+        case .conditional:
+            return "Question"
         }
-        
-        if habits.contains(where: { $0.name.lowercased().contains("hrv") || $0.name.lowercased().contains("morpheus") }) {
-            suggestions.append(Habit(name: "Morning Stretch", type: .timer(defaultDuration: 600)))
-            suggestions.append(Habit(name: "Workout", type: .website(url: URL(string: "https://workout.app")!, title: "Workout App")))
+    }
+    
+    private func getColorForType(_ type: HabitType) -> String {
+        switch type {
+        case .checkbox, .checkboxWithSubtasks:
+            return "#34C759" // Green
+        case .timer, .restTimer:
+            return "#007AFF" // Blue
+        case .appLaunch:
+            return "#FF3B30" // Red
+        case .website:
+            return "#FF9500" // Orange
+        case .counter:
+            return "#FFD60A" // Yellow
+        case .measurement:
+            return "#BF5AF2" // Purple
+        case .guidedSequence:
+            return "#64D2FF" // Light Blue
+        case .conditional:
+            return "#5856D6" // Indigo
         }
-        
-        if habits.contains(where: { $0.name.lowercased().contains("workout") || $0.name.lowercased().contains("stretch") }) {
-            suggestions.append(Habit(name: "Rest", type: .restTimer(targetDuration: 120)))
-            suggestions.append(Habit(name: "Shower", type: .checkbox))
-        }
-        
-        // Always suggest these
-        suggestions.append(Habit(name: "Coffee", type: .checkbox))
-        suggestions.append(Habit(name: "Supplements", type: .counter(items: ["Vitamin D", "Omega-3", "Magnesium"])))
-        suggestions.append(Habit(name: "Meditation", type: .timer(defaultDuration: 600)))
-        suggestions.append(Habit(name: "Journal", type: .checkbox))
-        suggestions.append(Habit(name: "Weight", type: .measurement(unit: "kg", targetValue: nil)))
-        
-        return suggestions
     }
     
     // MARK: - Review Step
@@ -353,6 +541,21 @@ public struct RoutineBuilderView: View {
             VStack(spacing: 16) {
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
+                        // Step indicator
+                        HStack(spacing: 4) {
+                            Circle()
+                                .fill(.green)
+                                .frame(width: 8, height: 8)
+                            Circle()
+                                .fill(.green)
+                                .frame(width: 8, height: 8)
+                            Circle()
+                                .fill(.blue)
+                                .frame(width: 8, height: 8)
+                        }
+                        .accessibilityLabel("Step 3 of 3: Review routine")
+                        .padding(.bottom, 4)
+                        
                         Text(templateName)
                             .font(.title2)
                             .fontWeight(.semibold)
@@ -476,6 +679,33 @@ public struct RoutineBuilderView: View {
         for (index, _) in habits.enumerated() {
             habits[index].order = index
         }
+    }
+    
+    @ViewBuilder
+    private func habitEditorView(for habit: Habit) -> some View {
+        switch habit.type {
+        case .conditional:
+            ConditionalHabitEditorView(
+                existingHabit: habit,
+                habitLibrary: getAllAvailableHabits(),
+                existingConditionalDepth: 0
+            ) { updatedHabit in
+                if let index = habits.firstIndex(where: { $0.id == habit.id }) {
+                    habits[index] = updatedHabit
+                }
+            }
+        default:
+            HabitEditorView(habit: habit) { updatedHabit in
+                if let index = habits.firstIndex(where: { $0.id == habit.id }) {
+                    habits[index] = updatedHabit
+                }
+            }
+        }
+    }
+    
+    private func getAllAvailableHabits() -> [Habit] {
+        // Get all habits from all templates to use as a library
+        routineService.templates.flatMap { $0.habits }
     }
     
     private func saveTemplate() {

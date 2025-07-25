@@ -393,6 +393,14 @@ private struct QuickHabitButton: View {
 private struct CompactHabitRow: View {
     @Binding var habit: Habit
     let onDelete: () -> Void
+    @State private var habitName: String
+    @State private var showingEditor = false
+    
+    init(habit: Binding<Habit>, onDelete: @escaping () -> Void) {
+        self._habit = habit
+        self.onDelete = onDelete
+        self._habitName = State(initialValue: habit.wrappedValue.name)
+    }
     
     var body: some View {
         HStack(spacing: 8) {
@@ -400,10 +408,16 @@ private struct CompactHabitRow: View {
                 .fill(Color(hex: habit.color) ?? .blue)
                 .frame(width: 6, height: 6)
             
-            TextField("Habit name", text: $habit.name)
+            TextField("Habit name", text: $habitName)
                 .font(.caption)
                 .textFieldStyle(.plain)
                 .lineLimit(1)
+                .onSubmit {
+                    habit.name = habitName
+                }
+                .onChange(of: habitName) { _, newName in
+                    habit.name = newName
+                }
             
             Spacer()
             
@@ -411,12 +425,45 @@ private struct CompactHabitRow: View {
                 .font(.caption2)
                 .foregroundStyle(.secondary)
             
+            Button {
+                showingEditor = true
+            } label: {
+                Image(systemName: "pencil.circle.fill")
+                    .font(.caption)
+                    .foregroundStyle(.blue)
+            }
+            .buttonStyle(.plain)
+            
             Button(action: onDelete) {
                 Image(systemName: "minus.circle.fill")
                     .font(.caption)
                     .foregroundStyle(.red)
             }
             .buttonStyle(.plain)
+        }
+        .onAppear {
+            habitName = habit.name
+        }
+        .sheet(isPresented: $showingEditor) {
+            habitEditorView(for: habit)
+        }
+    }
+    
+    @ViewBuilder
+    private func habitEditorView(for habitToEdit: Habit) -> some View {
+        switch habitToEdit.type {
+        case .conditional:
+            ConditionalHabitEditorView(
+                existingHabit: habitToEdit,
+                habitLibrary: [],
+                existingConditionalDepth: 0
+            ) { updatedHabit in
+                habit = updatedHabit
+            }
+        default:
+            HabitEditorView(habit: habitToEdit) { updatedHabit in
+                habit = updatedHabit
+            }
         }
     }
 }
@@ -536,6 +583,14 @@ struct PathBuilderView: View {
 struct HabitRow: View {
     @Binding var habit: Habit
     let onDelete: () -> Void
+    @State private var habitName: String
+    @State private var showingEditor = false
+    
+    init(habit: Binding<Habit>, onDelete: @escaping () -> Void) {
+        self._habit = habit
+        self.onDelete = onDelete
+        self._habitName = State(initialValue: habit.wrappedValue.name)
+    }
     
     var body: some View {
         let _ = print("🔍 HabitRow: Displaying habit - name: '\(habit.name)', type: \(habit.type), description: '\(habit.type.description)'")
@@ -545,9 +600,18 @@ struct HabitRow: View {
                 .frame(width: 8, height: 8)
             
             VStack(alignment: .leading) {
-                TextField("Habit name", text: $habit.name)
+                TextField("Habit name", text: $habitName)
                     .font(.subheadline)
                     .textFieldStyle(.plain)
+                    .onSubmit {
+                        habit.name = habitName
+                        print("🔍 HabitRow: Updated habit name to '\(habitName)'")
+                    }
+                    .onChange(of: habitName) { _, newName in
+                        habit.name = newName
+                        print("🔍 HabitRow: Changed habit name to '\(newName)'")
+                    }
+                
                 Text(habit.type.description.isEmpty ? "EMPTY DESCRIPTION" : habit.type.description)
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -555,15 +619,52 @@ struct HabitRow: View {
             
             Spacer()
             
-            Button(action: onDelete) {
-                Image(systemName: "trash")
-                    .foregroundStyle(.red)
+            HStack(spacing: 8) {
+                Button {
+                    showingEditor = true
+                } label: {
+                    Image(systemName: "pencil")
+                        .font(.caption)
+                        .foregroundStyle(.blue)
+                        .frame(width: 28, height: 28)
+                        .background(.blue.opacity(0.1), in: Circle())
+                }
+                .buttonStyle(.plain)
+                
+                Button(action: onDelete) {
+                    Image(systemName: "trash")
+                        .foregroundStyle(.red)
+                }
+                .buttonStyle(.plain)
             }
-            .buttonStyle(.plain)
         }
         .padding(.vertical, 4)
         .background(Color.gray.opacity(0.1))
         .cornerRadius(8)
+        .onAppear {
+            habitName = habit.name
+        }
+        .sheet(isPresented: $showingEditor) {
+            habitEditorView(for: habit)
+        }
+    }
+    
+    @ViewBuilder
+    private func habitEditorView(for habitToEdit: Habit) -> some View {
+        switch habitToEdit.type {
+        case .conditional:
+            ConditionalHabitEditorView(
+                existingHabit: habitToEdit,
+                habitLibrary: [],
+                existingConditionalDepth: 0
+            ) { updatedHabit in
+                habit = updatedHabit
+            }
+        default:
+            HabitEditorView(habit: habitToEdit) { updatedHabit in
+                habit = updatedHabit
+            }
+        }
     }
 }
 
@@ -585,7 +686,7 @@ struct HabitPickerView: View {
                             Button {
                                 print("🔍 HabitPickerView: Button tapped for category: \(category)")
                                 selectedTypeForSheet = category
-                                print("🔍 HabitPickerView: selectedTypeForSheet set to: \(selectedTypeForSheet)")
+                                print("🔍 HabitPickerView: selectedTypeForSheet set to: \(selectedTypeForSheet?.displayName ?? "nil")")
                             } label: {
                                 Label(category.displayName, systemImage: category.iconName)
                             }

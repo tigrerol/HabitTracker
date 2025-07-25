@@ -18,6 +18,7 @@ public struct HabitRowView: View {
                 .font(.body)
                 .foregroundStyle(habit.swiftUIColor)
                 .frame(width: 32)
+                .accessibilityHidden(true) // Icon is decorative, text provides the info
             
             VStack(alignment: .leading, spacing: 2) {
                 Text(habit.name)
@@ -36,27 +37,74 @@ public struct HabitRowView: View {
                 .foregroundStyle(.secondary)
                 .monospacedDigit()
             
-            Menu {
+            HStack(spacing: 8) {
                 Button {
                     onEdit()
                 } label: {
-                    Label("Edit", systemImage: "pencil")
+                    Image(systemName: "pencil")
+                        .font(.caption)
+                        .foregroundStyle(.blue)
+                        .frame(width: 28, height: 28)
+                        .background(.blue.opacity(0.1), in: Circle())
                 }
+                .accessibilityLabel("Edit habit")
                 
-                Button(role: .destructive) {
+                Button {
                     onDelete()
                 } label: {
-                    Label("Delete", systemImage: "trash")
+                    Image(systemName: "trash")
+                        .font(.caption)
+                        .foregroundStyle(.red)
+                        .frame(width: 28, height: 28)
+                        .background(.red.opacity(0.1), in: Circle())
                 }
-            } label: {
-                Image(systemName: "ellipsis")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .frame(width: 24, height: 24)
+                .accessibilityLabel("Delete habit")
             }
         }
         .padding(.vertical, 8)
         .padding(.horizontal, 12)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8))
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(habit.name), \(habit.type.description), estimated duration \(habit.estimatedDuration.formattedDuration)")
+        .accessibilityHint("Double tap to edit, or use actions")
+        .accessibilityActions {
+            Button("Edit") { onEdit() }
+            Button("Delete") { onDelete() }
+        }
+        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+            Button(role: .destructive) {
+                onDelete()
+            } label: {
+                Label("Delete", systemImage: "trash")
+            }
+            
+            Button {
+                onEdit()
+            } label: {
+                Label("Edit", systemImage: "pencil")
+            }
+            .tint(.blue)
+        }
+        .contextMenu {
+            Button {
+                onEdit()
+            } label: {
+                Label("Edit Habit", systemImage: "pencil")
+            }
+            
+            Button {
+                // Could add duplicate functionality here in the future
+            } label: {
+                Label("Duplicate", systemImage: "doc.on.doc")
+            }
+            
+            Divider()
+            
+            Button(role: .destructive) {
+                onDelete()
+            } label: {
+                Label("Delete Habit", systemImage: "trash")
+            }
+        }
     }
 }

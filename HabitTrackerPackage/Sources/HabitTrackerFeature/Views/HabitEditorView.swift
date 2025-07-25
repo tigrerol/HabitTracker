@@ -255,27 +255,101 @@ public struct HabitEditorView: View {
     
     // Timer settings
     private var timerSettings: some View {
-        HStack {
-            Text("Duration")
-            Spacer()
-            Picker("Duration", selection: $timerDuration) {
-                Text("30 sec").tag(TimeInterval(30))
-                Text("1 min").tag(TimeInterval(60))
-                Text("2 min").tag(TimeInterval(120))
-                Text("3 min").tag(TimeInterval(180))
-                Text("5 min").tag(TimeInterval(300))
-                Text("10 min").tag(TimeInterval(600))
-                Text("15 min").tag(TimeInterval(900))
-                Text("20 min").tag(TimeInterval(1200))
-                Text("30 min").tag(TimeInterval(1800))
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("Duration")
+                Spacer()
+                Text(timerDuration.formattedDuration)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
             }
-            .pickerStyle(.menu)
+            
+            HStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Minutes")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    
+                    TextField("0", value: Binding(
+                        get: { Int(timerDuration) / 60 },
+                        set: { newMinutes in
+                            let seconds = Int(timerDuration) % 60
+                            timerDuration = TimeInterval(max(0, newMinutes) * 60 + seconds)
+                        }
+                    ), format: .number)
+                    .keyboardType(.numberPad)
+                    .textFieldStyle(.roundedBorder)
+                    .frame(width: 80)
+                }
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Seconds")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    
+                    TextField("0", value: Binding(
+                        get: { Int(timerDuration) % 60 },
+                        set: { newSeconds in
+                            let minutes = Int(timerDuration) / 60
+                            timerDuration = TimeInterval(minutes * 60 + max(0, min(59, newSeconds)))
+                        }
+                    ), format: .number)
+                    .keyboardType(.numberPad)
+                    .textFieldStyle(.roundedBorder)
+                    .frame(width: 80)
+                }
+                
+                Spacer()
+            }
+            
+            // Quick preset buttons
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Quick presets")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach([
+                            (30, "30s"),
+                            (60, "1m"),
+                            (120, "2m"),
+                            (300, "5m"),
+                            (600, "10m"),
+                            (900, "15m"),
+                            (1200, "20m"),
+                            (1800, "30m")
+                        ], id: \.0) { duration, label in
+                            Button {
+                                withAnimation(.easeInOut(duration: 0.2)) {
+                                    timerDuration = TimeInterval(duration)
+                                }
+                            } label: {
+                                Text(label)
+                                    .font(.caption)
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 6)
+                                    .background(
+                                        timerDuration == TimeInterval(duration) ? 
+                                        Color.blue.opacity(0.2) : Color(.systemGray5),
+                                        in: Capsule()
+                                    )
+                                    .foregroundStyle(
+                                        timerDuration == TimeInterval(duration) ? .blue : .primary
+                                    )
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    .padding(.horizontal, 1)
+                }
+            }
         }
     }
     
     // Rest timer settings
     private var restTimerSettings: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 12) {
             Toggle("Set target duration", isOn: Binding(
                 get: { restTimerTarget != nil },
                 set: { enabled in
@@ -283,22 +357,94 @@ public struct HabitEditorView: View {
                 }
             ))
             
-            if restTimerTarget != nil {
-                HStack {
-                    Text("Target")
-                    Spacer()
-                    Picker("Target", selection: Binding(
-                        get: { restTimerTarget ?? 120 },
-                        set: { restTimerTarget = $0 }
-                    )) {
-                        Text("30 sec").tag(TimeInterval(30))
-                        Text("1 min").tag(TimeInterval(60))
-                        Text("90 sec").tag(TimeInterval(90))
-                        Text("2 min").tag(TimeInterval(120))
-                        Text("3 min").tag(TimeInterval(180))
-                        Text("5 min").tag(TimeInterval(300))
+            if let target = restTimerTarget {
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack {
+                        Text("Target")
+                        Spacer()
+                        Text(target.formattedDuration)
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
                     }
-                    .pickerStyle(.menu)
+                    
+                    HStack(spacing: 12) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Minutes")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                            
+                            TextField("0", value: Binding(
+                                get: { Int(target) / 60 },
+                                set: { newMinutes in
+                                    let seconds = Int(target) % 60
+                                    restTimerTarget = TimeInterval(max(0, newMinutes) * 60 + seconds)
+                                }
+                            ), format: .number)
+                            .keyboardType(.numberPad)
+                            .textFieldStyle(.roundedBorder)
+                            .frame(width: 80)
+                        }
+                        
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Seconds")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                            
+                            TextField("0", value: Binding(
+                                get: { Int(target) % 60 },
+                                set: { newSeconds in
+                                    let minutes = Int(target) / 60
+                                    restTimerTarget = TimeInterval(minutes * 60 + max(0, min(59, newSeconds)))
+                                }
+                            ), format: .number)
+                            .keyboardType(.numberPad)
+                            .textFieldStyle(.roundedBorder)
+                            .frame(width: 80)
+                        }
+                        
+                        Spacer()
+                    }
+                    
+                    // Quick preset buttons for rest timer
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Quick presets")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 8) {
+                                ForEach([
+                                    (30, "30s"),
+                                    (60, "1m"),
+                                    (90, "90s"),
+                                    (120, "2m"),
+                                    (180, "3m"),
+                                    (300, "5m")
+                                ], id: \.0) { duration, label in
+                                    Button {
+                                        withAnimation(.easeInOut(duration: 0.2)) {
+                                            restTimerTarget = TimeInterval(duration)
+                                        }
+                                    } label: {
+                                        Text(label)
+                                            .font(.caption)
+                                            .padding(.horizontal, 12)
+                                            .padding(.vertical, 6)
+                                            .background(
+                                                restTimerTarget == TimeInterval(duration) ? 
+                                                Color.blue.opacity(0.2) : Color(.systemGray5),
+                                                in: Capsule()
+                                            )
+                                            .foregroundStyle(
+                                                restTimerTarget == TimeInterval(duration) ? .blue : .primary
+                                            )
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                            }
+                            .padding(.horizontal, 1)
+                        }
+                    }
                 }
             }
         }

@@ -1,10 +1,12 @@
 import SwiftUI
 
-/// Quick add bar with smart type detection for creating habits
+/// Quick add bar with smart type detection and live preview for creating habits
 struct HabitQuickAddView: View {
     @State private var inputText = ""
     @State private var showingTypePicker = false
     @State private var detectedType: HabitType?
+    @State private var previewHabit: Habit?
+    @State private var showingPreview = false
     @FocusState private var isInputFocused: Bool
     
     let onAdd: (Habit) -> Void
@@ -28,12 +30,12 @@ struct HabitQuickAddView: View {
                     }
                     .onChange(of: inputText) { _, newValue in
                         detectedType = detectHabitType(from: newValue)
+                        updatePreviewHabit()
                     }
                 
                 if !inputText.isEmpty {
                     Button {
-                        inputText = ""
-                        detectedType = nil
+                        clearInput()
                     } label: {
                         Image(systemName: "xmark.circle.fill")
                             .font(.caption)
@@ -57,6 +59,14 @@ struct HabitQuickAddView: View {
             .padding(.vertical, 8)
             .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 10))
             
+            // Live preview card
+            if let preview = previewHabit, !inputText.isEmpty {
+                PreviewCard(habit: preview) {
+                    addHabitFromPreview(preview)
+                }
+                .transition(.scale.combined(with: .opacity))
+            }
+            
             // Smart suggestions
             if !inputText.isEmpty, let suggestions = getSmartSuggestions() {
                 ScrollView(.horizontal, showsIndicators: false) {
@@ -64,8 +74,7 @@ struct HabitQuickAddView: View {
                         ForEach(suggestions, id: \.0) { suggestion, type in
                             Button {
                                 createHabit(name: suggestion, type: type)
-                                inputText = ""
-                                detectedType = nil
+                                clearInput()
                             } label: {
                                 HStack(spacing: 4) {
                                     Image(systemName: type.iconName)
@@ -285,12 +294,37 @@ struct HabitQuickAddView: View {
         detectedType != nil ? Color.blue : Color.secondary
     }
     
+    private func updatePreviewHabit() {
+        guard !inputText.isEmpty else {
+            previewHabit = nil
+            return
+        }
+        
+        let name = cleanHabitName(inputText)
+        let type = detectedType ?? .checkbox
+        previewHabit = Habit(
+            name: name,
+            type: type,
+            color: getColorForType(type)
+        )
+    }
+    
     private func addHabitFromInput() {
         let name = cleanHabitName(inputText)
         let type = detectedType ?? .checkbox
         createHabit(name: name, type: type)
+        clearInput()
+    }
+    
+    private func addHabitFromPreview(_ habit: Habit) {
+        onAdd(habit)
+        clearInput()
+    }
+    
+    private func clearInput() {
         inputText = ""
         detectedType = nil
+        previewHabit = nil
     }
     
     private func createHabit(name: String, type: HabitType) {
@@ -514,6 +548,57 @@ private struct TypeOptionRow: View {
             }
         }
         .buttonStyle(.plain)
+    }
+}
+
+// MARK: - Preview Card
+
+private struct PreviewCard: View {
+    let habit: Habit
+    let onAdd: () -> Void
+    
+    var body: some View {
+        HStack {
+            Image(systemName: habit.type.iconName)
+                .font(.body)
+                .foregroundStyle(habit.swiftUIColor)
+                .frame(width: 32)
+            
+            VStack(alignment: .leading, spacing: 2) {
+                Text(habit.name)
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                
+                Text(habit.type.description)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            
+            Spacer()
+            
+            Text(habit.estimatedDuration.formattedDuration)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .monospacedDigit()
+            
+            Button {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    onAdd()
+                }
+            } label: {
+                Image(systemName: "plus.circle.fill")
+                    .font(.title3)
+                    .foregroundStyle(.white, .blue)
+            }
+            .accessibilityLabel("Add habit")
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 10))
+        .overlay(
+            RoundedRectangle(cornerRadius: 10)
+                .stroke(habit.swiftUIColor.opacity(0.3), lineWidth: 1)
+        )
     }
 }
 
