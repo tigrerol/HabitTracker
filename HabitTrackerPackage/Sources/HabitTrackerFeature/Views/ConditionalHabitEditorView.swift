@@ -38,7 +38,10 @@ public struct ConditionalHabitEditorView: View {
         } else {
             _habitName = State(initialValue: "")
             _question = State(initialValue: "")
-            _options = State(initialValue: [])
+            _options = State(initialValue: [
+                ConditionalOption(text: "Option 1", habits: []),
+                ConditionalOption(text: "Option 2", habits: [])
+            ])
             _color = State(initialValue: "#007AFF")
         }
     }
@@ -124,12 +127,15 @@ public struct ConditionalHabitEditorView: View {
                 }
             }
             .sheet(isPresented: $showingPathBuilder) {
-                if let index = selectedOptionIndex {
+                if let index = selectedOptionIndex, index < options.count {
                     PathBuilderView(
                         option: binding(for: index),
                         habitLibrary: habitLibrary,
                         existingConditionalDepth: existingConditionalDepth + 1
                     )
+                } else {
+                    Text("Error: Invalid option selected")
+                        .foregroundStyle(.red)
                 }
             }
             .alert("Delete Option", isPresented: $showingDeleteAlert) {
@@ -159,8 +165,16 @@ public struct ConditionalHabitEditorView: View {
     
     private func binding(for index: Int) -> Binding<ConditionalOption> {
         Binding(
-            get: { options[index] },
-            set: { options[index] = $0 }
+            get: { 
+                guard index < options.count else { 
+                    return ConditionalOption(text: "Error", habits: [])
+                }
+                return options[index] 
+            },
+            set: { 
+                guard index < options.count else { return }
+                options[index] = $0 
+            }
         )
     }
     
@@ -439,6 +453,41 @@ struct HabitPickerView: View {
                 onSelect(habit)
                 dismiss()
             }
+        case .counter:
+            HabitEditorView(
+                habit: Habit(name: "New Counter", type: .counter(items: ["Item 1"]))
+            ) { habit in
+                onSelect(habit)
+                dismiss()
+            }
+        case .measurement:
+            HabitEditorView(
+                habit: Habit(name: "New Measurement", type: .measurement(unit: "kg", targetValue: nil))
+            ) { habit in
+                onSelect(habit)
+                dismiss()
+            }
+        case .appLaunch:
+            HabitEditorView(
+                habit: Habit(name: "New App", type: .appLaunch(bundleId: "", appName: ""))
+            ) { habit in
+                onSelect(habit)
+                dismiss()
+            }
+        case .website:
+            HabitEditorView(
+                habit: Habit(name: "New Website", type: .website(url: URL(string: "https://example.com")!, title: ""))
+            ) { habit in
+                onSelect(habit)
+                dismiss()
+            }
+        case .guidedSequence:
+            HabitEditorView(
+                habit: Habit(name: "New Sequence", type: .guidedSequence(steps: []))
+            ) { habit in
+                onSelect(habit)
+                dismiss()
+            }
         case .conditional:
             ConditionalHabitEditorView(
                 habitLibrary: habitLibrary,
@@ -447,9 +496,6 @@ struct HabitPickerView: View {
                 onSelect(habit)
                 dismiss()
             }
-        // Add other cases as needed
-        default:
-            EmptyView()
         }
     }
 }

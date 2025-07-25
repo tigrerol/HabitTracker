@@ -3,6 +3,7 @@ import SwiftUI
 /// Sheet for editing habit details
 public struct HabitEditorView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(RoutineService.self) private var routineService
     
     @State private var habit: Habit
     @State private var habitName: String
@@ -199,11 +200,23 @@ public struct HabitEditorView: View {
                 sequenceEditor
                 
             case .conditional:
-                // Conditional habits should not be edited in standard editor
-                Text("Use the question editor to modify this habit")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .italic()
+                VStack(spacing: 12) {
+                    Text("Use the question editor to modify this habit")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .italic()
+                    
+                    NavigationLink(destination: ConditionalHabitEditorView(
+                        existingHabit: habit,
+                        habitLibrary: habitLibrary,
+                        existingConditionalDepth: 0,
+                        onSave: onSave
+                    )) {
+                        Label("Open Question Editor", systemImage: "questionmark.circle")
+                            .font(.subheadline)
+                            .foregroundStyle(.blue)
+                    }
+                }
             }
         }
         .padding()
@@ -233,6 +246,11 @@ public struct HabitEditorView: View {
         case .conditional:
             return "Question Settings"
         }
+    }
+    
+    /// Get all available habits from all templates to use as a library
+    private var habitLibrary: [Habit] {
+        routineService.templates.flatMap { $0.habits }.filter { $0.isActive }
     }
     
     // Timer settings
