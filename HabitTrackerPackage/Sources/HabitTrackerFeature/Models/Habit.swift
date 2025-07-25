@@ -58,6 +58,8 @@ extension Habit {
             return 60 // 1 minute to measure and record
         case .guidedSequence(let steps):
             return steps.reduce(0) { $0 + $1.duration }
+        case .conditional:
+            return 30 // Quick question, 30 seconds estimated
         }
     }
     

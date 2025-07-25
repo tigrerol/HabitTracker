@@ -18,7 +18,7 @@ struct RoutineSessionTests {
     }
     
     @Test("Session initializes correctly")
-    func sessionInitialization() {
+    @MainActor func sessionInitialization() {
         let template = createTestTemplate()
         let session = RoutineSession(template: template)
         
@@ -30,7 +30,7 @@ struct RoutineSessionTests {
     }
     
     @Test("Current habit is correctly identified")
-    func currentHabit() {
+    @MainActor func currentHabit() {
         let template = createTestTemplate()
         let session = RoutineSession(template: template)
         
@@ -39,7 +39,7 @@ struct RoutineSessionTests {
     }
     
     @Test("Completing habit advances to next")
-    func completeHabit() {
+    @MainActor func completeHabit() {
         let template = createTestTemplate()
         let session = RoutineSession(template: template)
         
@@ -54,7 +54,7 @@ struct RoutineSessionTests {
     }
     
     @Test("Skipping habit is recorded correctly")
-    func skipHabit() {
+    @MainActor func skipHabit() {
         let template = createTestTemplate()
         let session = RoutineSession(template: template)
         
@@ -67,17 +67,17 @@ struct RoutineSessionTests {
     }
     
     @Test("Progress calculation is accurate")
-    func progressCalculation() {
+    @MainActor func progressCalculation() {
         let template = createTestTemplate()
         let session = RoutineSession(template: template)
         
         #expect(session.progress == 0.0)
         
         session.completeCurrentHabit()
-        #expect(session.progress ≈ 0.333, within: 0.01)
+        #expect(abs(session.progress - 0.333) < 0.01)
         
         session.completeCurrentHabit()
-        #expect(session.progress ≈ 0.666, within: 0.01)
+        #expect(abs(session.progress - 0.666) < 0.01)
         
         session.completeCurrentHabit()
         #expect(session.progress == 1.0)
@@ -85,7 +85,7 @@ struct RoutineSessionTests {
     }
     
     @Test("Going to previous habit works correctly")
-    func goToPreviousHabit() {
+    @MainActor func goToPreviousHabit() {
         let template = createTestTemplate()
         let session = RoutineSession(template: template)
         
@@ -101,7 +101,7 @@ struct RoutineSessionTests {
     }
     
     @Test("Session duration is tracked")
-    func sessionDuration() {
+    @MainActor func sessionDuration() {
         let template = createTestTemplate()
         let session = RoutineSession(template: template)
         

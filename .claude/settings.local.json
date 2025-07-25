@@ -5,7 +5,9 @@
       "Bash(echo:*)",
       "Bash(ls:*)",
       "Bash(grep:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "mcp__XcodeBuildMCP__build_sim_name_ws",
+      "mcp__XcodeBuildMCP__test_sim_name_ws"
     ],
     "deny": []
   }

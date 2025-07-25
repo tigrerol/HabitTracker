@@ -156,11 +156,7 @@ public final class RoutineService {
             }
             
             // Apply the reordering modification
-            let modification = SessionModification(
-                type: .reordered(newOrder),
-                timestamp: Date()
-            )
-            session.modifications.append(modification)
+            session.reorderHabits(newOrder)
         }
         
         // Post notification that routine queue changed

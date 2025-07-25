@@ -32,7 +32,7 @@ public final class ResponseLoggingService: Sendable {
     }
     
     /// Get responses for a specific routine
-    public func getResponses(for routineId: UUID) -> [ConditionalResponse] {
+    public func getResponsesForRoutine(_ routineId: UUID) -> [ConditionalResponse] {
         getAllResponses().filter { $0.routineId == routineId }
     }
     

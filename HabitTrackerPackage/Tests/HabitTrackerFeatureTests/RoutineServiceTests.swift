@@ -1,11 +1,12 @@
 import Testing
+import Foundation
 @testable import HabitTrackerFeature
 
 @Suite("Routine Service Tests")
 struct RoutineServiceTests {
     
     @Test("Service initializes with sample templates")
-    func serviceInitialization() {
+    @MainActor func serviceInitialization() {
         let service = RoutineService()
         
         #expect(!service.templates.isEmpty)
@@ -16,7 +17,7 @@ struct RoutineServiceTests {
     }
     
     @Test("Default template is correctly identified")
-    func defaultTemplate() {
+    @MainActor func defaultTemplate() {
         let service = RoutineService()
         
         let defaultTemplate = service.defaultTemplate
@@ -26,7 +27,7 @@ struct RoutineServiceTests {
     }
     
     @Test("Starting a session creates active session")
-    func startSession() {
+    @MainActor func startSession() {
         let service = RoutineService()
         guard let template = service.templates.first else {
             Issue.record("No templates available")
@@ -42,7 +43,7 @@ struct RoutineServiceTests {
     }
     
     @Test("Completing session clears current session")
-    func completeSession() {
+    @MainActor func completeSession() {
         let service = RoutineService()
         guard let template = service.templates.first else {
             Issue.record("No templates available")
@@ -57,7 +58,7 @@ struct RoutineServiceTests {
     }
     
     @Test("Mood rating is stored correctly")
-    func moodRating() {
+    @MainActor func moodRating() {
         let service = RoutineService()
         let sessionId = UUID()
         

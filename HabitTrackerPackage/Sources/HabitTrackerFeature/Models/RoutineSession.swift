@@ -153,4 +153,13 @@ extension RoutineSession {
         )
         modifications.append(modification)
     }
+    
+    /// Reorder habits in this session
+    public func reorderHabits(_ newOrder: [Habit]) {
+        let modification = SessionModification(
+            type: .reordered(newOrder),
+            timestamp: Date()
+        )
+        modifications.append(modification)
+    }
 }

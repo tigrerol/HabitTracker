@@ -49,11 +49,30 @@ public struct ConditionalHabitEditorView: View {
                 Section("Habit Details") {
                     TextField("Habit Name", text: $habitName)
                     TextField("Question", text: $question)
-                    ColorPicker(selection: Binding(
-                        get: { Color(hex: color) ?? .blue },
-                        set: { color = $0.hexString }
-                    )) {
-                        Label("Color", systemImage: "paintpalette")
+                    // Color picker using predefined colors (similar to HabitEditorView)
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Color")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        
+                        HStack(spacing: 12) {
+                            ForEach(["#34C759", "#007AFF", "#FF9500", "#FF3B30", "#AF52DE", "#5AC8FA", "#FFD60A", "#FF2D55"], id: \.self) { colorHex in
+                                Circle()
+                                    .fill(Color(hex: colorHex) ?? .blue)
+                                    .frame(width: 32, height: 32)
+                                    .overlay {
+                                        if color == colorHex {
+                                            Image(systemName: "checkmark")
+                                                .font(.caption)
+                                                .fontWeight(.bold)
+                                                .foregroundStyle(.white)
+                                        }
+                                    }
+                                    .onTapGesture {
+                                        color = colorHex
+                                    }
+                            }
+                        }
                     }
                 }
                 
@@ -155,10 +174,11 @@ public struct ConditionalHabitEditorView: View {
             id: existingHabit?.id ?? UUID(),
             name: habitName,
             type: .conditional(conditionalInfo),
-            isActive: existingHabit?.isActive ?? true,
             isOptional: existingHabit?.isOptional ?? false,
+            notes: existingHabit?.notes,
             color: color,
-            order: existingHabit?.order ?? 0
+            order: existingHabit?.order ?? 0,
+            isActive: existingHabit?.isActive ?? true
         )
         
         onSave(habit)
@@ -209,39 +229,50 @@ struct PathBuilderView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var showingHabitPicker = false
     @State private var selectedHabitType: HabitTypeCategory?
+    @State private var optionText: String
+    @State private var habits: [Habit]
+    
+    init(option: Binding<ConditionalOption>, habitLibrary: [Habit], existingConditionalDepth: Int) {
+        self._option = option
+        self.habitLibrary = habitLibrary
+        self.existingConditionalDepth = existingConditionalDepth
+        self._optionText = State(initialValue: option.wrappedValue.text)
+        self._habits = State(initialValue: option.wrappedValue.habits)
+    }
     
     var body: some View {
         NavigationStack {
             Form {
                 Section("Option Details") {
-                    TextField("Option Text", text: $option.text)
+                    TextField("Option Text", text: $optionText)
                 }
                 
                 Section("Path Habits") {
-                    if option.habits.isEmpty {
+                    if habits.isEmpty {
                         ContentUnavailableView(
                             "No Habits",
                             systemImage: "list.bullet",
                             description: Text("Tap the + button to add habits to this path")
                         )
                     } else {
-                        ForEach(Array(option.habits.enumerated()), id: \.element.id) { index, habit in
+                        ForEach(Array(habits.enumerated()), id: \.element.id) { index, habit in
                             HabitRow(habit: habit) {
                                 // Delete habit
-                                option.habits.remove(at: index)
+                                habits.remove(at: index)
                             }
                         }
                         .onMove { from, to in
-                            option.habits.move(fromOffsets: from, toOffset: to)
+                            habits.move(fromOffsets: from, toOffset: to)
                         }
                     }
                 }
             }
-            .navigationTitle("Path for '\(option.text)'")
+            .navigationTitle("Path for '\(optionText)'")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Done") {
+                        saveChanges()
                         dismiss()
                     }
                 }
@@ -259,15 +290,31 @@ struct PathBuilderView: View {
                     habitLibrary: habitLibrary,
                     existingConditionalDepth: existingConditionalDepth,
                     onSelect: { habit in
-                        // Create a copy of the habit
-                        var newHabit = habit
-                        newHabit.id = UUID() // New ID for the copy
-                        newHabit.order = option.habits.count
-                        option.habits.append(newHabit)
+                        // Create a copy of the habit with new ID
+                        let newHabit = Habit(
+                            id: UUID(), // New ID for the copy
+                            name: habit.name,
+                            type: habit.type,
+                            isOptional: habit.isOptional,
+                            notes: habit.notes,
+                            color: habit.color,
+                            order: habits.count,
+                            isActive: habit.isActive
+                        )
+                        habits.append(newHabit)
                     }
                 )
             }
         }
+    }
+    
+    private func saveChanges() {
+        // Create a new ConditionalOption with the updated values
+        option = ConditionalOption(
+            id: option.id,
+            text: optionText,
+            habits: habits
+        )
     }
 }
 
@@ -379,12 +426,16 @@ struct HabitPickerView: View {
     private func habitEditorView(for type: HabitTypeCategory) -> some View {
         switch type {
         case .checkbox:
-            HabitEditorView(habitType: .checkbox) { habit in
+            HabitEditorView(
+                habit: Habit(name: "New Task", type: .checkbox)
+            ) { habit in
                 onSelect(habit)
                 dismiss()
             }
         case .timer:
-            HabitEditorView(habitType: .timer(defaultDuration: 300)) { habit in
+            HabitEditorView(
+                habit: Habit(name: "New Timer", type: .timer(defaultDuration: 300))
+            ) { habit in
                 onSelect(habit)
                 dismiss()
             }

@@ -22,6 +22,13 @@ public struct HabitEditorView: View {
     @State private var measurementTarget: Double? = nil
     @State private var subtasks: [Subtask] = []
     @State private var sequenceSteps: [SequenceStep] = []
+    @State private var launchMethod: LaunchMethod = .shortcut
+    
+    // Launch method enum
+    private enum LaunchMethod {
+        case shortcut
+        case urlScheme
+    }
     
     let onSave: (Habit) -> Void
     
@@ -320,14 +327,6 @@ public struct HabitEditorView: View {
             }
         }
     }
-    
-    // Launch method enum
-    private enum LaunchMethod {
-        case shortcut
-        case urlScheme
-    }
-    
-    @State private var launchMethod: LaunchMethod = .shortcut
     
     // Website settings
     private var websiteSettings: some View {
