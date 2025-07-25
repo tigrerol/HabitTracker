@@ -318,6 +318,8 @@ struct HabitQuickAddView: View {
             return "#BF5AF2" // Purple
         case .guidedSequence:
             return "#64D2FF" // Light Blue
+        case .conditional:
+            return "#5856D6" // Indigo
         }
     }
     
@@ -341,6 +343,8 @@ struct HabitQuickAddView: View {
             return "Record Measurement"
         case .guidedSequence:
             return "Guided Activity"
+        case .conditional:
+            return "Question"
         }
     }
 }
@@ -449,6 +453,16 @@ private struct HabitTypePickerView: View {
                         color: .cyan
                     ) {
                         onSelect(.guidedSequence(steps: []))
+                        dismiss()
+                    }
+                    
+                    TypeOptionRow(
+                        icon: "questionmark.circle",
+                        title: "Question",
+                        description: "Branch based on answer",
+                        color: .indigo
+                    ) {
+                        onSelect(.conditional(ConditionalHabitInfo(question: "", options: [])))
                         dismiss()
                     }
                 }

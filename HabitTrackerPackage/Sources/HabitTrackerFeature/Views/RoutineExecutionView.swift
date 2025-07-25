@@ -26,6 +26,9 @@ public struct RoutineExecutionView: View {
             }
             .navigationTitle(session?.template.name ?? "Routine")
             .navigationBarTitleDisplayMode(.inline)
+            .onReceive(NotificationCenter.default.publisher(for: .routineQueueDidChange)) { _ in
+                // Force view refresh when routine queue changes (for conditional habits)
+            }
         }
     }
     
@@ -113,6 +116,29 @@ public struct RoutineExecutionView: View {
             
             // Habit-specific interaction
             HabitInteractionView(habit: habit) { duration, notes in
+                // Handle conditional habits specially
+                if case .conditional(let info) = habit.type,
+                   let notes = notes,
+                   notes.hasPrefix("Selected: ") {
+                    // Extract selected option text
+                    let optionText = String(notes.dropFirst("Selected: ".count))
+                    
+                    // Find the selected option
+                    if let selectedOption = info.options.first(where: { $0.text == optionText }) {
+                        // Handle the conditional option selection
+                        routineService.handleConditionalOptionSelection(
+                            option: selectedOption,
+                            for: habit.id,
+                            question: info.question
+                        )
+                    }
+                } else if case .conditional(let info) = habit.type,
+                          let notes = notes,
+                          notes == "Skipped" {
+                    // Handle conditional habit skip
+                    routineService.skipConditionalHabit(habitId: habit.id, question: info.question)
+                }
+                
                 session.completeCurrentHabit(duration: duration, notes: notes)
             }
         }

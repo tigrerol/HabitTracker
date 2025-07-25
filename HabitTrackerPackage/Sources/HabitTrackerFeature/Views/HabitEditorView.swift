@@ -58,6 +58,9 @@ public struct HabitEditorView: View {
             self._subtasks = State(initialValue: tasks)
         case .guidedSequence(let steps):
             self._sequenceSteps = State(initialValue: steps)
+        case .conditional:
+            // Conditional habits will redirect to ConditionalHabitEditorView
+            break
         default:
             break
         }
@@ -187,6 +190,13 @@ public struct HabitEditorView: View {
                 
             case .guidedSequence:
                 sequenceEditor
+                
+            case .conditional:
+                // Conditional habits should not be edited in standard editor
+                Text("Use the question editor to modify this habit")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .italic()
             }
         }
         .padding()
@@ -213,6 +223,8 @@ public struct HabitEditorView: View {
             return "Measurement"
         case .guidedSequence:
             return "Sequence Steps"
+        case .conditional:
+            return "Question Settings"
         }
     }
     
@@ -519,6 +531,9 @@ public struct HabitEditorView: View {
             updatedHabit.type = .checkboxWithSubtasks(subtasks: subtasks)
         case .guidedSequence:
             updatedHabit.type = .guidedSequence(steps: sequenceSteps)
+        case .conditional:
+            // Don't modify conditional habits in this editor
+            break
         default:
             break
         }

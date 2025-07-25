@@ -39,6 +39,20 @@ public struct HabitInteractionView: View {
                 
             case .guidedSequence(let steps):
                 GuidedSequenceHabitView(habit: habit, steps: steps, onComplete: onComplete)
+                
+            case .conditional(let info):
+                ConditionalHabitInteractionView(
+                    habit: habit,
+                    conditionalInfo: info,
+                    onOptionSelected: { option in
+                        // Note: The actual path injection is handled by RoutineService
+                        // This just marks the conditional habit as complete
+                        onComplete(nil, "Selected: \(option.text)")
+                    },
+                    onSkip: {
+                        onComplete(nil, "Skipped")
+                    }
+                )
             }
         }
     }

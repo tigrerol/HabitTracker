@@ -1,6 +1,11 @@
 import Foundation
 import SwiftUI
 
+// MARK: - Notifications
+extension Notification.Name {
+    static let routineQueueDidChange = Notification.Name("routineQueueDidChange")
+}
+
 /// Service for managing routine templates and sessions
 @MainActor
 @Observable
@@ -93,6 +98,86 @@ public final class RoutineService {
     /// Delete a template
     public func deleteTemplate(withId id: UUID) {
         templates.removeAll { $0.id == id }
+    }
+    
+    /// Handle selection of a conditional habit option
+    public func handleConditionalOptionSelection(
+        option: ConditionalOption,
+        for habitId: UUID,
+        question: String
+    ) {
+        guard let session = currentSession else { return }
+        
+        // Log the response
+        let response = ConditionalResponse(
+            habitId: habitId,
+            question: question,
+            selectedOptionId: option.id,
+            selectedOptionText: option.text,
+            routineId: session.id,
+            wasSkipped: false
+        )
+        ResponseLoggingService.shared.logResponse(response)
+        
+        // Get the habits from the selected path
+        let pathHabits = option.habits
+        
+        // If there are habits in the path, inject them into the session
+        if !pathHabits.isEmpty {
+            // Find the current position in the active habits
+            let currentIndex = session.currentHabitIndex
+            let activeHabits = session.activeHabits
+            
+            // Create a reordered habit list that inserts the path habits after the current conditional
+            var newOrder: [Habit] = []
+            
+            // Add habits up to and including current position
+            for i in 0...currentIndex {
+                if i < activeHabits.count {
+                    newOrder.append(activeHabits[i])
+                }
+            }
+            
+            // Insert the path habits with adjusted order values
+            let baseOrder = currentIndex + 1
+            for (index, habit) in pathHabits.enumerated() {
+                var pathHabit = habit
+                pathHabit.order = baseOrder + index
+                newOrder.append(pathHabit)
+            }
+            
+            // Add remaining habits with adjusted order values
+            if currentIndex + 1 < activeHabits.count {
+                for i in (currentIndex + 1)..<activeHabits.count {
+                    var remainingHabit = activeHabits[i]
+                    remainingHabit.order = baseOrder + pathHabits.count + (i - currentIndex - 1)
+                    newOrder.append(remainingHabit)
+                }
+            }
+            
+            // Apply the reordering modification
+            let modification = SessionModification(
+                type: .reordered(newOrder),
+                timestamp: Date()
+            )
+            session.modifications.append(modification)
+        }
+        
+        // Post notification that routine queue changed
+        NotificationCenter.default.post(name: .routineQueueDidChange, object: nil)
+    }
+    
+    /// Handle skipping a conditional habit
+    public func skipConditionalHabit(habitId: UUID, question: String) {
+        guard let session = currentSession else { return }
+        
+        // Log the skip response
+        let response = ConditionalResponse.skip(
+            habitId: habitId,
+            question: question,
+            routineId: session.id
+        )
+        ResponseLoggingService.shared.logResponse(response)
     }
 }
 

@@ -29,6 +29,9 @@ public enum HabitType: Codable, Hashable, Sendable {
     
     /// Guided sequence with steps
     case guidedSequence(steps: [SequenceStep])
+    
+    /// Conditional habit with branching logic
+    case conditional(ConditionalHabitInfo)
 }
 
 /// Represents a subtask within a checkbox habit
@@ -92,6 +95,8 @@ extension HabitType {
         case .guidedSequence(let steps):
             let totalTime = steps.reduce(0) { $0 + $1.duration }
             return "\(steps.count) steps (\(Int(totalTime/60))min)"
+        case .conditional(let info):
+            return "\(info.options.count) options"
         }
     }
     
@@ -116,6 +121,8 @@ extension HabitType {
             return "chart.line.uptrend.xyaxis"
         case .guidedSequence:
             return "list.number"
+        case .conditional:
+            return "questionmark.circle"
         }
     }
 }
