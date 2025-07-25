@@ -12,6 +12,8 @@ public struct RoutineBuilderView: View {
     @State private var currentStep: BuilderStep = .naming
     @State private var editingHabit: Habit?
     @State private var isDefault = false
+    @State private var expandedHabits: Set<UUID> = []
+    @State private var selectedQuestionHabit: Habit?
     
     enum BuilderStep {
         case naming
@@ -265,19 +267,49 @@ public struct RoutineBuilderView: View {
                             
                             VStack(spacing: 8) {
                                 ForEach(habits) { habit in
-                                    HabitRowView(habit: habit) {
-                                        print("🔍 RoutineBuilderView: Edit closure called for habit: \(habit.name)")
-                                        editingHabit = habit
-                                        print("🔍 RoutineBuilderView: Set editingHabit to \(habit.name)")
-                                    } onDelete: {
-                                        withAnimation(.easeInOut) {
-                                            habits.removeAll { $0.id == habit.id }
+                                    if case .conditional = habit.type {
+                                        SelectableQuestionHabitRow(
+                                            habit: habit,
+                                            isSelected: selectedQuestionHabit?.id == habit.id,
+                                            onSelect: {
+                                                withAnimation(.easeInOut(duration: 0.2)) {
+                                                    selectedQuestionHabit = selectedQuestionHabit?.id == habit.id ? nil : habit
+                                                }
+                                            },
+                                            onEdit: {
+                                                print("🔍 RoutineBuilderView: Edit closure called for habit: \(habit.name)")
+                                                editingHabit = habit
+                                                print("🔍 RoutineBuilderView: Set editingHabit to \(habit.name)")
+                                            },
+                                            onDelete: {
+                                                withAnimation(.easeInOut) {
+                                                    habits.removeAll { $0.id == habit.id }
+                                                    if selectedQuestionHabit?.id == habit.id {
+                                                        selectedQuestionHabit = nil
+                                                    }
+                                                }
+                                            }
+                                        )
+                                    } else {
+                                        HabitRowView(habit: habit) {
+                                            print("🔍 RoutineBuilderView: Edit closure called for habit: \(habit.name)")
+                                            editingHabit = habit
+                                            print("🔍 RoutineBuilderView: Set editingHabit to \(habit.name)")
+                                        } onDelete: {
+                                            withAnimation(.easeInOut) {
+                                                habits.removeAll { $0.id == habit.id }
+                                            }
                                         }
                                     }
                                 }
                             }
                             .padding(.horizontal)
                         }
+                    }
+                    
+                    // Add Option section (when question is selected)
+                    if let selectedQuestion = selectedQuestionHabit {
+                        addOptionSection(for: selectedQuestion)
                     }
                     
                     // Habit types section
@@ -591,28 +623,23 @@ public struct RoutineBuilderView: View {
             } else {
                 List {
                     ForEach(Array(habits.enumerated()), id: \.element.id) { index, habit in
-                        HStack {
-                            Image(systemName: habit.type.iconName)
-                                .font(.caption)
-                                .foregroundStyle(habit.swiftUIColor)
-                                .frame(width: 24)
-                            
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(habit.name)
-                                    .font(.subheadline)
-                                
-                                Text(habit.type.description)
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
-                            
-                            Spacer()
-                            
-                            Text("\(habit.estimatedDuration.formattedDuration)")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                        .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+                        ExpandableHabitRow(
+                            habit: Binding(
+                                get: { habits[index] },
+                                set: { habits[index] = $0 }
+                            ),
+                            isExpanded: Binding(
+                                get: { expandedHabits.contains(habit.id) },
+                                set: { isExpanded in
+                                    if isExpanded {
+                                        expandedHabits.insert(habit.id)
+                                    } else {
+                                        expandedHabits.remove(habit.id)
+                                    }
+                                }
+                            )
+                        )
+                        .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
                     }
                     .onMove { source, destination in
                         habits.move(fromOffsets: source, toOffset: destination)
@@ -722,10 +749,499 @@ public struct RoutineBuilderView: View {
         
         dismiss()
     }
+    
+    // MARK: - Add Option Section
+    
+    @ViewBuilder
+    private func addOptionSection(for selectedQuestion: Habit) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("Add to '\(selectedQuestion.name)'")
+                    .font(.headline)
+                    .fontWeight(.semibold)
+                
+                Spacer()
+                
+                Text("Selected")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.horizontal)
+            
+            Button {
+                addNewOptionToSelectedQuestion()
+            } label: {
+                HStack {
+                    Image(systemName: "plus.circle.fill")
+                        .font(.title2)
+                        .foregroundStyle(.blue)
+                    
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Add Option")
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                            .foregroundStyle(.primary)
+                        
+                        Text("Create a new answer choice")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    
+                    Spacer()
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+            }
+            .buttonStyle(.plain)
+            .padding(.horizontal)
+        }
+    }
+    
+    private func addNewOptionToSelectedQuestion() {
+        guard let selectedQuestion = selectedQuestionHabit,
+              case .conditional(let info) = selectedQuestion.type,
+              let habitIndex = habits.firstIndex(where: { $0.id == selectedQuestion.id }) else {
+            return
+        }
+        
+        // Add new option
+        let newOption = ConditionalOption(
+            text: "Option \(info.options.count + 1)",
+            habits: []
+        )
+        
+        // Create new info with updated options
+        var updatedOptions = info.options
+        updatedOptions.append(newOption)
+        let updatedInfo = ConditionalHabitInfo(question: info.question, options: updatedOptions)
+        
+        // Update the habit
+        var updatedHabit = selectedQuestion
+        updatedHabit.type = .conditional(updatedInfo)
+        habits[habitIndex] = updatedHabit
+        
+        // Update selectedQuestionHabit to reflect the changes
+        selectedQuestionHabit = updatedHabit
+        
+        withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+            // Trigger UI update
+        }
+    }
 }
 
 // MARK: - Supporting Views
 // HabitRowView is now imported from its own file
+
+// MARK: - Expandable Habit Row
+struct ExpandableHabitRow: View {
+    @Binding var habit: Habit
+    @Binding var isExpanded: Bool
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            // Main habit row
+            Button {
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    if hasExpandableContent {
+                        isExpanded.toggle()
+                    }
+                }
+            } label: {
+                HStack {
+                    Image(systemName: habit.type.iconName)
+                        .font(.caption)
+                        .foregroundStyle(habit.swiftUIColor)
+                        .frame(width: 24)
+                    
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(habit.name)
+                            .font(.subheadline)
+                            .foregroundStyle(.primary)
+                        
+                        Text(habit.type.description)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    
+                    Spacer()
+                    
+                    if hasExpandableContent {
+                        Image(systemName: "chevron.right")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .rotationEffect(.degrees(isExpanded ? 90 : 0))
+                            .animation(.easeInOut(duration: 0.3), value: isExpanded)
+                    }
+                    
+                    Text("\(habit.estimatedDuration.formattedDuration)")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                .padding(.vertical, 8)
+            }
+            .buttonStyle(.plain)
+            
+            // Always show conditional options (not expandable)
+            if case .conditional(let info) = habit.type {
+                conditionalOptionsContent(info: info)
+            }
+            
+            // Expandable content for subtasks only
+            if isExpanded && hasExpandableContent {
+                expandableContent
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+                    .animation(.easeInOut(duration: 0.3), value: isExpanded)
+            }
+        }
+    }
+    
+    private var hasExpandableContent: Bool {
+        switch habit.type {
+        case .checkboxWithSubtasks:
+            return true
+        default:
+            return false
+        }
+    }
+    
+    @ViewBuilder
+    private var expandableContent: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            switch habit.type {
+            case .conditional(let info):
+                conditionalOptionsContent(info: info)
+            case .checkboxWithSubtasks(let subtasks):
+                subtasksContent(subtasks: subtasks)
+            default:
+                EmptyView()
+            }
+        }
+        .padding(.horizontal, 32)
+        .padding(.bottom, 12)
+        .background(Color(.systemGray6).opacity(0.5))
+        .cornerRadius(8)
+    }
+    
+    @ViewBuilder
+    private func conditionalOptionsContent(info: ConditionalHabitInfo) -> some View {
+        VStack(spacing: 8) {
+            // Options displayed exactly like main habit rows
+            if !info.options.isEmpty {
+                ForEach(Array(info.options.enumerated()), id: \.element.id) { index, option in
+                    let optionColor = optionColors[index % optionColors.count]
+                    
+                    VStack(spacing: 8) {
+                        // Option in identical format to main habit row
+                        HStack {
+                            Image(systemName: "questionmark.circle")
+                                .font(.caption)
+                                .foregroundStyle(optionColor)
+                                .frame(width: 24)
+                            
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(option.text)
+                                    .font(.subheadline)
+                                    .foregroundStyle(.primary)
+                                
+                                Text("\(option.habits.count) habit\(option.habits.count == 1 ? "" : "s")")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                            
+                            Spacer()
+                            
+                            Text("0:30")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        .padding(.vertical, 8)
+                        
+                        // Habits for this option
+                        if !option.habits.isEmpty {
+                            ForEach(option.habits) { habit in
+                                HStack {
+                                    Image(systemName: habit.type.iconName)
+                                        .font(.caption)
+                                        .foregroundStyle(optionColor)
+                                        .frame(width: 24)
+                                    
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(habit.name)
+                                            .font(.subheadline)
+                                            .foregroundStyle(.primary)
+                                        
+                                        Text(habit.type.description)
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                    }
+                                    
+                                    Spacer()
+                                    
+                                    Text("\(habit.estimatedDuration.formattedDuration)")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+                                .padding(.vertical, 8)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    private var optionColors: [Color] {
+        [.blue, .green, .orange, .purple, .red, .pink, .yellow, .cyan]
+    }
+    
+    
+    @ViewBuilder
+    private func subtasksContent(subtasks: [Subtask]) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text("Subtasks (\(subtasks.count)):")
+                    .font(.caption)
+                    .fontWeight(.medium)
+                    .foregroundStyle(.secondary)
+                
+                Spacer()
+                
+                Button {
+                    addSubtask()
+                } label: {
+                    Image(systemName: "plus.circle.fill")
+                        .font(.caption)
+                        .foregroundStyle(.blue)
+                }
+                .buttonStyle(.plain)
+            }
+            
+            if !subtasks.isEmpty {
+                ForEach(Array(subtasks.enumerated()), id: \.element.id) { index, subtask in
+                    HStack {
+                        Image(systemName: "circle")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                        
+                        TextField("Subtask name", text: Binding(
+                            get: { subtask.name },
+                            set: { newName in
+                                updateSubtaskName(at: index, newName: newName)
+                            }
+                        ))
+                        .font(.caption)
+                        .textFieldStyle(.plain)
+                        
+                        Button {
+                            removeSubtask(at: index)
+                        } label: {
+                            Image(systemName: "minus.circle.fill")
+                                .font(.caption2)
+                                .foregroundStyle(.red)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            } else {
+                Text("No subtasks yet")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .italic()
+            }
+        }
+    }
+    
+    private func addSubtask() {
+        guard case .checkboxWithSubtasks(var subtasks) = habit.type else { return }
+        
+        let newSubtask = Subtask(name: "New subtask")
+        subtasks.append(newSubtask)
+        habit.type = .checkboxWithSubtasks(subtasks: subtasks)
+    }
+    
+    private func removeSubtask(at index: Int) {
+        guard case .checkboxWithSubtasks(var subtasks) = habit.type else { return }
+        guard index < subtasks.count else { return }
+        
+        subtasks.remove(at: index)
+        habit.type = .checkboxWithSubtasks(subtasks: subtasks)
+    }
+    
+    private func updateSubtaskName(at index: Int, newName: String) {
+        guard case .checkboxWithSubtasks(var subtasks) = habit.type else { return }
+        guard index < subtasks.count else { return }
+        
+        subtasks[index].name = newName
+        habit.type = .checkboxWithSubtasks(subtasks: subtasks)
+    }
+}
+
+// MARK: - Selectable Question Habit Row
+
+struct SelectableQuestionHabitRow: View {
+    let habit: Habit
+    let isSelected: Bool
+    let onSelect: () -> Void
+    let onEdit: () -> Void
+    let onDelete: () -> Void
+    
+    var body: some View {
+        VStack(spacing: 8) {
+            // Main habit row (selectable)
+            Button(action: onSelect) {
+                HStack {
+                    Image(systemName: habit.type.iconName)
+                        .font(.body)
+                        .foregroundStyle(habit.swiftUIColor)
+                        .frame(width: 32)
+                    
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(habit.name)
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                            .foregroundStyle(.primary)
+                        
+                        Text(habit.type.description)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    
+                    Spacer()
+                    
+                    if isSelected {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.body)
+                            .foregroundStyle(.blue)
+                    }
+                    
+                    Text(habit.estimatedDuration.formattedDuration)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .monospacedDigit()
+                    
+                    HStack(spacing: 8) {
+                        Button {
+                            onEdit()
+                        } label: {
+                            Image(systemName: "pencil")
+                                .font(.caption)
+                                .foregroundStyle(.blue)
+                                .frame(width: 28, height: 28)
+                                .background(.blue.opacity(0.1), in: Circle())
+                        }
+                        .accessibilityLabel("Edit habit")
+                        
+                        Button {
+                            onDelete()
+                        } label: {
+                            Image(systemName: "trash")
+                                .font(.caption)
+                                .foregroundStyle(.red)
+                                .frame(width: 28, height: 28)
+                                .background(.red.opacity(0.1), in: Circle())
+                        }
+                        .accessibilityLabel("Delete habit")
+                    }
+                }
+                .padding(.vertical, 8)
+                .padding(.horizontal, 12)
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(.regularMaterial)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(isSelected ? .blue : .clear, lineWidth: 2)
+                        )
+                )
+            }
+            .buttonStyle(.plain)
+            
+            // Show options for conditional habits
+            if case .conditional(let info) = habit.type {
+                conditionalOptionsContent(info: info)
+            }
+        }
+    }
+    
+    @ViewBuilder
+    private func conditionalOptionsContent(info: ConditionalHabitInfo) -> some View {
+        VStack(spacing: 8) {
+            // Options displayed exactly like main habit rows
+            if !info.options.isEmpty {
+                ForEach(Array(info.options.enumerated()), id: \.element.id) { index, option in
+                    let optionColor = optionColors[index % optionColors.count]
+                    
+                    VStack(spacing: 8) {
+                        // Option in identical format to main habit row
+                        HStack {
+                            Image(systemName: "questionmark.circle")
+                                .font(.body)
+                                .foregroundStyle(optionColor)
+                                .frame(width: 32)
+                            
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(option.text)
+                                    .font(.subheadline)
+                                    .fontWeight(.medium)
+                                
+                                Text("\(option.habits.count) habit\(option.habits.count == 1 ? "" : "s")")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                            
+                            Spacer()
+                            
+                            Text("0:30")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .monospacedDigit()
+                        }
+                        .padding(.vertical, 8)
+                        .padding(.horizontal, 12)
+                        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8))
+                        
+                        // Habits for this option
+                        if !option.habits.isEmpty {
+                            ForEach(option.habits) { habit in
+                                HStack {
+                                    Image(systemName: habit.type.iconName)
+                                        .font(.body)
+                                        .foregroundStyle(optionColor)
+                                        .frame(width: 32)
+                                    
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(habit.name)
+                                            .font(.subheadline)
+                                            .fontWeight(.medium)
+                                        
+                                        Text(habit.type.description)
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                    }
+                                    
+                                    Spacer()
+                                    
+                                    Text("\(habit.estimatedDuration.formattedDuration)")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                        .monospacedDigit()
+                                }
+                                .padding(.vertical, 8)
+                                .padding(.horizontal, 12)
+                                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8))
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    private var optionColors: [Color] {
+        [.blue, .green, .orange, .purple, .red, .pink, .yellow, .cyan]
+    }
+}
 
 #Preview {
     RoutineBuilderView()
