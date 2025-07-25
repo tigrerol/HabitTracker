@@ -7,8 +7,7 @@ public struct ConditionalHabitEditorView: View {
     @State private var question: String
     @State private var options: [ConditionalOption]
     @State private var color: String
-    @State private var showingPathBuilder: Bool = false
-    @State private var selectedOptionIndex: Int?
+    @State private var selectedOptionForBuilder: ConditionalOption?
     @State private var showingDeleteAlert = false
     @State private var optionToDelete: ConditionalOption?
     
@@ -84,8 +83,9 @@ public struct ConditionalHabitEditorView: View {
                         OptionCard(
                             option: option,
                             onTap: {
-                                selectedOptionIndex = index
-                                showingPathBuilder = true
+                                print("🔍 OptionCard: onTap called for index: \(index), option: \(option.text)")
+                                selectedOptionForBuilder = option
+                                print("🔍 OptionCard: Set selectedOptionForBuilder to \(selectedOptionForBuilder?.text ?? "nil")")
                             },
                             onDelete: {
                                 optionToDelete = option
@@ -126,22 +126,37 @@ public struct ConditionalHabitEditorView: View {
                     .disabled(!isValid)
                 }
             }
-            .sheet(isPresented: $showingPathBuilder) {
-                if let index = selectedOptionIndex, index < options.count {
+            .sheet(item: $selectedOptionForBuilder) { option in
+                let _ = print("🔍 Sheet: selectedOptionForBuilder triggered for option: \(option.text)")
+                if let index = options.firstIndex(where: { $0.id == option.id }) {
+                    let _ = print("🔍 Sheet: Found option at index \(index), showing PathBuilderView")
                     PathBuilderView(
                         option: binding(for: index),
                         habitLibrary: habitLibrary,
                         existingConditionalDepth: existingConditionalDepth + 1
                     )
                 } else {
-                    Text("Error: Invalid option selected")
-                        .foregroundStyle(.red)
+                    let _ = print("🔍 Sheet: Could not find option in current list")
+                    VStack {
+                        Text("Error: Option not found")
+                            .foregroundStyle(.red)
+                        Text("Option: \(option.text)")
+                            .font(.caption)
+                        Button("Close") {
+                            selectedOptionForBuilder = nil
+                        }
+                    }
+                    .padding()
                 }
             }
             .alert("Delete Option", isPresented: $showingDeleteAlert) {
                 Button("Delete", role: .destructive) {
                     if let option = optionToDelete {
                         options.removeAll { $0.id == option.id }
+                        // Reset selection if deleted option was selected
+                        if selectedOptionForBuilder?.id == option.id {
+                            selectedOptionForBuilder = nil
+                        }
                     }
                 }
                 Button("Cancel", role: .cancel) {}
@@ -171,9 +186,13 @@ public struct ConditionalHabitEditorView: View {
                 }
                 return options[index] 
             },
-            set: { 
+            set: { newValue in
                 guard index < options.count else { return }
-                options[index] = $0 
+                options[index] = newValue
+                // Update selectedOptionForBuilder if it's the same one being modified
+                if selectedOptionForBuilder?.id == newValue.id {
+                    selectedOptionForBuilder = newValue
+                }
             }
         )
     }
@@ -221,8 +240,9 @@ private struct OptionCard: View {
                         .foregroundStyle(.secondary)
                 }
             }
-            
-            Spacer()
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
+            .onTapGesture(perform: onTap)
             
             Button(action: onDelete) {
                 Image(systemName: "trash")
@@ -230,8 +250,6 @@ private struct OptionCard: View {
             }
             .buttonStyle(.plain)
         }
-        .contentShape(Rectangle())
-        .onTapGesture(perform: onTap)
     }
 }
 
@@ -259,6 +277,9 @@ struct PathBuilderView: View {
             Form {
                 Section("Option Details") {
                     TextField("Option Text", text: $optionText)
+                        .onChange(of: optionText) {
+                            saveChanges()
+                        }
                 }
                 
                 Section("Path Habits") {
@@ -273,10 +294,12 @@ struct PathBuilderView: View {
                             HabitRow(habit: habit) {
                                 // Delete habit
                                 habits.remove(at: index)
+                                saveChanges()
                             }
                         }
                         .onMove { from, to in
                             habits.move(fromOffsets: from, toOffset: to)
+                            saveChanges()
                         }
                     }
                 }
@@ -304,6 +327,7 @@ struct PathBuilderView: View {
                     habitLibrary: habitLibrary,
                     existingConditionalDepth: existingConditionalDepth,
                     onSelect: { habit in
+                        print("🔍 PathBuilderView: onSelect called with habit - name: '\(habit.name)', type: \(habit.type)")
                         // Create a copy of the habit with new ID
                         let newHabit = Habit(
                             id: UUID(), // New ID for the copy
@@ -315,7 +339,10 @@ struct PathBuilderView: View {
                             order: habits.count,
                             isActive: habit.isActive
                         )
+                        print("🔍 PathBuilderView: Created new habit copy - name: '\(newHabit.name)', type: \(newHabit.type)")
                         habits.append(newHabit)
+                        print("🔍 PathBuilderView: habits.count is now \(habits.count)")
+                        saveChanges()
                     }
                 )
             }
@@ -338,14 +365,15 @@ struct HabitRow: View {
     let onDelete: () -> Void
     
     var body: some View {
+        let _ = print("🔍 HabitRow: Displaying habit - name: '\(habit.name)', type: \(habit.type), description: '\(habit.type.description)'")
         HStack {
             Circle()
                 .fill(Color(hex: habit.color) ?? .blue)
                 .frame(width: 8, height: 8)
             
             VStack(alignment: .leading) {
-                Text(habit.name)
-                Text(habit.type.description)
+                Text(habit.name.isEmpty ? "EMPTY NAME" : habit.name)
+                Text(habit.type.description.isEmpty ? "EMPTY DESCRIPTION" : habit.type.description)
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -358,6 +386,8 @@ struct HabitRow: View {
             }
             .buttonStyle(.plain)
         }
+        .background(Color.gray.opacity(0.1))
+        .cornerRadius(8)
     }
 }
 
@@ -367,8 +397,7 @@ struct HabitPickerView: View {
     let existingConditionalDepth: Int
     let onSelect: (Habit) -> Void
     @Environment(\.dismiss) private var dismiss
-    @State private var selectedType: HabitTypeCategory?
-    @State private var showingNewHabitEditor = false
+    @State private var selectedTypeForSheet: HabitTypeCategory?
     
     var body: some View {
         NavigationStack {
@@ -378,8 +407,9 @@ struct HabitPickerView: View {
                         // Hide conditional if at max depth
                         if !(category == .conditional && existingConditionalDepth >= 2) {
                             Button {
-                                selectedType = category
-                                showingNewHabitEditor = true
+                                print("🔍 HabitPickerView: Button tapped for category: \(category)")
+                                selectedTypeForSheet = category
+                                print("🔍 HabitPickerView: selectedTypeForSheet set to: \(selectedTypeForSheet)")
                             } label: {
                                 Label(category.displayName, systemImage: category.iconName)
                             }
@@ -420,10 +450,9 @@ struct HabitPickerView: View {
                     }
                 }
             }
-            .sheet(isPresented: $showingNewHabitEditor) {
-                if let type = selectedType {
-                    habitEditorView(for: type)
-                }
+            .sheet(item: $selectedTypeForSheet) { type in
+                let _ = print("🔍 HabitPickerView: Sheet presenting with type: \(type)")
+                habitEditorView(for: type)
             }
         }
     }
@@ -447,9 +476,10 @@ struct HabitPickerView: View {
                 dismiss()
             }
         case .timer:
-            HabitEditorView(
-                habit: Habit(name: "New Timer", type: .timer(defaultDuration: 300))
-            ) { habit in
+            let timerHabit = Habit(name: "New Timer", type: .timer(defaultDuration: 300))
+            let _ = print("🔍 HabitPickerView: Creating timer habit - name: '\(timerHabit.name)', type: \(timerHabit.type)")
+            HabitEditorView(habit: timerHabit) { habit in
+                print("🔍 HabitPickerView: Timer habit saved - name: '\(habit.name)', type: \(habit.type)")
                 onSelect(habit)
                 dismiss()
             }
@@ -501,7 +531,7 @@ struct HabitPickerView: View {
 }
 
 // MARK: - Habit Type Category
-enum HabitTypeCategory: CaseIterable {
+enum HabitTypeCategory: CaseIterable, Identifiable {
     case checkbox
     case timer
     case counter
@@ -510,6 +540,8 @@ enum HabitTypeCategory: CaseIterable {
     case website
     case guidedSequence
     case conditional
+    
+    var id: Self { self }
     
     var displayName: String {
         switch self {
