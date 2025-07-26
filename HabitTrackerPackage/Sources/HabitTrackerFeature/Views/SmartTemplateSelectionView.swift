@@ -10,6 +10,7 @@ struct SmartTemplateSelectionView: View {
     @State private var editingTemplate: RoutineTemplate?
     @State private var templateToDelete: RoutineTemplate?
     @State private var showingDeleteAlert = false
+    @State private var showingLocationSetup = false
     
     var body: some View {
         NavigationStack {
@@ -55,6 +56,9 @@ struct SmartTemplateSelectionView: View {
         }
         .sheet(item: $editingTemplate) { template in
             RoutineBuilderView(editingTemplate: template)
+        }
+        .sheet(isPresented: $showingLocationSetup) {
+            LocationSetupView()
         }
         .alert("Delete Routine", isPresented: $showingDeleteAlert) {
             Button("Cancel", role: .cancel) { }
@@ -125,6 +129,20 @@ struct SmartTemplateSelectionView: View {
                 }
                 .font(.caption)
                 .foregroundStyle(.secondary)
+            } else {
+                // Location setup button when location is unknown
+                Button {
+                    showingLocationSetup = true
+                } label: {
+                    Label {
+                        Text("Set Locations")
+                    } icon: {
+                        Image(systemName: "location.badge.plus")
+                    }
+                    .font(.caption)
+                    .foregroundStyle(.blue)
+                }
+                .buttonStyle(.plain)
             }
         }
         .padding(.horizontal, 12)

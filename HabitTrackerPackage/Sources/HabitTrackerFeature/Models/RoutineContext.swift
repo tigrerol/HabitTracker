@@ -131,8 +131,6 @@ public enum DayType: String, Codable, CaseIterable, Sendable {
 public enum LocationType: String, Codable, CaseIterable, Sendable {
     case home = "home"
     case office = "office"
-    case gym = "gym"
-    case travel = "travel"
     case unknown = "unknown"
     
     /// Display name for the location type
@@ -140,8 +138,6 @@ public enum LocationType: String, Codable, CaseIterable, Sendable {
         switch self {
         case .home: return "Home"
         case .office: return "Office"
-        case .gym: return "Gym"
-        case .travel: return "Travel"
         case .unknown: return "Unknown"
         }
     }
@@ -151,8 +147,6 @@ public enum LocationType: String, Codable, CaseIterable, Sendable {
         switch self {
         case .home: return "house.fill"
         case .office: return "building.2.fill"
-        case .gym: return "figure.strengthtraining.traditional"
-        case .travel: return "airplane"
         case .unknown: return "location.slash"
         }
     }
