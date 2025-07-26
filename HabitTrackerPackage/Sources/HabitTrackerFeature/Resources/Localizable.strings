@@ -87,7 +87,6 @@
 "RoutineBuilderView.EditRoutine.NavigationTitle" = "Edit Routine";
 "RoutineBuilderView.CreateRoutine.NavigationTitle" = "Create Routine";
 "RoutineBuilderView.Cancel.Button" = "Cancel";
-"RoutineBuilderView.Build.Version" = "Build: 2024.12.24.1847";
 "RoutineBuilderView.Naming.Title" = "Let's name your routine";
 "RoutineBuilderView.Naming.Subtitle" = "Choose a name that describes when you'll use this routine";
 "RoutineBuilderView.Naming.RoutineName.Placeholder" = "Routine Name";
@@ -253,7 +252,7 @@
 
 /* SmartTemplateSelectionView Strings */
 "SmartTemplateSelectionView.NavigationTitle" = "Good Morning!";
-"SmartTemplateSelectionView.BuildNumber" = "Build: 2024.12.24.1847";
+"SmartTemplateSelectionView.BuildNumber" = "Build: %@ (%@)";
 "SmartTemplateSelectionView.DeleteAlert.Title" = "Delete Routine";
 "SmartTemplateSelectionView.DeleteAlert.Cancel" = "Cancel";
 "SmartTemplateSelectionView.DeleteAlert.Delete" = "Delete";
@@ -449,3 +448,56 @@
 "HabitTypeCategory.Website.DisplayName" = "Website/Shortcut";
 "HabitTypeCategory.GuidedSequence.DisplayName" = "Guided Sequence";
 "HabitTypeCategory.Question.DisplayName" = "Question";
+
+/* ConditionalHabitInteractionView Strings */
+"ConditionalHabitInteractionView.Skip" = "Skip";
+"ConditionalHabitInteractionView.Preview.PainAssessment" = "Pain Assessment";
+"ConditionalHabitInteractionView.Preview.AnyPainToday" = "Any pain today?";
+"ConditionalHabitInteractionView.Preview.Shoulder" = "Shoulder";
+"ConditionalHabitInteractionView.Preview.ShoulderStretches" = "Shoulder Stretches";
+"ConditionalHabitInteractionView.Preview.NerveGlides" = "Nerve Glides";
+"ConditionalHabitInteractionView.Preview.Knee" = "Knee";
+"ConditionalHabitInteractionView.Preview.KneeMobilization" = "Knee Mobilization";
+"ConditionalHabitInteractionView.Preview.Back" = "Back";
+"ConditionalHabitInteractionView.Preview.BackExtensions" = "Back Extensions";
+"ConditionalHabitInteractionView.Preview.None" = "None";
+
+/* MoodRatingView Strings */
+"MoodRatingView.NavigationTitle" = "How do you feel?";
+"MoodRatingView.Skip" = "Skip";
+"MoodRatingView.Header.Emoji" = "🌅";
+"MoodRatingView.Header.Title" = "Rate your morning energy";
+"MoodRatingView.Header.Subtitle" = "This helps us learn what works best for you";
+"MoodRatingView.Selection.Question" = "How are you feeling?";
+"MoodRatingView.Notes.Label" = "Notes (optional)";
+"MoodRatingView.Notes.Placeholder" = "How did the routine feel today?";
+"MoodRatingView.Save" = "Save";
+
+/* InlineMoodRatingView Strings */
+"InlineMoodRatingView.Question" = "How do you feel?";
+"InlineMoodRatingView.ThankYou" = "Thanks for rating!";
+
+/* HabitRowView Strings */
+"HabitRowView.Accessibility.EditHabit" = "Edit habit";
+"HabitRowView.Accessibility.DeleteHabit" = "Delete habit";
+"HabitRowView.Accessibility.HabitDetails" = "%1$@, %2$@, estimated duration %3$@";
+"HabitRowView.Accessibility.Hint" = "Double tap to edit, or use actions";
+"HabitRowView.Edit" = "Edit";
+"HabitRowView.Delete" = "Delete";
+"HabitRowView.EditHabit" = "Edit Habit";
+"HabitRowView.Duplicate" = "Duplicate";
+"HabitRowView.DeleteHabit" = "Delete Habit";
+"HabitRowView.HabitSingular" = "%d habit";
+"HabitRowView.HabitPlural" = "%d habits";
+
+/* CustomLocationEditorView Strings */
+"CustomLocationEditorView.LocationName.Placeholder" = "Location Name";
+"CustomLocationEditorView.Icon.Label" = "Icon";
+"CustomLocationEditorView.Icon.Choose" = "Choose";
+"CustomLocationEditorView.LocationDetails.Section" = "Location Details";
+"CustomLocationEditorView.LocationDetails.Footer" = "Give your location a descriptive name like 'Coffee Shop' or 'Parents' House'";
+"CustomLocationEditorView.EditLocation.NavigationTitle" = "Edit Location";
+"CustomLocationEditorView.NewLocation.NavigationTitle" = "New Location";
+"CustomLocationEditorView.Cancel" = "Cancel";
+"CustomLocationEditorView.Save" = "Save";
+"CustomLocationEditorView.ChooseIcon.NavigationTitle" = "Choose Icon";

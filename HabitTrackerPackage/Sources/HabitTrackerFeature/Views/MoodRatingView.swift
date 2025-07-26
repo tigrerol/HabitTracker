@@ -28,11 +28,11 @@ public struct MoodRatingView: View {
                 saveButton
             }
             .padding()
-            .navigationTitle("How do you feel?")
+            .navigationTitle(String(localized: "MoodRatingView.NavigationTitle", bundle: .module))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Skip") {
+                    Button(String(localized: "MoodRatingView.Skip", bundle: .module)) {
                         dismiss()
                     }
                 }
@@ -43,14 +43,14 @@ public struct MoodRatingView: View {
     
     private var headerView: some View {
         VStack(spacing: 12) {
-            Text("🌅")
+            Text(String(localized: "MoodRatingView.Header.Emoji", bundle: .module))
                 .font(.system(size: 60))
             
-            Text("Rate your morning energy")
+            Text(String(localized: "MoodRatingView.Header.Title", bundle: .module))
                 .font(.headline)
                 .multilineTextAlignment(.center)
             
-            Text("This helps us learn what works best for you")
+            Text(String(localized: "MoodRatingView.Header.Subtitle", bundle: .module))
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
@@ -59,7 +59,7 @@ public struct MoodRatingView: View {
     
     private var moodSelection: some View {
         VStack(spacing: 16) {
-            Text("How are you feeling?")
+            Text(String(localized: "MoodRatingView.Selection.Question", bundle: .module))
                 .font(.subheadline)
                 .fontWeight(.medium)
             
@@ -89,11 +89,11 @@ public struct MoodRatingView: View {
     
     private var notesSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Notes (optional)")
+            Text(String(localized: "MoodRatingView.Notes.Label", bundle: .module))
                 .font(.subheadline)
                 .fontWeight(.medium)
             
-            TextField("How did the routine feel today?", text: $notes, axis: .vertical)
+            TextField(String(localized: "MoodRatingView.Notes.Placeholder", bundle: .module), text: $notes, axis: .vertical)
                 .textFieldStyle(.roundedBorder)
                 .lineLimit(3...6)
         }
@@ -110,7 +110,7 @@ public struct MoodRatingView: View {
             }
             dismiss()
         } label: {
-            Text("Save")
+            Text(String(localized: "MoodRatingView.Save", bundle: .module))
                 .font(.headline)
                 .foregroundStyle(.white)
                 .frame(maxWidth: .infinity)

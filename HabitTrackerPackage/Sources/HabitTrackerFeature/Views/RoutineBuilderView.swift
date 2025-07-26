@@ -67,13 +67,6 @@ public struct RoutineBuilderView: View {
                     }
                 }
             }
-            .safeAreaInset(edge: .top, alignment: .trailing) {
-                Text(String(localized: "RoutineBuilderView.Build.Version", bundle: .module))
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                    .padding(.trailing, 16)
-                    .padding(.top, 4)
-            }
         }
         .onAppear {
             if let template = editingTemplate {

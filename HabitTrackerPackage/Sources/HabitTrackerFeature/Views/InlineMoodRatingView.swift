@@ -11,7 +11,7 @@ struct InlineMoodRatingView: View {
     
     var body: some View {
         VStack(spacing: 16) {
-            Text("How do you feel?")
+            Text(String(localized: "InlineMoodRatingView.Question", bundle: .module))
                 .font(.headline)
                 .fontWeight(.medium)
             
@@ -53,7 +53,7 @@ struct InlineMoodRatingView: View {
                 HStack {
                     Image(systemName: "checkmark.circle.fill")
                         .foregroundStyle(.green)
-                    Text("Thanks for rating!")
+                    Text(String(localized: "InlineMoodRatingView.ThankYou", bundle: .module))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }

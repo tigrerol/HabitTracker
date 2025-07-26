@@ -59,7 +59,7 @@ public struct ConditionalHabitInteractionView: View {
             Button {
                 onSkip()
             } label: {
-                Text("Skip")
+                Text(String(localized: "ConditionalHabitInteractionView.Skip", bundle: .module))
                     .font(.callout)
                     .foregroundStyle(.secondary)
             }
@@ -142,34 +142,34 @@ struct ConditionalHabitInteractionView_Previews: PreviewProvider {
     static var previews: some View {
         ConditionalHabitInteractionView(
             habit: Habit(
-                name: "Pain Assessment",
+                name: String(localized: "ConditionalHabitInteractionView.Preview.PainAssessment", bundle: .module),
                 type: .conditional(
                     ConditionalHabitInfo(
-                        question: "Any pain today?",
+                        question: String(localized: "ConditionalHabitInteractionView.Preview.AnyPainToday", bundle: .module),
                         options: [
-                            ConditionalOption(text: "Shoulder", habits: [
-                                Habit(name: "Shoulder Stretches", type: .timer(defaultDuration: 300)),
-                                Habit(name: "Nerve Glides", type: .checkbox)
+                            ConditionalOption(text: String(localized: "ConditionalHabitInteractionView.Preview.Shoulder", bundle: .module), habits: [
+                                Habit(name: String(localized: "ConditionalHabitInteractionView.Preview.ShoulderStretches", bundle: .module), type: .timer(defaultDuration: 300)),
+                                Habit(name: String(localized: "ConditionalHabitInteractionView.Preview.NerveGlides", bundle: .module), type: .checkbox)
                             ]),
-                            ConditionalOption(text: "Knee", habits: [
-                                Habit(name: "Knee Mobilization", type: .timer(defaultDuration: 180))
+                            ConditionalOption(text: String(localized: "ConditionalHabitInteractionView.Preview.Knee", bundle: .module), habits: [
+                                Habit(name: String(localized: "ConditionalHabitInteractionView.Preview.KneeMobilization", bundle: .module), type: .timer(defaultDuration: 180))
                             ]),
-                            ConditionalOption(text: "Back", habits: [
-                                Habit(name: "Back Extensions", type: .checkbox)
+                            ConditionalOption(text: String(localized: "ConditionalHabitInteractionView.Preview.Back", bundle: .module), habits: [
+                                Habit(name: String(localized: "ConditionalHabitInteractionView.Preview.BackExtensions", bundle: .module), type: .checkbox)
                             ]),
-                            ConditionalOption(text: "None", habits: [])
+                            ConditionalOption(text: String(localized: "ConditionalHabitInteractionView.Preview.None", bundle: .module), habits: [])
                         ]
                     )
                 ),
                 color: "#007AFF"
             ),
             conditionalInfo: ConditionalHabitInfo(
-                question: "Any pain today?",
+                question: String(localized: "ConditionalHabitInteractionView.Preview.AnyPainToday", bundle: .module),
                 options: [
-                    ConditionalOption(text: "Shoulder", habits: []),
-                    ConditionalOption(text: "Knee", habits: []),
-                    ConditionalOption(text: "Back", habits: []),
-                    ConditionalOption(text: "None", habits: [])
+                    ConditionalOption(text: String(localized: "ConditionalHabitInteractionView.Preview.Shoulder", bundle: .module), habits: []),
+                    ConditionalOption(text: String(localized: "ConditionalHabitInteractionView.Preview.Knee", bundle: .module), habits: []),
+                    ConditionalOption(text: String(localized: "ConditionalHabitInteractionView.Preview.Back", bundle: .module), habits: []),
+                    ConditionalOption(text: String(localized: "ConditionalHabitInteractionView.Preview.None", bundle: .module), habits: [])
                 ]
             ),
             onOptionSelected: { _ in },

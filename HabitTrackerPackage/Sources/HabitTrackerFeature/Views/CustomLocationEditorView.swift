@@ -29,11 +29,11 @@ struct CustomLocationEditorView: View {
         NavigationStack {
             Form {
                 Section {
-                    TextField("Location Name", text: $name)
+                    TextField(String(localized: "CustomLocationEditorView.LocationName.Placeholder", bundle: .module), text: $name)
                         .textInputAutocapitalization(.words)
                     
                     HStack {
-                        Text("Icon")
+                        Text(String(localized: "CustomLocationEditorView.Icon.Label", bundle: .module))
                         Spacer()
                         Button {
                             showingIconPicker = true
@@ -41,28 +41,28 @@ struct CustomLocationEditorView: View {
                             HStack(spacing: 8) {
                                 Image(systemName: selectedIcon)
                                     .foregroundStyle(.blue)
-                                Text("Choose")
+                                Text(String(localized: "CustomLocationEditorView.Icon.Choose", bundle: .module))
                                     .foregroundStyle(.blue)
                             }
                         }
                     }
                 } header: {
-                    Text("Location Details")
+                    Text(String(localized: "CustomLocationEditorView.LocationDetails.Section", bundle: .module))
                 } footer: {
-                    Text("Give your location a descriptive name like 'Coffee Shop' or 'Parents' House'")
+                    Text(String(localized: "CustomLocationEditorView.LocationDetails.Footer", bundle: .module))
                 }
             }
-            .navigationTitle(isEditing ? "Edit Location" : "New Location")
+            .navigationTitle(isEditing ? String(localized: "CustomLocationEditorView.EditLocation.NavigationTitle", bundle: .module) : String(localized: "CustomLocationEditorView.NewLocation.NavigationTitle", bundle: .module))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
+                    Button(String(localized: "CustomLocationEditorView.Cancel", bundle: .module)) {
                         dismiss()
                     }
                 }
                 
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") {
+                    Button(String(localized: "CustomLocationEditorView.Save", bundle: .module)) {
                         saveLocation()
                     }
                     .disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
@@ -144,11 +144,11 @@ private struct IconPickerView: View {
                 }
             }
             .padding()
-            .navigationTitle("Choose Icon")
+            .navigationTitle(String(localized: "CustomLocationEditorView.ChooseIcon.NavigationTitle", bundle: .module))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
+                    Button(String(localized: "CustomLocationEditorView.Cancel", bundle: .module)) {
                         dismiss()
                     }
                 }

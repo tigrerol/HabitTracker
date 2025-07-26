@@ -33,14 +33,8 @@ struct SmartTemplateSelectionView: View {
             .padding()
             .navigationTitle(String(localized: "SmartTemplateSelectionView.NavigationTitle", bundle: .module))
             .navigationBarTitleDisplayMode(.large)
-            .safeAreaInset(edge: .bottom) {
-                Text(String(localized: "SmartTemplateSelectionView.BuildNumber", bundle: .module))
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                    .padding(.bottom, 8)
-            }
             .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
+                ToolbarItem(placement: .cancellationAction) {
                     Button {
                         showingContextSettings = true
                     } label: {
@@ -48,13 +42,16 @@ struct SmartTemplateSelectionView: View {
                     }
                 }
                 
-                ToolbarItem(placement: .primaryAction) {
+                ToolbarItem(placement: .confirmationAction) {
                     Button {
                         showingRoutineBuilder = true
                     } label: {
                         Image(systemName: "plus")
                     }
                 }
+            }
+            .safeAreaInset(edge: .bottom) {
+                buildVersionView
             }
         }
         .onAppear {
@@ -96,6 +93,18 @@ struct SmartTemplateSelectionView: View {
                 Text(String(localized: "SmartTemplateSelectionView.DeleteAlert.Message", bundle: .module).replacingOccurrences(of: "%@", with: template.name))
             }
         }
+    }
+    
+    private var buildVersionView: some View {
+        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "Unknown"
+        let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "Unknown"
+        
+        let _ = print("📱 App Version Info - Version: \(version), Build: \(build)")
+        
+        return Text(String(format: String(localized: "SmartTemplateSelectionView.BuildNumber", bundle: .module), version, build))
+            .font(.caption2)
+            .foregroundStyle(.secondary)
+            .padding(.bottom, 8)
     }
     
     private var headerView: some View {

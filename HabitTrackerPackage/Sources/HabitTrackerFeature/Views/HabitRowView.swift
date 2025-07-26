@@ -139,7 +139,9 @@ public struct HabitRowView: View {
                                     .font(.subheadline)
                                     .fontWeight(.medium)
                                 
-                                Text("\(option.habits.count) habit\(option.habits.count == 1 ? "" : "s")")
+                                Text(option.habits.count == 1 ? 
+                                     String(format: String(localized: "HabitRowView.HabitSingular", bundle: .module), option.habits.count) :
+                                     String(format: String(localized: "HabitRowView.HabitPlural", bundle: .module), option.habits.count))
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
                             }

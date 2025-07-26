@@ -114,6 +114,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 8B41F6662DEDD0D6001A66F9 /* Build configuration list for PBXNativeTarget "HabitTracker" */;
 			buildPhases = (
+				8BD71C0B2DEE42A100CEDD92 /* Auto-Increment Build Number */,
 				8B41F6412DEDD0D5001A66F9 /* Sources */,
 				8B41F6422DEDD0D5001A66F9 /* Frameworks */,
 				8B41F6432DEDD0D5001A66F9 /* Resources */,
@@ -213,6 +214,28 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		8BD71C0B2DEE42A100CEDD92 /* Auto-Increment Build Number */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Auto-Increment Build Number";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/bash;
+			shellScript = "# Auto-increment build number script\n# Generate build number based on current timestamp (YYMMDD.HHMM format)\nBUILD_NUMBER=$(date +\"%y%m%d.%H%M\")\n\necho \"🔧 Auto-incrementing build number to: $BUILD_NUMBER\"\n\n# Update the xcconfig file with the new build number\nXCCONFIG_FILE=\"$SRCROOT/Config/Shared.xcconfig\"\n\nif [ -f \"$XCCONFIG_FILE\" ]; then\n    # Use sed to replace the CURRENT_PROJECT_VERSION line\n    if [[ \"$OSTYPE\" == \"darwin\"* ]]; then\n        # macOS version of sed\n        sed -i '' \"s/CURRENT_PROJECT_VERSION = .*/CURRENT_PROJECT_VERSION = $BUILD_NUMBER/\" \"$XCCONFIG_FILE\"\n    else\n        # Linux version of sed\n        sed -i \"s/CURRENT_PROJECT_VERSION = .*/CURRENT_PROJECT_VERSION = $BUILD_NUMBER/\" \"$XCCONFIG_FILE\"\n    fi\n    \n    echo \"✅ Updated xcconfig with build number: $BUILD_NUMBER\"\nelse\n    echo \"❌ Could not find $XCCONFIG_FILE\"\n    exit 1\nfi\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		8B41F6412DEDD0D5001A66F9 /* Sources */ = {
