@@ -1,18 +1,16 @@
 import Foundation
 import CoreLocation
 
-/// Enhanced routine context with flexible day categories
+/// Routine context with flexible day categories
 public struct RoutineContext: Codable, Hashable, Sendable {
     public let timeSlot: TimeSlot
-    public let dayCategory: DayCategory?
-    public let dayType: DayType // Kept for backwards compatibility
+    public let dayCategory: DayCategory
     public let location: LocationType
     public let timestamp: Date
     
     public init(
         timeSlot: TimeSlot,
-        dayCategory: DayCategory? = nil,
-        dayType: DayType? = nil,
+        dayCategory: DayCategory,
         location: LocationType,
         timestamp: Date = Date()
     ) {
@@ -20,65 +18,11 @@ public struct RoutineContext: Codable, Hashable, Sendable {
         self.dayCategory = dayCategory
         self.location = location
         self.timestamp = timestamp
-        
-        // If dayType is provided, use it; otherwise derive from dayCategory
-        if let dayType = dayType {
-            self.dayType = dayType
-        } else if let dayCategory = dayCategory {
-            // Map category to legacy day type
-            switch dayCategory.id {
-            case "weekday":
-                self.dayType = .weekday
-            case "weekend":
-                self.dayType = .weekend
-            default:
-                // For custom categories, use traditional workday pattern as fallback
-                let weekday = Calendar.current.component(.weekday, from: timestamp)
-                self.dayType = (weekday == 1 || weekday == 7) ? .weekend : .weekday
-            }
-        } else {
-            self.dayType = DayType.from(date: timestamp)
-        }
     }
     
-    /// Legacy initializer for backwards compatibility
-    public init(
-        timeSlot: TimeSlot,
-        dayType: DayType,
-        location: LocationType,
-        timestamp: Date = Date()
-    ) {
-        self.timeSlot = timeSlot
-        self.dayType = dayType
-        self.location = location
-        self.timestamp = timestamp
-        
-        // Map dayType to dayCategory for consistency
-        switch dayType {
-        case .weekday:
-            self.dayCategory = .weekday
-        case .weekend:
-            self.dayCategory = .weekend
-        }
-    }
-    
-    /// Create context from current conditions
-    public static func current(location: LocationType = .unknown) -> RoutineContext {
-        let now = Date()
-        
-        // For now, use legacy system to avoid main actor issues
-        // TODO: Consider making this async in the future
-        return RoutineContext(
-            timeSlot: TimeSlot.from(date: now),
-            dayType: DayType.from(date: now),
-            location: location,
-            timestamp: now
-        )
-    }
-    
-    /// Create context from current conditions with day category (main actor required)
+    /// Create context from current conditions (main actor required)
     @MainActor
-    public static func currentWithCategory(location: LocationType = .unknown) -> RoutineContext {
+    public static func current(location: LocationType = .unknown) -> RoutineContext {
         let now = Date()
         let categoryManager = DayCategoryManager.shared
         let dayCategory = categoryManager.category(for: now)
@@ -89,21 +33,6 @@ public struct RoutineContext: Codable, Hashable, Sendable {
             location: location,
             timestamp: now
         )
-    }
-    
-    /// Get the effective day category (prefers dayCategory, falls back to mapping dayType)
-    public var effectiveDayCategory: DayCategory {
-        if let dayCategory = dayCategory {
-            return dayCategory
-        }
-        
-        // Map legacy dayType to category
-        switch dayType {
-        case .weekday:
-            return .weekday
-        case .weekend:
-            return .weekend
-        }
     }
 }
 
@@ -168,41 +97,6 @@ public enum TimeSlot: String, Codable, CaseIterable, Sendable {
     }
 }
 
-/// Day types for routine scheduling
-public enum DayType: String, Codable, CaseIterable, Sendable {
-    case weekday = "weekday"
-    case weekend = "weekend"
-    
-    /// Display name for the day type
-    public var displayName: String {
-        switch self {
-        case .weekday: return "Weekday"
-        case .weekend: return "Weekend"
-        }
-    }
-    
-    /// Icon for the day type
-    public var icon: String {
-        switch self {
-        case .weekday: return "briefcase"
-        case .weekend: return "house"
-        }
-    }
-    
-    /// Determine day type from a date
-    public static func from(date: Date) -> DayType {
-        // Fallback to standard logic for now to avoid main actor complexity
-        let calendar = Calendar.current
-        let weekday = calendar.component(.weekday, from: date)
-        
-        // Check if weekend (Saturday = 7, Sunday = 1)
-        if weekday == 1 || weekday == 7 {
-            return .weekend
-        }
-        
-        return .weekday
-    }
-}
 
 /// Location types for routine scheduling
 public enum LocationType: String, Codable, CaseIterable, Sendable {
@@ -232,46 +126,81 @@ public enum LocationType: String, Codable, CaseIterable, Sendable {
 /// Rules for when a routine template should be selected
 public struct RoutineContextRule: Codable, Hashable, Sendable {
     public var timeSlots: Set<TimeSlot>
-    public var dayTypes: Set<DayType>
-    public var locations: Set<LocationType>
+    public var dayCategoryIds: Set<String>
+    public var locationIds: Set<String> // Changed to support both built-in and custom locations
     public var priority: Int // Higher priority wins in conflicts
     
     public init(
         timeSlots: Set<TimeSlot> = [],
-        dayTypes: Set<DayType> = [],
-        locations: Set<LocationType> = [],
+        dayCategoryIds: Set<String> = [],
+        locationIds: Set<String> = [],
         priority: Int = 0
     ) {
         self.timeSlots = timeSlots
-        self.dayTypes = dayTypes
-        self.locations = locations
+        self.dayCategoryIds = dayCategoryIds
+        self.locationIds = locationIds
         self.priority = priority
     }
     
     /// Check if this rule matches the given context
-    public func matches(_ context: RoutineContext) -> Bool {
+    @MainActor
+    public func matches(_ context: RoutineContext, locationManager: LocationManager) -> Bool {
         let timeMatch = timeSlots.isEmpty || timeSlots.contains(context.timeSlot)
-        let dayMatch = dayTypes.isEmpty || dayTypes.contains(context.dayType)
-        let locationMatch = locations.isEmpty || locations.contains(context.location)
+        let dayMatch = dayCategoryIds.isEmpty || dayCategoryIds.contains(context.dayCategory.id)
+        
+        // Enhanced location matching that handles custom locations
+        let locationMatch: Bool
+        if locationIds.isEmpty {
+            locationMatch = true
+        } else {
+            // Check current extended location type
+            switch locationManager.currentExtendedLocationType {
+            case .builtin(let locationType):
+                locationMatch = locationIds.contains(locationType.rawValue)
+            case .custom(let uuid):
+                locationMatch = locationIds.contains(uuid.uuidString)
+            }
+        }
         
         return timeMatch && dayMatch && locationMatch
     }
     
     /// Calculate match score (higher is better)
-    public func matchScore(for context: RoutineContext) -> Int {
-        guard matches(context) else { return 0 }
+    @MainActor
+    public func matchScore(for context: RoutineContext, locationManager: LocationManager) -> Int {
+        guard matches(context, locationManager: locationManager) else { 
+            print("   ❌ No match for timeSlots:\(timeSlots), dayCategories:\(dayCategoryIds), locations:\(locationIds)")
+            return 0 
+        }
         
         var score = priority * 1000 // Base score from priority
+        print("   ✅ Base score (priority \(priority) * 1000): \(score)")
         
         // Add points for specific matches (not empty sets)
         if !timeSlots.isEmpty && timeSlots.contains(context.timeSlot) {
             score += 100
+            print("   ✅ Time slot match (\(context.timeSlot)): +100, total: \(score)")
         }
-        if !dayTypes.isEmpty && dayTypes.contains(context.dayType) {
+        if !dayCategoryIds.isEmpty && dayCategoryIds.contains(context.dayCategory.id) {
             score += 100
+            print("   ✅ Day category match (\(context.dayCategory.id)): +100, total: \(score)")
         }
-        if !locations.isEmpty && locations.contains(context.location) {
-            score += 100
+        if !locationIds.isEmpty {
+            // Check if current location matches
+            switch locationManager.currentExtendedLocationType {
+            case .builtin(let locationType):
+                if locationIds.contains(locationType.rawValue) {
+                    score += 100
+                    print("   ✅ Location match (\(locationType.rawValue)): +100, total: \(score)")
+                }
+            case .custom(let uuid):
+                if locationIds.contains(uuid.uuidString) {
+                    score += 100
+                    print("   ✅ Custom location match (\(uuid)): +100, total: \(score)")
+                }
+            }
+        } else {
+            print("   ⚪ Location any (empty set): +0, total: \(score)")
         }
         
         return score

@@ -13,11 +13,11 @@ struct TimeSlotEditorView: View {
         NavigationStack {
             List {
                 Section {
-                    Text("Customize when each time slot occurs to match your personal schedule.")
+                    Text(String(localized: "TimeSlotEditorView.Description", bundle: .module))
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 } header: {
-                    Text("Time Slots")
+                    Text(String(localized: "TimeSlotEditorView.TimeSlots.Title", bundle: .module))
                 }
                 
                 ForEach($timeSlots) { $timeSlot in
@@ -45,39 +45,39 @@ struct TimeSlotEditorView: View {
                     Button {
                         showingAddTimeSlot = true
                     } label: {
-                        Label("Add Custom Time Slot", systemImage: "plus.circle")
+                        Label(String(localized: "TimeSlotEditorView.AddCustomTimeSlot.Label", bundle: .module), systemImage: "plus.circle")
                     }
                 }
                 
                 Section {
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("How it works:")
+                        Text(String(localized: "TimeSlotEditorView.HowItWorks.Title", bundle: .module))
                             .font(.subheadline)
                             .fontWeight(.medium)
                         
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("• Adjust the time ranges to match your schedule")
-                            Text("• Times automatically wrap around midnight")
-                            Text("• Changes apply to all smart routine suggestions")
+                            Text(String(localized: "TimeSlotEditorView.HowItWorks.Step1", bundle: .module))
+                            Text(String(localized: "TimeSlotEditorView.HowItWorks.Step2", bundle: .module))
+                            Text(String(localized: "TimeSlotEditorView.HowItWorks.Step3", bundle: .module))
                         }
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     }
                 } header: {
-                    Text("Tips")
+                    Text(String(localized: "TimeSlotEditorView.Tips.Title", bundle: .module))
                 }
             }
-            .navigationTitle("Time Slots")
+            .navigationTitle(String(localized: "TimeSlotEditorView.NavigationTitle", bundle: .module))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
+                    Button(String(localized: "TimeSlotEditorView.Cancel.Button", bundle: .module)) {
                         dismiss()
                     }
                 }
                 
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") {
+                    Button(String(localized: "TimeSlotEditorView.Save.Button", bundle: .module)) {
                         saveTimeSlots()
                         dismiss()
                     }
@@ -129,7 +129,7 @@ private struct TimeSlotRow: View {
                             .fontWeight(.medium)
                         
                         if !timeSlot.isBuiltIn {
-                            Text("Custom")
+                            Text(String(localized: "TimeSlotEditorView.Custom.Label", bundle: .module))
                                 .font(.caption2)
                                 .foregroundStyle(.secondary)
                                 .padding(.horizontal, 8)
@@ -160,12 +160,12 @@ private struct TimeSlotRow: View {
             
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Start Time")
+                    Text(String(localized: "TimeSlotEditorView.StartTime.Label", bundle: .module))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     
                     DatePicker(
-                        "Start",
+                        String(localized: "TimeSlotEditorView.Start.DatePickerLabel", bundle: .module),
                         selection: Binding(
                             get: { timeSlot.startTime.date },
                             set: { date in
@@ -182,12 +182,12 @@ private struct TimeSlotRow: View {
                 Spacer()
                 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("End Time")
+                    Text(String(localized: "TimeSlotEditorView.EndTime.Label", bundle: .module))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     
                     DatePicker(
-                        "End",
+                        String(localized: "TimeSlotEditorView.End.DatePickerLabel", bundle: .module),
                         selection: Binding(
                             get: { timeSlot.endTime.date },
                             set: { date in
@@ -229,11 +229,11 @@ private struct AddTimeSlotView: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section("Time Slot Details") {
-                    TextField("Name", text: $name)
+                Section(String(localized: "TimeSlotEditorView.TimeSlotDetails.Section", bundle: .module)) {
+                    TextField(String(localized: "TimeSlotEditorView.Name.Placeholder", bundle: .module), text: $name)
                     
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("Icon")
+                        Text(String(localized: "TimeSlotEditorView.Icon.Title", bundle: .module))
                             .font(.subheadline)
                             .fontWeight(.medium)
                         
@@ -257,15 +257,15 @@ private struct AddTimeSlotView: View {
                     }
                 }
                 
-                Section("Time Range") {
+                Section(String(localized: "TimeSlotEditorView.TimeRange.Section", bundle: .module)) {
                     HStack {
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("Start Time")
+                            Text(String(localized: "TimeSlotEditorView.StartTime.Label", bundle: .module))
                                 .font(.subheadline)
                                 .fontWeight(.medium)
                             
                             DatePicker(
-                                "Start",
+                                String(localized: "TimeSlotEditorView.Start.DatePickerLabel", bundle: .module),
                                 selection: Binding(
                                     get: { startTime.date },
                                     set: { startTime = TimeOfDay.from(date: $0) }
@@ -279,12 +279,12 @@ private struct AddTimeSlotView: View {
                         Spacer()
                         
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("End Time")
+                            Text(String(localized: "TimeSlotEditorView.EndTime.Label", bundle: .module))
                                 .font(.subheadline)
                                 .fontWeight(.medium)
                             
                             DatePicker(
-                                "End",
+                                String(localized: "TimeSlotEditorView.End.DatePickerLabel", bundle: .module),
                                 selection: Binding(
                                     get: { endTime.date },
                                     set: { endTime = TimeOfDay.from(date: $0) }
@@ -307,17 +307,17 @@ private struct AddTimeSlotView: View {
                     }
                 }
             }
-            .navigationTitle("Add Time Slot")
+            .navigationTitle(String(localized: "TimeSlotEditorView.AddTimeSlot.NavigationTitle", bundle: .module))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
+                    Button(String(localized: "TimeSlotEditorView.Cancel.Button", bundle: .module)) {
                         dismiss()
                     }
                 }
                 
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Add") {
+                    Button(String(localized: "TimeSlotEditorView.Add.Button", bundle: .module)) {
                         let newTimeSlot = TimeSlotDefinition(
                             name: name,
                             icon: icon,

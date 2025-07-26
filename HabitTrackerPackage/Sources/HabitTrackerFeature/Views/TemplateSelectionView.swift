@@ -19,7 +19,7 @@ public struct TemplateSelectionView: View {
                 startButton
             }
             .padding()
-            .navigationTitle("Good Morning!")
+            .navigationTitle(String(localized: "TemplateSelectionView.NavigationTitle", bundle: .module))
             .navigationBarTitleDisplayMode(.large)
         }
         .onAppear {
@@ -30,11 +30,11 @@ public struct TemplateSelectionView: View {
     
     private var headerView: some View {
         VStack(spacing: 8) {
-            Text("Choose your routine")
+            Text(String(localized: "TemplateSelectionView.ChooseRoutine", bundle: .module))
                 .font(.title2)
                 .fontWeight(.medium)
             
-            Text("Select the template that fits your day")
+            Text(String(localized: "TemplateSelectionView.SelectTemplate", bundle: .module))
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
         }
@@ -61,7 +61,7 @@ public struct TemplateSelectionView: View {
         } label: {
             HStack {
                 Image(systemName: "play.fill")
-                Text("Start Routine")
+                Text(String(localized: "TemplateSelectionView.StartRoutine", bundle: .module))
             }
             .font(.headline)
             .foregroundStyle(.white)
@@ -94,7 +94,7 @@ private struct TemplateCard: View {
                         Spacer()
                         
                         if template.isDefault {
-                            Text("DEFAULT")
+                            Text(String(localized: "TemplateSelectionView.Default", bundle: .module))
                                 .font(.caption2)
                                 .fontWeight(.semibold)
                                 .foregroundStyle(.white)
@@ -111,7 +111,7 @@ private struct TemplateCard: View {
                     }
                     
                     HStack {
-                        Label("\(template.activeHabitsCount) habits", systemImage: "list.bullet")
+                        Label(String(format: String(localized: "TemplateSelectionView.HabitsCount", bundle: .module), template.activeHabitsCount), systemImage: "list.bullet")
                         
                         Spacer()
                         

@@ -18,7 +18,25 @@ public final class RoutineService {
     public let smartSelector = SmartRoutineSelector()
     
     public init() {
+        loadTemplates()
+    }
+    
+    /// Load templates from persistence, or create sample templates if none exist
+    private func loadTemplates() {
+        if let data = UserDefaults.standard.data(forKey: "RoutineTemplates") {
+            do {
+                templates = try JSONDecoder().decode([RoutineTemplate].self, from: data)
+                print("✅ Loaded \(templates.count) templates from persistence")
+                return
+            } catch {
+                print("❌ Failed to load templates from persistence: \(error)")
+            }
+        }
+        
+        // First time launch or failed to load - create sample templates
+        print("🆕 Creating sample templates (first launch)")
         loadSampleTemplates()
+        persistTemplates()
     }
     
     /// Load predefined sample templates
@@ -26,8 +44,20 @@ public final class RoutineService {
         templates = [
             createOfficeTemplate(),
             createHomeOfficeTemplate(),
-            createWeekendTemplate()
+            createWeekendTemplate(),
+            createAfternoonTemplate()
         ]
+    }
+    
+    /// Persist templates to UserDefaults
+    private func persistTemplates() {
+        do {
+            let data = try JSONEncoder().encode(templates)
+            UserDefaults.standard.set(data, forKey: "RoutineTemplates")
+            print("✅ Persisted \(templates.count) templates")
+        } catch {
+            print("❌ Failed to persist templates: \(error)")
+        }
     }
     
     /// Start a new routine session with the given template
@@ -68,8 +98,9 @@ public final class RoutineService {
     }
     
     /// Get smart template based on current context
-    public var smartTemplate: (template: RoutineTemplate?, reason: String) {
-        smartSelector.selectBestTemplate(from: templates)
+    @MainActor
+    public func getSmartTemplate() async -> (template: RoutineTemplate?, reason: String) {
+        await smartSelector.selectBestTemplate(from: templates)
     }
     
     /// Add a new template
@@ -87,6 +118,8 @@ public final class RoutineService {
                 }
             }
         }
+        
+        persistTemplates()
     }
     
     /// Update an existing template
@@ -100,12 +133,15 @@ public final class RoutineService {
                     templates[i].isDefault = false
                 }
             }
+            
+            persistTemplates()
         }
     }
     
     /// Delete a template
     public func deleteTemplate(withId id: UUID) {
         templates.removeAll { $0.id == id }
+        persistTemplates()
     }
     
     /// Handle selection of a conditional habit option
@@ -230,8 +266,8 @@ extension RoutineService {
         // Office routine is for weekday mornings at the office
         let contextRule = RoutineContextRule(
             timeSlots: [.earlyMorning, .morning],
-            dayTypes: [.weekday],
-            locations: [.office],
+            dayCategoryIds: ["weekday"],
+            locationIds: ["office"],
             priority: 2
         )
         
@@ -293,8 +329,8 @@ extension RoutineService {
         // Home office routine is for weekday mornings at home
         let contextRule = RoutineContextRule(
             timeSlots: [.earlyMorning, .morning, .lateMorning],
-            dayTypes: [.weekday],
-            locations: [.home],
+            dayCategoryIds: ["weekday"],
+            locationIds: ["home"],
             priority: 2
         )
         
@@ -303,7 +339,7 @@ extension RoutineService {
             description: "Morning routine for working from home",
             habits: habits,
             color: "#34C759",
-            isDefault: true,
+            isDefault: false,
             contextRule: contextRule
         )
     }
@@ -345,9 +381,9 @@ extension RoutineService {
         
         // Weekend routine is for any time on weekends, any location
         let contextRule = RoutineContextRule(
-            timeSlots: [.earlyMorning, .morning, .lateMorning],
-            dayTypes: [.weekend],
-            locations: [], // Any location
+            timeSlots: [.earlyMorning, .morning, .lateMorning, .afternoon, .evening, .night],
+            dayCategoryIds: ["weekend"],
+            locationIds: [], // Any location
             priority: 1
         )
         
@@ -356,6 +392,63 @@ extension RoutineService {
             description: "Relaxed weekend morning routine",
             habits: habits,
             color: "#FDCB6E",
+            contextRule: contextRule
+        )
+    }
+    
+    /// Create afternoon routine template
+    private func createAfternoonTemplate() -> RoutineTemplate {
+        let habits = [
+            Habit(
+                name: "Review Daily Goals",
+                type: .checkbox,
+                color: "#007AFF",
+                order: 1
+            ),
+            Habit(
+                name: "Afternoon Stretch",
+                type: .timer(defaultDuration: 300),
+                color: "#34C759",
+                order: 2
+            ),
+            Habit(
+                name: "Healthy Snack",
+                type: .checkbox,
+                color: "#FF9500",
+                order: 3
+            ),
+            Habit(
+                name: "Focus Time",
+                type: .timer(defaultDuration: 1500),
+                color: "#5856D6",
+                order: 4
+            ),
+            Habit(
+                name: "Evening Planning",
+                type: .checkboxWithSubtasks(subtasks: [
+                    Subtask(name: "Review tomorrow's calendar"),
+                    Subtask(name: "Set top 3 priorities"),
+                    Subtask(name: "Prepare for meetings")
+                ]),
+                color: "#FF3B30",
+                order: 5
+            )
+        ]
+        
+        // Afternoon routine is for weekday and weekend afternoons/evenings at any location
+        let contextRule = RoutineContextRule(
+            timeSlots: [.afternoon, .evening],
+            dayCategoryIds: ["weekday", "weekend"],
+            locationIds: [], // Any location
+            priority: 3 // Higher priority than weekend template
+        )
+        
+        return RoutineTemplate(
+            name: "Afternoon Focus",
+            description: "Afternoon productivity and evening prep",
+            habits: habits,
+            color: "#FF9500",
+            isDefault: false,
             contextRule: contextRule
         )
     }

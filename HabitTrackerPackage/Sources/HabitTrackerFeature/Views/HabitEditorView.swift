@@ -87,18 +87,18 @@ public struct HabitEditorView: View {
                 VStack(spacing: 20) {
                 // Basic info
                 VStack(alignment: .leading, spacing: 16) {
-                    Text("Basic Information")
+                    Text(String(localized: "HabitEditorView.BasicInformation.Title", bundle: .module))
                         .font(.headline)
                         .foregroundStyle(.primary)
                     
-                    TextField("Habit Name", text: $habitName)
+                    TextField(String(localized: "HabitEditorView.BasicInformation.HabitName.Placeholder", bundle: .module), text: $habitName)
                         .textFieldStyle(.roundedBorder)
                     
-                    Toggle("Optional Habit", isOn: $isOptional)
+                    Toggle(String(localized: "HabitEditorView.BasicInformation.OptionalHabit.Label", bundle: .module), isOn: $isOptional)
                     
                     // Color picker
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("Color")
+                        Text(String(localized: "HabitEditorView.BasicInformation.Color.Label", bundle: .module))
                             .font(.caption)
                             .foregroundStyle(.secondary)
                         
@@ -130,10 +130,10 @@ public struct HabitEditorView: View {
                 
                 // Notes
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Additional Notes")
+                    Text(String(localized: "HabitEditorView.BasicInformation.Notes.Title", bundle: .module))
                         .font(.headline)
                     
-                    TextField("Notes (optional)", text: $notes, axis: .vertical)
+                    TextField(String(localized: "HabitEditorView.BasicInformation.Notes.Placeholder", bundle: .module), text: $notes, axis: .vertical)
                         .lineLimit(2...4)
                         .textFieldStyle(.roundedBorder)
                 }
@@ -142,17 +142,17 @@ public struct HabitEditorView: View {
                 }
                 .padding()
             }
-            .navigationTitle("Edit Habit")
+            .navigationTitle(String(localized: "HabitEditorView.NavigationTitle", bundle: .module))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
+                    Button(String(localized: "HabitEditorView.Cancel.Button", bundle: .module)) {
                         dismiss()
                     }
                 }
                 
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") {
+                    Button(String(localized: "HabitEditorView.Save.Button", bundle: .module)) {
                         saveHabit()
                     }
                     .fontWeight(.semibold)
@@ -206,7 +206,7 @@ public struct HabitEditorView: View {
                 
             case .conditional:
                 VStack(spacing: 12) {
-                    Text("Use the question editor to modify this habit")
+                    Text(String(localized: "HabitEditorView.Question.Instructions", bundle: .module))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .italic()
@@ -217,7 +217,7 @@ public struct HabitEditorView: View {
                         existingConditionalDepth: 0,
                         onSave: onSave
                     )) {
-                        Label("Open Question Editor", systemImage: "questionmark.circle")
+                        Label(String(localized: "HabitEditorView.Question.OpenEditor.Label", bundle: .module), systemImage: "questionmark.circle")
                             .font(.subheadline)
                             .foregroundStyle(.blue)
                     }
@@ -231,25 +231,25 @@ public struct HabitEditorView: View {
     private var habitTypeTitle: String {
         switch habit.type {
         case .checkbox:
-            return "Simple Task"
+            return String(localized: "HabitType.Checkbox.Title", bundle: .module)
         case .checkboxWithSubtasks:
-            return "Subtasks"
+            return String(localized: "HabitType.CheckboxWithSubtasks.Title", bundle: .module)
         case .timer:
-            return "Timer Settings"
+            return String(localized: "HabitType.Timer.Title", bundle: .module)
         case .restTimer:
-            return "Rest Timer"
+            return String(localized: "HabitType.RestTimer.Title", bundle: .module)
         case .appLaunch:
-            return "App Launch"
+            return String(localized: "HabitType.AppLaunch.Title", bundle: .module)
         case .website:
-            return "Website"
+            return String(localized: "HabitType.Website.Title", bundle: .module)
         case .counter:
-            return "Checklist Items"
+            return String(localized: "HabitType.Counter.Title", bundle: .module)
         case .measurement:
-            return "Measurement"
+            return String(localized: "HabitType.Measurement.Title", bundle: .module)
         case .guidedSequence:
-            return "Sequence Steps"
+            return String(localized: "HabitType.Sequence.Title", bundle: .module)
         case .conditional:
-            return "Question Settings"
+            return String(localized: "HabitType.Question.Title", bundle: .module)
         }
     }
     
@@ -262,7 +262,7 @@ public struct HabitEditorView: View {
     private var timerSettings: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("Duration")
+                Text(String(localized: "HabitEditorView.Timer.Duration.Label", bundle: .module))
                 Spacer()
                 Text(timerDuration.formattedDuration)
                     .font(.subheadline)
@@ -271,7 +271,7 @@ public struct HabitEditorView: View {
             
             HStack(spacing: 12) {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Minutes")
+                    Text(String(localized: "HabitEditorView.Timer.Minutes.Label", bundle: .module))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     
@@ -288,7 +288,7 @@ public struct HabitEditorView: View {
                 }
                 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Seconds")
+                    Text(String(localized: "HabitEditorView.Timer.Seconds.Label", bundle: .module))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     
@@ -309,7 +309,7 @@ public struct HabitEditorView: View {
             
             // Quick preset buttons
             VStack(alignment: .leading, spacing: 8) {
-                Text("Quick presets")
+                Text(String(localized: "HabitEditorView.Timer.QuickPresets.Title", bundle: .module))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 
@@ -355,7 +355,7 @@ public struct HabitEditorView: View {
     // Rest timer settings
     private var restTimerSettings: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Toggle("Set target duration", isOn: Binding(
+            Toggle(String(localized: "HabitEditorView.RestTimer.SetTarget.Toggle", bundle: .module), isOn: Binding(
                 get: { restTimerTarget != nil },
                 set: { enabled in
                     restTimerTarget = enabled ? 120 : nil
@@ -365,7 +365,7 @@ public struct HabitEditorView: View {
             if let target = restTimerTarget {
                 VStack(alignment: .leading, spacing: 12) {
                     HStack {
-                        Text("Target")
+                        Text(String(localized: "HabitEditorView.RestTimer.Target.Label", bundle: .module))
                         Spacer()
                         Text(target.formattedDuration)
                             .font(.subheadline)
@@ -374,7 +374,7 @@ public struct HabitEditorView: View {
                     
                     HStack(spacing: 12) {
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("Minutes")
+                            Text(String(localized: "HabitEditorView.Timer.Minutes.Label", bundle: .module))
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                             
@@ -391,7 +391,7 @@ public struct HabitEditorView: View {
                         }
                         
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("Seconds")
+                            Text(String(localized: "HabitEditorView.Timer.Seconds.Label", bundle: .module))
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                             
@@ -412,7 +412,7 @@ public struct HabitEditorView: View {
                     
                     // Quick preset buttons for rest timer
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("Quick presets")
+                        Text(String(localized: "HabitEditorView.Timer.QuickPresets.Title", bundle: .module))
                             .font(.caption)
                             .foregroundStyle(.secondary)
                         
@@ -458,37 +458,37 @@ public struct HabitEditorView: View {
     // App launch settings
     private var appLaunchSettings: some View {
         VStack(alignment: .leading, spacing: 12) {
-            TextField("Display Name", text: $appName)
+            TextField(String(localized: "HabitEditorView.AppLaunch.DisplayName.Placeholder", bundle: .module), text: $appName)
                 .textFieldStyle(.roundedBorder)
             
             VStack(alignment: .leading, spacing: 8) {
-                Text("Launch Method")
+                Text(String(localized: "HabitEditorView.AppLaunch.LaunchMethod.Label", bundle: .module))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 
-                Picker("Launch Method", selection: $launchMethod) {
-                    Text("Shortcut").tag(LaunchMethod.shortcut)
-                    Text("URL Scheme").tag(LaunchMethod.urlScheme)
+                Picker(String(localized: "HabitEditorView.AppLaunch.LaunchMethod.Picker.Label", bundle: .module), selection: $launchMethod) {
+                    Text(String(localized: "HabitEditorView.AppLaunch.Shortcut.Label", bundle: .module)).tag(LaunchMethod.shortcut)
+                    Text(String(localized: "HabitEditorView.AppLaunch.URLScheme.Label", bundle: .module)).tag(LaunchMethod.urlScheme)
                 }
                 .pickerStyle(.segmented)
                 
                 if launchMethod == .shortcut {
                     VStack(alignment: .leading, spacing: 4) {
-                        TextField("Shortcut Name", text: $appBundleId)
+                        TextField(String(localized: "HabitEditorView.AppLaunch.ShortcutName.Placeholder", bundle: .module), text: $appBundleId)
                             .textFieldStyle(.roundedBorder)
                         
-                        Text("Enter the exact name of your shortcut")
+                        Text(String(localized: "HabitEditorView.AppLaunch.ShortcutName.Instructions", bundle: .module))
                             .font(.caption2)
                             .foregroundStyle(.secondary)
                     }
                 } else {
                     VStack(alignment: .leading, spacing: 4) {
-                        TextField("URL Scheme", text: $appBundleId)
+                        TextField(String(localized: "HabitEditorView.AppLaunch.URLScheme.Placeholder", bundle: .module), text: $appBundleId)
                             .textInputAutocapitalization(.never)
                             .autocorrectionDisabled()
                             .textFieldStyle(.roundedBorder)
                         
-                        Text("Examples: instagram://, spotify://, todoist://")
+                        Text(String(localized: "HabitEditorView.AppLaunch.URLScheme.Examples", bundle: .module))
                             .font(.caption2)
                             .foregroundStyle(.secondary)
                     }
@@ -500,8 +500,8 @@ public struct HabitEditorView: View {
     // Website settings
     private var websiteSettings: some View {
         Group {
-            TextField("Title", text: $websiteTitle)
-            TextField("URL", text: $websiteURL)
+            TextField(String(localized: "HabitEditorView.Website.Title.Placeholder", bundle: .module), text: $websiteTitle)
+            TextField(String(localized: "HabitEditorView.Website.URL.Placeholder", bundle: .module), text: $websiteURL)
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled()
                 .keyboardType(.URL)
@@ -511,10 +511,10 @@ public struct HabitEditorView: View {
     // Measurement settings
     private var measurementSettings: some View {
         Group {
-            TextField("Unit (kg, lbs, bpm, etc.)", text: $measurementUnit)
+            TextField(String(localized: "HabitEditorView.Measurement.Unit.Placeholder", bundle: .module), text: $measurementUnit)
             
             HStack {
-                Toggle("Set target", isOn: Binding(
+                Toggle(String(localized: "HabitEditorView.Measurement.SetTarget.Toggle", bundle: .module), isOn: Binding(
                     get: { measurementTarget != nil },
                     set: { enabled in
                         measurementTarget = enabled ? 0 : nil
@@ -522,7 +522,7 @@ public struct HabitEditorView: View {
                 ))
                 
                 if measurementTarget != nil {
-                    TextField("Target", value: Binding(
+                    TextField(String(localized: "HabitEditorView.Measurement.Target.Placeholder", bundle: .module), value: Binding(
                         get: { measurementTarget ?? 0 },
                         set: { measurementTarget = $0 }
                     ), format: .number)
@@ -538,14 +538,14 @@ public struct HabitEditorView: View {
         let _ = print("🔍 subtasksEditor: Rendering with \(subtasks.count) subtasks")
         return VStack(alignment: .leading, spacing: 8) {
             if subtasks.isEmpty {
-                Text("No subtasks yet")
+                Text(String(localized: "HabitEditorView.Subtasks.NoSubtasks.Message", bundle: .module))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .italic()
             } else {
                 ForEach(subtasks) { subtask in
                     HStack {
-                        TextField("Subtask", text: Binding(
+                        TextField(String(localized: "HabitEditorView.Subtasks.Subtask.Placeholder", bundle: .module), text: Binding(
                             get: { subtask.name },
                             set: { newName in
                                 if let index = subtasks.firstIndex(where: { $0.id == subtask.id }) {
@@ -571,13 +571,13 @@ public struct HabitEditorView: View {
             
             Button {
                 withAnimation {
-                    let newSubtask = Subtask(name: "New subtask")
+                    let newSubtask = Subtask(name: String(localized: "HabitEditorView.Subtasks.NewSubtask.Default", bundle: .module))
                     print("🔍 subtasksEditor: Adding new subtask with id \(newSubtask.id)")
                     subtasks.append(newSubtask)
                     print("🔍 subtasksEditor: subtasks.count is now \(subtasks.count)")
                 }
             } label: {
-                Label("Add Subtask", systemImage: "plus.circle.fill")
+                Label(String(localized: "HabitEditorView.Subtasks.AddSubtask.Label", bundle: .module), systemImage: "plus.circle.fill")
                     .font(.subheadline)
                     .foregroundStyle(.blue)
             }
@@ -588,11 +588,11 @@ public struct HabitEditorView: View {
     // Counter items editor
     private var counterItemsEditor: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Items to track:")
+            Text(String(localized: "HabitEditorView.Counter.ItemsToTrack.Title", bundle: .module))
                 .font(.caption)
                 .foregroundStyle(.secondary)
             
-            TextField("Enter items separated by commas", text: Binding(
+            TextField(String(localized: "HabitEditorView.Counter.Items.Placeholder", bundle: .module), text: Binding(
                 get: { counterItems.joined(separator: ", ") },
                 set: { newValue in
                     counterItems = newValue.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }
@@ -601,7 +601,7 @@ public struct HabitEditorView: View {
             .lineLimit(3...6)
             .textFieldStyle(.roundedBorder)
             
-            Text("Separate multiple items with commas")
+            Text(String(localized: "HabitEditorView.Counter.Instructions", bundle: .module))
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
         }
@@ -614,7 +614,7 @@ public struct HabitEditorView: View {
             ForEach(sequenceSteps) { step in
                 VStack(alignment: .leading, spacing: 4) {
                     HStack {
-                        TextField("Step name", text: Binding(
+                        TextField(String(localized: "HabitEditorView.Sequence.StepName.Placeholder", bundle: .module), text: Binding(
                             get: { step.name },
                             set: { newName in
                                 if let index = sequenceSteps.firstIndex(where: { $0.id == step.id }) {
@@ -624,7 +624,7 @@ public struct HabitEditorView: View {
                         ))
                         
                         HStack(spacing: 4) {
-                            TextField("Duration", value: Binding(
+                            TextField(String(localized: "HabitEditorView.Sequence.Duration.Placeholder", bundle: .module), value: Binding(
                                 get: { Int(step.duration) },
                                 set: { newValue in
                                     if let index = sequenceSteps.firstIndex(where: { $0.id == step.id }) {
@@ -636,7 +636,7 @@ public struct HabitEditorView: View {
                             .textFieldStyle(.roundedBorder)
                             .frame(width: 60)
                             
-                            Text("sec")
+                            Text(String(localized: "HabitEditorView.Sequence.Seconds.Label", bundle: .module))
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
@@ -651,7 +651,7 @@ public struct HabitEditorView: View {
                         }
                     }
                     
-                    TextField("Instructions (optional)", text: Binding(
+                    TextField(String(localized: "HabitEditorView.Sequence.Instructions.Placeholder", bundle: .module), text: Binding(
                         get: { step.instructions ?? "" },
                         set: { newInstructions in
                             if let index = sequenceSteps.firstIndex(where: { $0.id == step.id }) {
@@ -667,10 +667,10 @@ public struct HabitEditorView: View {
             
             Button {
                 withAnimation {
-                    sequenceSteps.append(SequenceStep(name: "New step", duration: 30))
+                    sequenceSteps.append(SequenceStep(name: String(localized: "HabitEditorView.Sequence.NewStep.Default", bundle: .module), duration: 30))
                 }
             } label: {
-                Label("Add Step", systemImage: "plus.circle.fill")
+                Label(String(localized: "HabitEditorView.Sequence.AddStep.Label", bundle: .module), systemImage: "plus.circle.fill")
                     .font(.subheadline)
             }
         }

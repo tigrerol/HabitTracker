@@ -121,7 +121,7 @@ public struct DayCategory: Codable, Identifiable, Hashable, Sendable {
     
     // MARK: - Color Encoding/Decoding
     
-    private static func encodeColor(_ color: Color) -> Data {
+    internal static func encodeColor(_ color: Color) -> Data {
         do {
             let resolved = color.resolve(in: .init())
             let colorInfo = ColorInfo(
@@ -138,7 +138,7 @@ public struct DayCategory: Codable, Identifiable, Hashable, Sendable {
         }
     }
     
-    private static func decodeColor(from data: Data) -> Color {
+    internal static func decodeColor(from data: Data) -> Color {
         do {
             let colorInfo = try JSONDecoder().decode(ColorInfo.self, from: data)
             return Color(
@@ -160,44 +160,6 @@ public struct DayCategory: Codable, Identifiable, Hashable, Sendable {
     }
 }
 
-/// Legacy day type definition for backwards compatibility
-public struct DayTypeDefinition: Codable, Identifiable, Sendable {
-    public let id: String
-    public var name: String
-    public var icon: String
-    public let isBuiltIn: Bool
-    
-    public init(
-        id: String = UUID().uuidString,
-        name: String,
-        icon: String,
-        isBuiltIn: Bool = false
-    ) {
-        self.id = id
-        self.name = name
-        self.icon = icon
-        self.isBuiltIn = isBuiltIn
-    }
-    
-    /// Create from DayType enum (for backwards compatibility)
-    public init(type: DayType) {
-        self.id = type.rawValue
-        self.name = type.displayName
-        self.icon = type.icon
-        self.isBuiltIn = true
-    }
-    
-    /// Display name
-    public var displayName: String {
-        name
-    }
-    
-    /// Default day type definitions
-    public static let defaults: [DayTypeDefinition] = [
-        DayTypeDefinition(type: .weekday),
-        DayTypeDefinition(type: .weekend)
-    ]
-}
 
 /// Enhanced day category settings with flexible categories
 public struct DayCategorySettings: Codable, Sendable {
@@ -304,88 +266,196 @@ public struct DayCategorySettings: Codable, Sendable {
     public static let `default` = DayCategorySettings()
 }
 
-/// Legacy day type settings for backwards compatibility
-public struct DayTypeSettings: Codable, Sendable {
-    private var weekdayTypes: [Weekday: DayType]
-    private var customDayTypes: [DayTypeDefinition]
+
+/// Flexible location category that users can customize
+public struct LocationCategory: Codable, Identifiable, Hashable, Sendable {
+    public let id: String
+    public var name: String
+    public var icon: String
+    public var colorData: Data
+    public let isBuiltIn: Bool
+    
+    public init(
+        id: String = UUID().uuidString,
+        name: String,
+        icon: String,
+        color: Color = .blue,
+        isBuiltIn: Bool = false
+    ) {
+        self.id = id
+        self.name = name
+        self.icon = icon
+        self.colorData = DayCategory.encodeColor(color)
+        self.isBuiltIn = isBuiltIn
+    }
+    
+    /// Color property computed from colorData
+    public var color: Color {
+        DayCategory.decodeColor(from: colorData)
+    }
+    
+    /// Update color
+    public mutating func setColor(_ color: Color) {
+        colorData = DayCategory.encodeColor(color)
+    }
+    
+    /// Display name
+    public var displayName: String {
+        name
+    }
+    
+    /// Built-in categories for backwards compatibility
+    public static let home = LocationCategory(
+        id: "home",
+        name: "Home",
+        icon: "house.fill",
+        color: .green,
+        isBuiltIn: true
+    )
+    
+    public static let office = LocationCategory(
+        id: "office",
+        name: "Office", 
+        icon: "building.2.fill",
+        color: .blue,
+        isBuiltIn: true
+    )
+    
+    public static let unknown = LocationCategory(
+        id: "unknown",
+        name: "Unknown",
+        icon: "location.slash",
+        color: .gray,
+        isBuiltIn: true
+    )
+    
+    /// Default categories
+    public static let defaults: [LocationCategory] = [home, office, unknown]
+}
+
+/// Enhanced location category settings with flexible categories
+public struct LocationCategorySettings: Codable, Sendable {
+    private var customCategories: [LocationCategory]
     
     public init() {
-        weekdayTypes = [:]
-        customDayTypes = []
+        customCategories = LocationCategory.defaults
     }
     
-    /// Get the day type for a specific weekday
-    public func dayType(for weekday: Weekday) -> DayType {
-        weekdayTypes[weekday] ?? Self.defaultDayType(for: weekday)
+    /// Get all available categories (built-in + custom)
+    public func getAllCategories() -> [LocationCategory] {
+        customCategories
     }
     
-    /// Set the day type for a specific weekday
-    public mutating func setDayType(_ dayType: DayType, for weekday: Weekday) {
-        weekdayTypes[weekday] = dayType
-    }
-    
-    /// Get all custom day types
-    public func getAllCustomDayTypes() -> [DayTypeDefinition] {
-        customDayTypes
-    }
-    
-    /// Add a custom day type
-    public mutating func addCustomDayType(_ dayType: DayTypeDefinition) {
-        customDayTypes.append(dayType)
-    }
-    
-    /// Update a custom day type
-    public mutating func updateCustomDayType(_ updatedDayType: DayTypeDefinition) {
-        if let index = customDayTypes.firstIndex(where: { $0.id == updatedDayType.id }) {
-            customDayTypes[index] = updatedDayType
+    /// Add a custom category
+    public mutating func addCustomCategory(_ category: LocationCategory) {
+        // Prevent duplicate IDs
+        if !customCategories.contains(where: { $0.id == category.id }) {
+            customCategories.append(category)
         }
     }
     
-    /// Delete a custom day type
-    public mutating func deleteCustomDayType(withId id: String) {
-        customDayTypes.removeAll { $0.id == id && !$0.isBuiltIn }
+    /// Update a custom category
+    public mutating func updateCustomCategory(_ updatedCategory: LocationCategory) {
+        if let index = customCategories.firstIndex(where: { $0.id == updatedCategory.id }) {
+            customCategories[index] = updatedCategory
+        }
     }
     
-    /// Get day type for current day
-    public func getCurrentDayType() -> DayType {
-        dayType(for: Weekday.current())
+    /// Delete a custom category
+    public mutating func deleteCustomCategory(withId id: String) {
+        // Don't delete built-in categories
+        customCategories.removeAll { $0.id == id && !$0.isBuiltIn }
     }
     
-    /// Get day type for a specific date
-    public func dayType(for date: Date) -> DayType {
-        let weekday = Calendar.current.component(.weekday, from: date)
-        let weekdayEnum = Weekday.from(calendarWeekday: weekday)
-        return dayType(for: weekdayEnum)
+    /// Get category by ID
+    public func category(withId id: String) -> LocationCategory? {
+        customCategories.first { $0.id == id }
     }
     
-    /// Summary of current settings
-    public var summary: String {
-        let weekdays = Weekday.allCases.filter { dayType(for: $0) == .weekday }
-        let weekends = Weekday.allCases.filter { dayType(for: $0) == .weekend }
+    /// Standard settings (Home, Office, Unknown)
+    public static let `default` = LocationCategorySettings()
+}
+
+/// Enhanced manager for flexible location categories
+@Observable @MainActor
+public final class LocationCategoryManager: Sendable {
+    public static let shared = LocationCategoryManager()
+    
+    private var settings: LocationCategorySettings = .default
+    
+    private init() {
+        loadSettings()
+    }
+    
+    /// Get current location category settings
+    public func getLocationCategorySettings() -> LocationCategorySettings {
+        settings
+    }
+    
+    /// Update location category settings
+    public func updateLocationCategorySettings(_ newSettings: LocationCategorySettings) {
+        settings = newSettings
+        persistSettings()
+    }
+    
+    /// Get all available categories
+    public func getAllCategories() -> [LocationCategory] {
+        settings.getAllCategories()
+    }
+    
+    /// Get category by ID
+    public func category(withId id: String) -> LocationCategory? {
+        settings.category(withId: id)
+    }
+    
+    /// Add a custom category
+    public func addCustomCategory(_ category: LocationCategory) {
+        settings.addCustomCategory(category)
+        persistSettings()
+    }
+    
+    /// Update a custom category
+    public func updateCustomCategory(_ updatedCategory: LocationCategory) {
+        settings.updateCustomCategory(updatedCategory)
+        persistSettings()
+    }
+    
+    /// Delete a custom category
+    public func deleteCustomCategory(withId id: String) {
+        settings.deleteCustomCategory(withId: id)
+        persistSettings()
+    }
+    
+    /// Reset to default settings
+    public func resetToDefaults() {
+        settings = .default
+        persistSettings()
+    }
+    
+    // MARK: - Persistence
+    
+    private func loadSettings() {
+        if let data = UserDefaults.standard.data(forKey: "LocationCategorySettings") {
+            do {
+                settings = try JSONDecoder().decode(LocationCategorySettings.self, from: data)
+                return
+            } catch {
+                print("Failed to load location category settings: \(error)")
+            }
+        }
         
-        if weekdays.isEmpty {
-            return "All days are weekends"
-        } else if weekends.isEmpty {
-            return "All days are weekdays"
-        } else {
-            let weekdayNames = weekdays.map(\.shortName).joined(separator: ", ")
-            let weekendNames = weekends.map(\.shortName).joined(separator: ", ")
-            return "Work: \(weekdayNames) • Rest: \(weekendNames)"
-        }
+        // Fallback to defaults
+        settings = .default
     }
     
-    /// Default day type for a weekday (standard Mon-Fri work schedule)
-    private static func defaultDayType(for weekday: Weekday) -> DayType {
-        switch weekday {
-        case .sunday, .saturday:
-            return .weekend
-        case .monday, .tuesday, .wednesday, .thursday, .friday:
-            return .weekday
+    private func persistSettings() {
+        do {
+            let data = try JSONEncoder().encode(settings)
+            UserDefaults.standard.set(data, forKey: "LocationCategorySettings")
+        } catch {
+            print("Failed to save location category settings: \(error)")
         }
     }
-    
-    /// Standard settings (Mon-Fri weekdays, Sat-Sun weekend)
-    public static let `default` = DayTypeSettings()
 }
 
 /// Enhanced manager for flexible day categories
@@ -460,22 +530,6 @@ public final class DayCategoryManager: Sendable {
         persistSettings()
     }
     
-    // MARK: - Legacy support for DayType
-    
-    /// Get legacy day type for backwards compatibility
-    public func getDayType(for date: Date) -> DayType {
-        let category = settings.category(for: date)
-        switch category.id {
-        case "weekday":
-            return .weekday
-        case "weekend":
-            return .weekend
-        default:
-            // For custom categories, map based on traditional workday pattern
-            let weekday = Calendar.current.component(.weekday, from: date)
-            return (weekday == 1 || weekday == 7) ? .weekend : .weekday
-        }
-    }
     
     // MARK: - Persistence
     
@@ -490,17 +544,6 @@ public final class DayCategoryManager: Sendable {
             }
         }
         
-        // Try to migrate from old format
-        if let data = UserDefaults.standard.data(forKey: "CustomDayTypeSettings") {
-            do {
-                let oldSettings = try JSONDecoder().decode(DayTypeSettings.self, from: data)
-                settings = migrateLegacySettings(oldSettings)
-                persistSettings() // Save migrated data
-                return
-            } catch {
-                print("Failed to migrate legacy day type settings: \(error)")
-            }
-        }
         
         // Fallback to defaults
         settings = .default
@@ -515,134 +558,5 @@ public final class DayCategoryManager: Sendable {
         }
     }
     
-    private func migrateLegacySettings(_ legacySettings: DayTypeSettings) -> DayCategorySettings {
-        var newSettings = DayCategorySettings.default
-        
-        // Map legacy day type assignments to new categories
-        for weekday in Weekday.allCases {
-            let dayType = legacySettings.dayType(for: weekday)
-            let categoryId = dayType == .weekday ? "weekday" : "weekend"
-            newSettings.setCategory(categoryId, for: weekday)
-        }
-        
-        return newSettings
-    }
 }
 
-/// Legacy manager for backwards compatibility
-public final class DayTypeManager: ObservableObject, @unchecked Sendable {
-    public static let shared = DayTypeManager()
-    
-    @Published private var settings: DayTypeSettings = .default
-    private let queue = DispatchQueue(label: "DayTypeManager", qos: .userInitiated)
-    
-    private init() {
-        loadSettings()
-    }
-    
-    /// Get current day type settings
-    public func getDayTypeSettings() -> DayTypeSettings {
-        queue.sync { settings }
-    }
-    
-    /// Update day type settings
-    public func updateDayTypeSettings(_ newSettings: DayTypeSettings) {
-        queue.sync {
-            settings = newSettings
-        }
-        DispatchQueue.main.async {
-            self.persistSettings()
-        }
-    }
-    
-    /// Get the current day type based on current date
-    public func getCurrentDayType() -> DayType {
-        let currentSettings = queue.sync { settings }
-        return currentSettings.getCurrentDayType()
-    }
-    
-    /// Get day type for a specific date
-    public func dayType(for date: Date) -> DayType {
-        let currentSettings = queue.sync { settings }
-        return currentSettings.dayType(for: date)
-    }
-    
-    /// Get all custom day types
-    public func getAllCustomDayTypes() -> [DayTypeDefinition] {
-        let currentSettings = queue.sync { settings }
-        return currentSettings.getAllCustomDayTypes()
-    }
-    
-    /// Add a custom day type
-    public func addCustomDayType(_ dayType: DayTypeDefinition) {
-        queue.sync {
-            settings.addCustomDayType(dayType)
-        }
-        DispatchQueue.main.async {
-            self.persistSettings()
-        }
-    }
-    
-    /// Update a custom day type
-    public func updateCustomDayType(_ updatedDayType: DayTypeDefinition) {
-        queue.sync {
-            settings.updateCustomDayType(updatedDayType)
-        }
-        DispatchQueue.main.async {
-            self.persistSettings()
-        }
-    }
-    
-    /// Delete a custom day type
-    public func deleteCustomDayType(withId id: String) {
-        queue.sync {
-            settings.deleteCustomDayType(withId: id)
-        }
-        DispatchQueue.main.async {
-            self.persistSettings()
-        }
-    }
-    
-    /// Reset to default settings
-    public func resetToDefaults() {
-        queue.sync {
-            settings = .default
-        }
-        DispatchQueue.main.async {
-            self.persistSettings()
-        }
-    }
-    
-    // MARK: - Persistence
-    
-    private func loadSettings() {
-        guard let data = UserDefaults.standard.data(forKey: "CustomDayTypeSettings") else {
-            queue.sync {
-                settings = .default
-            }
-            return
-        }
-        
-        do {
-            let loadedSettings = try JSONDecoder().decode(DayTypeSettings.self, from: data)
-            queue.sync {
-                settings = loadedSettings
-            }
-        } catch {
-            print("Failed to load custom day type settings: \(error)")
-            queue.sync {
-                settings = .default
-            }
-        }
-    }
-    
-    private func persistSettings() {
-        let settingsToSave = queue.sync { settings }
-        do {
-            let data = try JSONEncoder().encode(settingsToSave)
-            UserDefaults.standard.set(data, forKey: "CustomDayTypeSettings")
-        } catch {
-            print("Failed to save custom day type settings: \(error)")
-        }
-    }
-}

@@ -58,17 +58,17 @@ public struct RoutineBuilderView: View {
                 }
             }
             .animation(.easeInOut(duration: 0.3), value: currentStep)
-            .navigationTitle(editingTemplate != nil ? "Edit Routine" : "Create Routine")
+            .navigationTitle(editingTemplate != nil ? String(localized: "RoutineBuilderView.EditRoutine.NavigationTitle", bundle: .module) : String(localized: "RoutineBuilderView.CreateRoutine.NavigationTitle", bundle: .module))
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
+                    Button(String(localized: "RoutineBuilderView.Cancel.Button", bundle: .module)) {
                         dismiss()
                     }
                 }
             }
             .safeAreaInset(edge: .top, alignment: .trailing) {
-                Text("Build: 2024.12.24.1847")
+                Text(String(localized: "RoutineBuilderView.Build.Version", bundle: .module))
                     .font(.caption2)
                     .foregroundStyle(.secondary)
                     .padding(.trailing, 16)
@@ -105,14 +105,14 @@ public struct RoutineBuilderView: View {
                         .fill(.gray.opacity(0.3))
                         .frame(width: 8, height: 8)
                 }
-                .accessibilityLabel("Step 1 of 3: Naming routine")
+                .accessibilityLabel(String(localized: "Accessibility.Step1.Naming", bundle: .module))
                 .padding(.bottom, 8)
                 
-                Text("Let's name your routine")
+                Text(String(localized: "RoutineBuilderView.Naming.Title", bundle: .module))
                     .font(.title2)
                     .fontWeight(.semibold)
                 
-                Text("Choose a name that describes when you'll use this routine")
+                Text(String(localized: "RoutineBuilderView.Naming.Subtitle", bundle: .module))
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
@@ -120,14 +120,14 @@ public struct RoutineBuilderView: View {
             .padding(.top, 40)
             
             VStack(spacing: 24) {
-                TextField("Routine Name", text: $templateName)
+                TextField(String(localized: "RoutineBuilderView.Naming.RoutineName.Placeholder", bundle: .module), text: $templateName)
                     .textFieldStyle(.roundedBorder)
                     .font(.title3)
                 
                 // Quick name suggestions
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 12) {
-                        ForEach(["Weekday Morning", "Weekend", "Quick Start", "Full Routine", "Travel"], id: \.self) { suggestion in
+                        ForEach([String(localized: "RoutineSuggestion.WeekdayMorning", bundle: .module), String(localized: "RoutineSuggestion.Weekend", bundle: .module), String(localized: "RoutineSuggestion.QuickStart", bundle: .module), String(localized: "RoutineSuggestion.FullRoutine", bundle: .module), String(localized: "RoutineSuggestion.Travel", bundle: .module)], id: \.self) { suggestion in
                             Button {
                                 withAnimation(.easeInOut) {
                                     templateName = suggestion
@@ -146,12 +146,12 @@ public struct RoutineBuilderView: View {
                 
                 // Color picker
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Color")
+                    Text(String(localized: "RoutineBuilderView.Naming.Color.Label", bundle: .module))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     
                     HStack(spacing: 12) {
-                        ForEach(Array(zip(["#34C759", "#007AFF", "#FF9500", "#FF3B30", "#AF52DE", "#5AC8FA"], ["Green", "Blue", "Orange", "Red", "Purple", "Light Blue"])), id: \.0) { color, colorName in
+                        ForEach(Array(zip(["#34C759", "#007AFF", "#FF9500", "#FF3B30", "#AF52DE", "#5AC8FA"], [String(localized: "Color.Green", bundle: .module), String(localized: "Color.Blue", bundle: .module), String(localized: "Color.Orange", bundle: .module), String(localized: "Color.Red", bundle: .module), String(localized: "Color.Purple", bundle: .module), String(localized: "Color.LightBlue", bundle: .module)])), id: \.0) { color, colorName in
                             Button {
                                 withAnimation(.easeInOut) {
                                     templateColor = color
@@ -169,8 +169,8 @@ public struct RoutineBuilderView: View {
                                         }
                                     }
                             }
-                            .accessibilityLabel("\(colorName) color")
-                            .accessibilityValue(templateColor == color ? "Selected" : "Not selected")
+                            .accessibilityLabel(String(localized: "Accessibility.ColorButton", bundle: .module).replacingOccurrences(of: "%@", with: colorName))
+                            .accessibilityValue(templateColor == color ? String(localized: "Color.Selected", bundle: .module) : String(localized: "Color.NotSelected", bundle: .module))
                             .accessibilityAddTraits(templateColor == color ? .isSelected : [])
                         }
                     }
@@ -184,7 +184,7 @@ public struct RoutineBuilderView: View {
                     currentStep = .building
                 }
             } label: {
-                Text("Next")
+                Text(String(localized: "RoutineBuilderView.Naming.Next.Button", bundle: .module))
                     .font(.headline)
                     .foregroundStyle(.white)
                     .frame(maxWidth: .infinity)
@@ -214,11 +214,11 @@ public struct RoutineBuilderView: View {
                             .fontWeight(.semibold)
                         
                         if habits.isEmpty {
-                            Text("What's the first thing you do?")
+                            Text(String(localized: "RoutineBuilderView.Building.Question", bundle: .module))
                                 .font(.subheadline)
                                 .foregroundStyle(.secondary)
                         } else {
-                            Text("\(habits.count) habits • \(totalDuration.formattedDuration) total")
+                            Text(String(localized: "RoutineBuilderView.Building.HabitsCount", bundle: .module).replacingOccurrences(of: "%lld", with: "\(habits.count)").replacingOccurrences(of: "%@", with: totalDuration.formattedDuration))
                                 .font(.subheadline)
                                 .foregroundStyle(.secondary)
                         }
@@ -238,11 +238,11 @@ public struct RoutineBuilderView: View {
                             .fill(.gray.opacity(0.3))
                             .frame(width: 8, height: 8)
                     }
-                    .accessibilityLabel("Step 2 of 3: Building routine")
+                    .accessibilityLabel(String(localized: "Accessibility.Step2.Building", bundle: .module))
                 }
                 
                 if !habits.isEmpty {
-                    Text("Keep adding habits or continue to review")
+                    Text(String(localized: "RoutineBuilderView.Building.Instructions", bundle: .module))
                         .font(.caption)
                         .foregroundStyle(.tertiary)
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -257,13 +257,13 @@ public struct RoutineBuilderView: View {
                     if !habits.isEmpty {
                         VStack(alignment: .leading, spacing: 12) {
                             HStack {
-                                Text("Your routine")
+                                Text(String(localized: "RoutineBuilderView.Building.YourRoutine.Title", bundle: .module))
                                     .font(.headline)
                                     .fontWeight(.semibold)
                                 
                                 Spacer()
                                 
-                                Text("\(habits.count) habit\(habits.count == 1 ? "" : "s")")
+                                Text(habits.count == 1 ? String(localized: "RoutineBuilderView.Building.HabitCount", bundle: .module).replacingOccurrences(of: "%lld", with: "\(habits.count)") : String(localized: "RoutineBuilderView.Building.HabitsCount.Plural", bundle: .module).replacingOccurrences(of: "%lld", with: "\(habits.count)"))
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
                                     .padding(.horizontal, 8)
@@ -412,7 +412,7 @@ public struct RoutineBuilderView: View {
                         Button {
                             currentStep = .naming
                         } label: {
-                            Text("Back")
+                            Text(String(localized: "RoutineBuilderView.Building.Back.Button", bundle: .module))
                                 .font(.headline)
                                 .foregroundStyle(.primary)
                                 .frame(maxWidth: .infinity)
@@ -432,7 +432,7 @@ public struct RoutineBuilderView: View {
                             }
                         }
                     } label: {
-                        Text(habits.isEmpty ? "Skip" : "Review")
+                        Text(habits.isEmpty ? String(localized: "RoutineBuilderView.Building.Skip.Button", bundle: .module) : String(localized: "RoutineBuilderView.Building.Review.Button", bundle: .module))
                             .font(.headline)
                             .foregroundStyle(.white)
                             .frame(maxWidth: .infinity)
@@ -456,9 +456,9 @@ public struct RoutineBuilderView: View {
                 habitEditorView(for: $habits[index])
             } else {
                 VStack {
-                    Text("Error: Invalid habit index")
+                    Text(String(localized: "RoutineBuilderView.Error.InvalidHabitIndex", bundle: .module))
                         .foregroundStyle(.red)
-                    Button("Close") {
+                    Button(String(localized: "RoutineBuilderView.Error.Close.Button", bundle: .module)) {
                         editingHabitIndex = nil
                         editingHabit = nil
                     }
@@ -484,9 +484,9 @@ public struct RoutineBuilderView: View {
                 )
             } else {
                 VStack {
-                    Text("Error: Invalid sub-habit reference")
+                    Text(String(localized: "RoutineBuilderView.Error.InvalidSubHabitReference", bundle: .module))
                         .foregroundStyle(.red)
-                    Button("Close") {
+                    Button(String(localized: "RoutineBuilderView.Error.Close.Button", bundle: .module)) {
                         editingSubHabit = nil
                     }
                 }
@@ -521,13 +521,13 @@ public struct RoutineBuilderView: View {
     private var suggestedHabitsSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("Add habit type")
+                Text(String(localized: "RoutineBuilderView.AddHabitType.Title", bundle: .module))
                     .font(.headline)
                     .fontWeight(.semibold)
                 
                 Spacer()
                 
-                Text("Tap to create")
+                Text(String(localized: "RoutineBuilderView.AddHabitType.Subtitle", bundle: .module))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -585,56 +585,56 @@ public struct RoutineBuilderView: View {
     private var habitTypeOptions: [HabitTypeOption] {
         [
             HabitTypeOption(
-                name: "Task",
-                description: "Simple checkbox",
+                name: String(localized: "HabitType.Task.Name", bundle: .module),
+                description: String(localized: "HabitType.Task.Description", bundle: .module),
                 type: .checkbox,
                 color: .green
             ),
             HabitTypeOption(
-                name: "Checklist",
-                description: "Multiple steps",
+                name: String(localized: "HabitType.Checklist.Name", bundle: .module),
+                description: String(localized: "HabitType.Checklist.Description", bundle: .module),
                 type: .checkboxWithSubtasks(subtasks: []),
                 color: .green
             ),
             HabitTypeOption(
-                name: "Timer",
-                description: "Timed activity",
+                name: String(localized: "HabitType.Timer.Name", bundle: .module),
+                description: String(localized: "HabitType.Timer.Description", bundle: .module),
                 type: .timer(defaultDuration: 300),
                 color: .blue
             ),
             HabitTypeOption(
-                name: "Rest Timer",
-                description: "Track rest time",
+                name: String(localized: "HabitType.RestTimer.Name", bundle: .module),
+                description: String(localized: "HabitType.RestTimer.Description", bundle: .module),
                 type: .restTimer(targetDuration: 120),
                 color: .blue
             ),
             HabitTypeOption(
-                name: "App/Shortcut",
-                description: "Launch app",
+                name: String(localized: "HabitType.AppShortcut.Name", bundle: .module),
+                description: String(localized: "HabitType.AppShortcut.Description", bundle: .module),
                 type: .appLaunch(bundleId: "", appName: ""),
                 color: .red
             ),
             HabitTypeOption(
-                name: "Website",
-                description: "Open URL",
+                name: String(localized: "HabitType.Website.Name", bundle: .module),
+                description: String(localized: "HabitType.Website.Description", bundle: .module),
                 type: .website(url: URL(string: "https://example.com")!, title: ""),
                 color: .orange
             ),
             HabitTypeOption(
-                name: "Counter",
-                description: "Track items",
+                name: String(localized: "HabitType.Counter.Name", bundle: .module),
+                description: String(localized: "HabitType.Counter.Description", bundle: .module),
                 type: .counter(items: ["Item 1"]),
                 color: .yellow
             ),
             HabitTypeOption(
-                name: "Measurement",
-                description: "Record value",
+                name: String(localized: "HabitType.Measurement.Name", bundle: .module),
+                description: String(localized: "HabitType.Measurement.Description", bundle: .module),
                 type: .measurement(unit: "value", targetValue: nil),
                 color: .purple
             ),
             HabitTypeOption(
-                name: "Sequence",
-                description: "Guided steps",
+                name: String(localized: "HabitType.Sequence.Name", bundle: .module),
+                description: String(localized: "HabitType.Sequence.Description", bundle: .module),
                 type: .guidedSequence(steps: []),
                 color: .cyan
             ),
@@ -731,7 +731,7 @@ public struct RoutineBuilderView: View {
                             .font(.title2)
                             .fontWeight(.semibold)
                         
-                        Text("\(habits.count) habits • \(totalDuration.formattedDuration)")
+                        Text(String(localized: "RoutineBuilderView.Summary.HabitsCount", bundle: .module).replacingOccurrences(of: "%d", with: "\(habits.count)").replacingOccurrences(of: "%@", with: totalDuration.formattedDuration))
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                     }
@@ -753,7 +753,7 @@ public struct RoutineBuilderView: View {
                     HStack {
                         Label {
                             VStack(alignment: .leading, spacing: 2) {
-                                Text("Smart Selection Rules")
+                                Text(String(localized: "RoutineBuilderView.Summary.SmartSelectionRules", bundle: .module))
                                     .foregroundStyle(.primary)
                                 
                                 if let rule = contextRule {
@@ -761,7 +761,7 @@ public struct RoutineBuilderView: View {
                                         .font(.caption)
                                         .foregroundStyle(.secondary)
                                 } else {
-                                    Text("Not configured")
+                                    Text(String(localized: "RoutineBuilderView.Summary.NotConfigured", bundle: .module))
                                         .font(.caption)
                                         .foregroundStyle(.secondary)
                                 }
@@ -791,14 +791,14 @@ public struct RoutineBuilderView: View {
                         .font(.system(size: 60))
                         .foregroundStyle(.secondary)
                     
-                    Text("No habits added")
+                    Text(String(localized: "RoutineBuilderView.Summary.NoHabitsAdded", bundle: .module))
                         .font(.headline)
                         .foregroundStyle(.secondary)
                     
                     Button {
                         currentStep = .building
                     } label: {
-                        Text("Add Habits")
+                        Text(String(localized: "RoutineBuilderView.Summary.AddHabits.Button", bundle: .module))
                             .font(.subheadline)
                             .foregroundStyle(.blue)
                     }
@@ -841,7 +841,7 @@ public struct RoutineBuilderView: View {
                     Button {
                         currentStep = .building
                     } label: {
-                        Text("Edit")
+                        Text(String(localized: "RoutineBuilderView.Summary.Edit.Button", bundle: .module))
                             .font(.headline)
                             .foregroundStyle(.primary)
                             .frame(maxWidth: .infinity)
@@ -887,13 +887,26 @@ public struct RoutineBuilderView: View {
             parts.append("Time: \(timeSlotNames.joined(separator: ", "))")
         }
         
-        if !rule.dayTypes.isEmpty {
-            let dayTypeNames = rule.dayTypes.map { $0.displayName }.sorted()
+        if !rule.dayCategoryIds.isEmpty {
+            let dayTypeNames = rule.dayCategoryIds.compactMap { categoryId in
+                DayCategoryManager.shared.getAllCategories().first { $0.id == categoryId }?.displayName
+            }.sorted()
             parts.append("Days: \(dayTypeNames.joined(separator: ", "))")
         }
         
-        if !rule.locations.isEmpty {
-            let locationNames = rule.locations.map { $0.displayName }.sorted()
+        if !rule.locationIds.isEmpty {
+            let locationNames = rule.locationIds.compactMap { locationId -> String? in
+                // Check if it's a built-in location
+                if let builtInLocation = LocationType(rawValue: locationId) {
+                    return builtInLocation.displayName
+                }
+                // Check if it's a custom location
+                if let uuid = UUID(uuidString: locationId),
+                   let customLocation = routineService.smartSelector.locationManager.getCustomLocation(id: uuid) {
+                    return customLocation.name
+                }
+                return nil
+            }.sorted()
             parts.append("Location: \(locationNames.joined(separator: ", "))")
         }
         
@@ -1020,13 +1033,13 @@ public struct RoutineBuilderView: View {
     private func addOptionSection(for selectedQuestion: Habit) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("Add to '\(selectedQuestion.name)'")
+                Text(String(localized: "RoutineBuilderView.AddToQuestion", bundle: .module).replacingOccurrences(of: "%@", with: selectedQuestion.name))
                     .font(.headline)
                     .fontWeight(.semibold)
                 
                 Spacer()
                 
-                Text("Selected")
+                Text(String(localized: "RoutineBuilderView.Selected.Label", bundle: .module))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -1041,12 +1054,12 @@ public struct RoutineBuilderView: View {
                         .foregroundStyle(.blue)
                     
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Add Option")
+                        Text(String(localized: "RoutineBuilderView.AddOption.Button", bundle: .module))
                             .font(.subheadline)
                             .fontWeight(.medium)
                             .foregroundStyle(.primary)
                         
-                        Text("Create a new answer choice")
+                        Text(String(localized: "RoutineBuilderView.CreateAnswerChoice", bundle: .module))
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -1101,13 +1114,13 @@ public struct RoutineBuilderView: View {
             
             VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("Add habit to '\(selectedOptionData.text)'")
+                Text(String(localized: "RoutineBuilderView.AddHabitToOption", bundle: .module).replacingOccurrences(of: "%@", with: selectedOptionData.text))
                     .font(.headline)
                     .fontWeight(.semibold)
                 
                 Spacer()
                 
-                Text("Selected")
+                Text(String(localized: "RoutineBuilderView.Selected.Label", bundle: .module))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -1228,7 +1241,7 @@ struct ExpandableHabitRow: View {
                             .animation(.easeInOut(duration: 0.3), value: isExpanded)
                     }
                     
-                    Text("\(habit.estimatedDuration.formattedDuration)")
+                    Text(String(localized: "RoutineBuilderView.Duration.Label", bundle: .module).replacingOccurrences(of: "%@", with: habit.estimatedDuration.formattedDuration))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -1298,14 +1311,14 @@ struct ExpandableHabitRow: View {
                                     .font(.subheadline)
                                     .foregroundStyle(.primary)
                                 
-                                Text("\(option.habits.count) habit\(option.habits.count == 1 ? "" : "s")")
+                                Text(option.habits.count == 1 ? String(localized: "RoutineBuilderView.Building.HabitCount", bundle: .module).replacingOccurrences(of: "%lld", with: "\(option.habits.count)") : String(localized: "RoutineBuilderView.Building.HabitsCount.Plural", bundle: .module).replacingOccurrences(of: "%lld", with: "\(option.habits.count)"))
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
                             }
                             
                             Spacer()
                             
-                            Text("0:30")
+                            Text(String(localized: "RoutineBuilderView.Duration.Default", bundle: .module))
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
@@ -1332,7 +1345,7 @@ struct ExpandableHabitRow: View {
                                     
                                     Spacer()
                                     
-                                    Text("\(habit.estimatedDuration.formattedDuration)")
+                                    Text(String(localized: "RoutineBuilderView.Duration.Label", bundle: .module).replacingOccurrences(of: "%@", with: habit.estimatedDuration.formattedDuration))
                                         .font(.caption)
                                         .foregroundStyle(.secondary)
                                 }
@@ -1354,7 +1367,7 @@ struct ExpandableHabitRow: View {
     private func subtasksContent(subtasks: [Subtask]) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text("Subtasks (\(subtasks.count)):")
+                Text(String(localized: "RoutineBuilderView.Subtasks.Title", bundle: .module).replacingOccurrences(of: "%d", with: "\(subtasks.count)"))
                     .font(.caption)
                     .fontWeight(.medium)
                     .foregroundStyle(.secondary)
@@ -1398,7 +1411,7 @@ struct ExpandableHabitRow: View {
                     }
                 }
             } else {
-                Text("No subtasks yet")
+                Text(String(localized: "RoutineBuilderView.Subtasks.NoSubtasks", bundle: .module))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .italic()
@@ -1547,7 +1560,7 @@ struct SelectableQuestionHabitRow: View {
                                         .fontWeight(.medium)
                                         .foregroundStyle(.primary)
                                     
-                                    Text("\(option.habits.count) habit\(option.habits.count == 1 ? "" : "s")")
+                                    Text(option.habits.count == 1 ? String(localized: "RoutineBuilderView.Building.HabitCount", bundle: .module).replacingOccurrences(of: "%lld", with: "\(option.habits.count)") : String(localized: "RoutineBuilderView.Building.HabitsCount.Plural", bundle: .module).replacingOccurrences(of: "%lld", with: "\(option.habits.count)"))
                                         .font(.caption)
                                         .foregroundStyle(.secondary)
                                 }
@@ -1562,7 +1575,7 @@ struct SelectableQuestionHabitRow: View {
                                         .foregroundStyle(.blue)
                                 }
                                 
-                                Text("0:30")
+                                Text(String(localized: "RoutineBuilderView.Duration.Default", bundle: .module))
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
                                     .monospacedDigit()
@@ -1634,7 +1647,7 @@ struct SelectableQuestionHabitRow: View {
                                     
                                     Spacer()
                                     
-                                    Text("\(habit.estimatedDuration.formattedDuration)")
+                                    Text(String(localized: "RoutineBuilderView.Duration.Label", bundle: .module).replacingOccurrences(of: "%@", with: habit.estimatedDuration.formattedDuration))
                                         .font(.caption)
                                         .foregroundStyle(.secondary)
                                         .monospacedDigit()
@@ -1719,7 +1732,7 @@ struct OptionEditorView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
+                    Button(String(localized: "RoutineBuilderView.Cancel.Button", bundle: .module)) {
                         dismiss()
                     }
                 }

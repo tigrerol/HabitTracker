@@ -47,10 +47,10 @@ public struct HabitInteractionView: View {
                     onOptionSelected: { option in
                         // Note: The actual path injection is handled by RoutineService
                         // This just marks the conditional habit as complete
-                        onComplete(nil, "Selected: \(option.text)")
+                        onComplete(nil, String(localized: "HabitInteractionView.Question.Selected", bundle: .module).replacingOccurrences(of: "%@", with: option.text))
                     },
                     onSkip: {
-                        onComplete(nil, "Skipped")
+                        onComplete(nil, String(localized: "HabitInteractionView.Question.Skipped", bundle: .module))
                     }
                 )
             }
@@ -77,7 +77,7 @@ struct CheckboxHabitView: View {
                         .foregroundStyle(isCompleting ? .green : habit.swiftUIColor)
                         .scaleEffect(isCompleting ? 1.2 : 1.0)
                     
-                    Text(isCompleting ? "Completed!" : "Tap to Complete")
+                    Text(isCompleting ? String(localized: "HabitInteractionView.Checkbox.Completed", bundle: .module) : String(localized: "HabitInteractionView.Checkbox.TapToComplete", bundle: .module))
                         .font(.headline)
                         .foregroundStyle(isCompleting ? .green : .primary)
                 }
@@ -157,7 +157,7 @@ struct TimerHabitView: View {
                         } label: {
                             HStack {
                                 Image(systemName: "play.fill")
-                                Text("Start")
+                                Text(String(localized: "HabitInteractionView.Timer.Start", bundle: .module))
                             }
                             .font(.headline)
                             .foregroundStyle(.white)
@@ -185,7 +185,7 @@ struct TimerHabitView: View {
                         } label: {
                             HStack {
                                 Image(systemName: isPaused ? "play.fill" : "pause.fill")
-                                Text(isPaused ? "Resume" : "Pause")
+                                Text(isPaused ? String(localized: "HabitInteractionView.Timer.Resume", bundle: .module) : String(localized: "HabitInteractionView.Timer.Pause", bundle: .module))
                             }
                             .font(.headline)
                             .foregroundStyle(.white)
@@ -213,7 +213,7 @@ struct TimerHabitView: View {
                     let elapsed = defaultDuration - timeRemaining
                     onComplete(elapsed, nil)
                 } label: {
-                    Text("Mark Complete Early")
+                    Text(String(localized: "HabitInteractionView.Timer.MarkCompleteEarly", bundle: .module))
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
@@ -227,7 +227,7 @@ struct TimerHabitView: View {
     @ViewBuilder
     private func quickTimerButton(seconds: TimeInterval, label: String) -> some View {
         Button {
-            onComplete(seconds, "Quick \(label) completion")
+            onComplete(seconds, String(localized: "HabitInteractionView.Timer.QuickCompletion", bundle: .module).replacingOccurrences(of: "%@", with: label))
         } label: {
             Text(label)
                 .font(.caption)
@@ -259,7 +259,7 @@ struct TimerHabitView: View {
     private func stopTimer() {
         timer?.invalidate()
         let elapsed = defaultDuration - timeRemaining
-        onComplete(elapsed, "Stopped early")
+        onComplete(elapsed, String(localized: "HabitInteractionView.Timer.StoppedEarly", bundle: .module))
     }
     
     private func createTimer() {
@@ -299,12 +299,12 @@ struct AppLaunchHabitView: View {
                     .foregroundStyle(habit.swiftUIColor)
                 
                 if hasLaunchedApp {
-                    Text("Return here when finished")
+                    Text(String(localized: "HabitInteractionView.AppLaunch.ReturnWhenFinished", bundle: .module))
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
                 } else {
-                    Text(isShortcut ? "Tap to run shortcut" : "Tap to launch \(appName)")
+                    Text(isShortcut ? String(localized: "HabitInteractionView.AppLaunch.TapToRunShortcut", bundle: .module) : String(localized: "HabitInteractionView.AppLaunch.TapToLaunch", bundle: .module).replacingOccurrences(of: "%@", with: appName))
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
@@ -314,7 +314,7 @@ struct AppLaunchHabitView: View {
                 Button {
                     launchApp()
                 } label: {
-                    Text(isShortcut ? "Run Shortcut" : "Launch \(appName)")
+                    Text(isShortcut ? String(localized: "HabitInteractionView.AppLaunch.RunShortcut", bundle: .module) : String(localized: "HabitInteractionView.AppLaunch.Launch", bundle: .module).replacingOccurrences(of: "%@", with: appName))
                         .font(.headline)
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity)
@@ -326,7 +326,7 @@ struct AppLaunchHabitView: View {
                     let duration = startTime.map { Date().timeIntervalSince($0) }
                     onComplete(duration, nil)
                 } label: {
-                    Text("I'm Done")
+                    Text(String(localized: "HabitInteractionView.AppLaunch.ImDone", bundle: .module))
                         .font(.headline)
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity)
@@ -382,12 +382,12 @@ struct WebsiteHabitView: View {
                     .foregroundStyle(habit.swiftUIColor)
                 
                 if hasOpenedWebsite {
-                    Text("Return here when finished with \(title)")
+                    Text(String(localized: "HabitInteractionView.Website.ReturnWhenFinished", bundle: .module).replacingOccurrences(of: "%@", with: title))
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
                 } else {
-                    Text("Tap to open \(title)")
+                    Text(String(localized: "HabitInteractionView.Website.TapToOpen", bundle: .module).replacingOccurrences(of: "%@", with: title))
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
@@ -397,7 +397,7 @@ struct WebsiteHabitView: View {
                 Button {
                     openWebsite()
                 } label: {
-                    Text("Open \(title)")
+                    Text(String(localized: "HabitInteractionView.Website.Open", bundle: .module).replacingOccurrences(of: "%@", with: title))
                         .font(.headline)
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity)
@@ -409,7 +409,7 @@ struct WebsiteHabitView: View {
                     let duration = startTime.map { Date().timeIntervalSince($0) }
                     onComplete(duration, nil)
                 } label: {
-                    Text("I'm Done")
+                    Text(String(localized: "HabitInteractionView.AppLaunch.ImDone", bundle: .module))
                         .font(.headline)
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity)
@@ -438,7 +438,7 @@ struct CounterHabitView: View {
     var body: some View {
         VStack(spacing: 24) {
             VStack(spacing: 16) {
-                Text("\(completedItems.count) of \(items.count) completed")
+                Text(String(format: String(localized: "HabitInteractionView.Counter.CompletedItems", bundle: .module), completedItems.count, items.count))
                     .font(.headline)
                     .foregroundStyle(habit.swiftUIColor)
                 
@@ -477,10 +477,10 @@ struct CounterHabitView: View {
             }
             
             Button {
-                let notes = completedItems.isEmpty ? "No items completed" : "Completed: \(Array(completedItems).joined(separator: ", "))"
+                let notes = completedItems.isEmpty ? String(localized: "HabitInteractionView.Counter.NoItemsCompleted", bundle: .module) : String(localized: "HabitInteractionView.Counter.CompletedList", bundle: .module).replacingOccurrences(of: "%@", with: Array(completedItems).joined(separator: ", "))
                 onComplete(nil, notes)
             } label: {
-                Text("Complete")
+                Text(String(localized: "HabitInteractionView.Complete.Button", bundle: .module))
                     .font(.headline)
                     .foregroundStyle(.white)
                     .frame(maxWidth: .infinity)
@@ -541,7 +541,7 @@ struct SubtasksHabitView: View {
                             Spacer()
                             
                             if subtask.isOptional {
-                                Text("Optional")
+                                Text(String(localized: "HabitInteractionView.Optional.Label", bundle: .module))
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
                                     .padding(.horizontal, 8)
@@ -565,7 +565,7 @@ struct SubtasksHabitView: View {
                 let notes = "Completed \(completedSubtasks.count) of \(subtasks.count) subtasks"
                 onComplete(nil, notes)
             } label: {
-                Text("Complete")
+                Text(String(localized: "HabitInteractionView.Complete.Button", bundle: .module))
                     .font(.headline)
                     .foregroundStyle(.white)
                     .frame(maxWidth: .infinity)
@@ -603,7 +603,7 @@ struct RestTimerHabitView: View {
                         .tint(habit.swiftUIColor)
                         .scaleEffect(y: 3)
                     
-                    Text("Target: \(target.formattedMinutesSeconds)")
+                    Text(String(localized: "HabitInteractionView.RestTimer.Target", bundle: .module).replacingOccurrences(of: "%@", with: target.formattedMinutesSeconds))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -617,7 +617,7 @@ struct RestTimerHabitView: View {
                     } label: {
                         HStack {
                             Image(systemName: "play.fill")
-                            Text("Start Rest")
+                            Text(String(localized: "HabitInteractionView.RestTimer.StartRest", bundle: .module))
                         }
                         .font(.headline)
                         .foregroundStyle(.white)
@@ -631,7 +631,7 @@ struct RestTimerHabitView: View {
                     } label: {
                         HStack {
                             Image(systemName: "stop.fill")
-                            Text("End Rest")
+                            Text(String(localized: "HabitInteractionView.RestTimer.EndRest", bundle: .module))
                         }
                         .font(.headline)
                         .foregroundStyle(.white)
@@ -681,7 +681,7 @@ struct MeasurementHabitView: View {
     var body: some View {
         VStack(spacing: 24) {
             VStack(spacing: 12) {
-                Text("Enter \(unit)")
+                Text(String(localized: "HabitInteractionView.Measurement.Enter", bundle: .module).replacingOccurrences(of: "%@", with: unit))
                     .font(.headline)
                     .foregroundStyle(.secondary)
                 
@@ -710,7 +710,7 @@ struct MeasurementHabitView: View {
                     onComplete(nil, notes)
                 }
             } label: {
-                Text("Record")
+                Text(String(localized: "HabitInteractionView.Measurement.Record", bundle: .module))
                     .font(.headline)
                     .foregroundStyle(.white)
                     .frame(maxWidth: .infinity)
@@ -752,7 +752,7 @@ struct GuidedSequenceHabitView: View {
             if let step = currentStep {
                 // Step info
                 VStack(spacing: 8) {
-                    Text("Step \(currentStepIndex + 1) of \(steps.count)")
+                    Text(String(format: String(localized: "HabitInteractionView.Sequence.StepProgress", bundle: .module), currentStepIndex + 1, steps.count))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     
@@ -788,7 +788,7 @@ struct GuidedSequenceHabitView: View {
                         } label: {
                             HStack {
                                 Image(systemName: "play.fill")
-                                Text("Start")
+                                Text(String(localized: "HabitInteractionView.Timer.Start", bundle: .module))
                             }
                             .font(.headline)
                             .foregroundStyle(.white)
@@ -806,7 +806,7 @@ struct GuidedSequenceHabitView: View {
                         } label: {
                             HStack {
                                 Image(systemName: isPaused ? "play.fill" : "pause.fill")
-                                Text(isPaused ? "Resume" : "Pause")
+                                Text(isPaused ? String(localized: "HabitInteractionView.Timer.Resume", bundle: .module) : String(localized: "HabitInteractionView.Timer.Pause", bundle: .module))
                             }
                             .font(.headline)
                             .foregroundStyle(.white)
@@ -819,7 +819,7 @@ struct GuidedSequenceHabitView: View {
                     Button {
                         nextStep()
                     } label: {
-                        Text("Skip")
+                        Text(String(localized: "HabitInteractionView.Sequence.Skip", bundle: .module))
                             .font(.headline)
                             .foregroundStyle(.orange)
                             .padding()
@@ -833,18 +833,18 @@ struct GuidedSequenceHabitView: View {
                         .font(.system(size: 60))
                         .foregroundStyle(.green)
                     
-                    Text("Sequence Complete!")
+                    Text(String(localized: "HabitInteractionView.Sequence.Complete", bundle: .module))
                         .font(.title2)
                         .fontWeight(.semibold)
                     
-                    Text("Total time: \(totalElapsed.formattedMinutesSeconds)")
+                    Text(String(localized: "HabitInteractionView.Sequence.TotalTime", bundle: .module).replacingOccurrences(of: "%@", with: totalElapsed.formattedMinutesSeconds))
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                     
                     Button {
                         onComplete(totalElapsed, "Completed all \(steps.count) steps")
                     } label: {
-                        Text("Done")
+                        Text(String(localized: "HabitInteractionView.Sequence.Done", bundle: .module))
                             .font(.headline)
                             .foregroundStyle(.white)
                             .frame(maxWidth: .infinity)

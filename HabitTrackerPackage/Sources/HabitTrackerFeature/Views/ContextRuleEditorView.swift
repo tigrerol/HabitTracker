@@ -4,11 +4,13 @@ import SwiftUI
 struct ContextRuleEditorView: View {
     @Binding var contextRule: RoutineContextRule?
     @Environment(\.dismiss) private var dismiss
+    @Environment(DayCategoryManager.self) private var dayCategoryManager
+    @Environment(RoutineService.self) private var routineService
     
     // Local state for editing
     @State private var selectedTimeSlots: Set<TimeSlot> = []
-    @State private var selectedDayTypes: Set<DayType> = []
-    @State private var selectedLocations: Set<LocationType> = []
+    @State private var selectedDayCategories: Set<String> = [] // Changed to store category IDs
+    @State private var selectedLocationIds: Set<String> = [] // Changed to store location IDs
     @State private var priority: Int = 0
     @State private var isEnabled: Bool = false
     
@@ -16,20 +18,20 @@ struct ContextRuleEditorView: View {
         NavigationStack {
             Form {
                 Section {
-                    Toggle("Enable Smart Selection", isOn: $isEnabled)
+                    Toggle(String(localized: "ContextRuleEditorView.EnableSmartSelection.Toggle", bundle: .module), isOn: $isEnabled)
                         .onChange(of: isEnabled) { _, newValue in
                             if !newValue {
                                 // Clear all selections when disabled
                                 selectedTimeSlots.removeAll()
-                                selectedDayTypes.removeAll()
-                                selectedLocations.removeAll()
+                                selectedDayCategories.removeAll()
+                                selectedLocationIds.removeAll()
                                 priority = 0
                             }
                         }
                 } header: {
-                    Text("Smart Selection")
+                    Text(String(localized: "ContextRuleEditorView.SmartSelection.Header", bundle: .module))
                 } footer: {
-                    Text("When enabled, this routine will be automatically selected based on time, day, and location.")
+                    Text(String(localized: "ContextRuleEditorView.SmartSelection.Footer", bundle: .module))
                 }
                 
                 if isEnabled {
@@ -50,83 +52,101 @@ struct ContextRuleEditorView: View {
                             }
                         }
                     } header: {
-                        Text("Time of Day")
+                        Text(String(localized: "ContextRuleEditorView.TimeOfDay.Header", bundle: .module))
                     } footer: {
-                        Text("Select when this routine should be suggested. Leave empty for any time.")
+                        Text(String(localized: "ContextRuleEditorView.TimeOfDay.Footer", bundle: .module))
                     }
                     
-                    // Day Types Section
+                    // Day Categories Section
                     Section {
-                        ForEach(DayType.allCases, id: \.self) { dayType in
+                        ForEach(dayCategoryManager.getAllCategories(), id: \.id) { category in
                             MultipleSelectionRow(
-                                title: dayType.displayName,
+                                title: category.displayName,
                                 subtitle: nil,
-                                icon: dayType.icon,
-                                isSelected: selectedDayTypes.contains(dayType)
+                                icon: category.icon,
+                                isSelected: selectedDayCategories.contains(category.id)
                             ) {
-                                if selectedDayTypes.contains(dayType) {
-                                    selectedDayTypes.remove(dayType)
+                                if selectedDayCategories.contains(category.id) {
+                                    selectedDayCategories.remove(category.id)
                                 } else {
-                                    selectedDayTypes.insert(dayType)
+                                    selectedDayCategories.insert(category.id)
                                 }
                             }
                         }
                     } header: {
-                        Text("Day Type")
+                        Text(String(localized: "ContextRuleEditorView.DayType.Header", bundle: .module))
                     } footer: {
-                        Text("Select which days this routine should be suggested. Leave empty for any day.")
+                        Text(String(localized: "ContextRuleEditorView.DayType.Footer", bundle: .module))
                     }
                     
                     // Locations Section
                     Section {
+                        // Built-in locations
                         ForEach(LocationType.allCases.filter { $0 != .unknown }, id: \.self) { location in
                             MultipleSelectionRow(
                                 title: location.displayName,
                                 subtitle: nil,
                                 icon: location.icon,
-                                isSelected: selectedLocations.contains(location)
+                                isSelected: selectedLocationIds.contains(location.rawValue)
                             ) {
-                                if selectedLocations.contains(location) {
-                                    selectedLocations.remove(location)
+                                if selectedLocationIds.contains(location.rawValue) {
+                                    selectedLocationIds.remove(location.rawValue)
                                 } else {
-                                    selectedLocations.insert(location)
+                                    selectedLocationIds.insert(location.rawValue)
+                                }
+                            }
+                        }
+                        
+                        // Custom locations
+                        let customLocations = routineService.smartSelector.locationManager.allCustomLocations
+                        ForEach(customLocations) { customLocation in
+                            MultipleSelectionRow(
+                                title: customLocation.name,
+                                subtitle: nil,
+                                icon: customLocation.icon,
+                                isSelected: selectedLocationIds.contains(customLocation.id.uuidString)
+                            ) {
+                                if selectedLocationIds.contains(customLocation.id.uuidString) {
+                                    selectedLocationIds.remove(customLocation.id.uuidString)
+                                } else {
+                                    selectedLocationIds.insert(customLocation.id.uuidString)
                                 }
                             }
                         }
                     } header: {
-                        Text("Location")
+                        Text(String(localized: "ContextRuleEditorView.Location.Header", bundle: .module))
                     } footer: {
-                        Text("Select where this routine should be suggested. Leave empty for any location.")
+                        Text(String(localized: "ContextRuleEditorView.Location.Footer", bundle: .module))
                     }
                     
                     // Priority Section
                     Section {
                         Stepper(value: $priority, in: 0...10) {
                             HStack {
-                                Text("Priority")
+                                Text(String(localized: "ContextRuleEditorView.Priority.Label", bundle: .module))
                                 Spacer()
                                 Text("\(priority)")
                                     .foregroundStyle(.secondary)
                             }
                         }
                     } header: {
-                        Text("Priority")
+                        Text(String(localized: "ContextRuleEditorView.Priority.Header", bundle: .module))
                     } footer: {
-                        Text("Higher priority routines are selected when multiple routines match the current context.")
+                        Text(String(localized: "ContextRuleEditorView.Priority.Footer", bundle: .module))
                     }
                 }
             }
-            .navigationTitle("Smart Selection Rules")
+            .navigationTitle(String(localized: "ContextRuleEditorView.NavigationTitle", bundle: .module))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
+                    Button(String(localized: "ContextRuleEditorView.Cancel.Button", bundle: .module)) {
                         dismiss()
                     }
                 }
                 
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") {
+                    Button(String(localized: "ContextRuleEditorView.Done.Button", bundle: .module)) {
                         saveContextRule()
                         dismiss()
                     }
@@ -142,8 +162,8 @@ struct ContextRuleEditorView: View {
         if let rule = contextRule {
             isEnabled = true
             selectedTimeSlots = rule.timeSlots
-            selectedDayTypes = rule.dayTypes
-            selectedLocations = rule.locations
+            selectedDayCategories = rule.dayCategoryIds
+            selectedLocationIds = rule.locationIds
             priority = rule.priority
         } else {
             isEnabled = false
@@ -154,8 +174,8 @@ struct ContextRuleEditorView: View {
         if isEnabled {
             contextRule = RoutineContextRule(
                 timeSlots: selectedTimeSlots,
-                dayTypes: selectedDayTypes,
-                locations: selectedLocations,
+                dayCategoryIds: selectedDayCategories,
+                locationIds: selectedLocationIds,
                 priority: priority
             )
         } else {

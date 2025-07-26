@@ -17,11 +17,11 @@ struct DayTypeEditorView: View {
         NavigationStack {
             List {
                 Section {
-                    Text("Create custom day categories and assign them to different days to match your personal schedule.")
+                    Text(String(localized: "DayTypeEditorView.Description", bundle: .module))
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 } header: {
-                    Text("Day Categories")
+                    Text(String(localized: "DayTypeEditorView.DayCategories.Title", bundle: .module))
                 }
                 
                 // Category Management Section
@@ -60,7 +60,7 @@ struct DayTypeEditorView: View {
                 // Summary Section
                 Section {
                     HStack {
-                        Text("Current Setting")
+                        Text(String(localized: "DayTypeEditorView.CurrentSetting.Title", bundle: .module))
                             .fontWeight(.medium)
                         Spacer()
                         Text(currentSummary)
@@ -68,27 +68,27 @@ struct DayTypeEditorView: View {
                             .multilineTextAlignment(.trailing)
                     }
                 } header: {
-                    Text("Summary")
+                    Text(String(localized: "DayTypeEditorView.Summary.Title", bundle: .module))
                 }
                 
                 // Tips Section
                 Section {
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("Examples:")
+                        Text(String(localized: "DayTypeEditorView.Examples.Title", bundle: .module))
                             .font(.subheadline)
                             .fontWeight(.medium)
                         
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("• 'Work Days' and 'Rest Days'")
-                            Text("• 'Gym Days', 'Study Days', 'Free Days'")
-                            Text("• 'First Half' and 'Second Half'")
-                            Text("• 'Lazy Days', 'Productive Days'")
+                            Text(String(localized: "DayTypeEditorView.Examples.WorkRest", bundle: .module))
+                            Text(String(localized: "DayTypeEditorView.Examples.GymStudy", bundle: .module))
+                            Text(String(localized: "DayTypeEditorView.Examples.FirstSecond", bundle: .module))
+                            Text(String(localized: "DayTypeEditorView.Examples.LazyProductive", bundle: .module))
                         }
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     }
                 } header: {
-                    Text("Ideas")
+                    Text(String(localized: "DayTypeEditorView.Ideas.Title", bundle: .module))
                 }
                 
                 // Presets Section
@@ -308,7 +308,7 @@ private struct DayAssignmentRow: View {
                         Text(selectedCategory.name)
                             .foregroundStyle(.primary)
                     } else {
-                        Text("Select Category")
+                        Text(String(localized: "DayTypeEditorView.SelectCategory.Title", bundle: .module))
                             .foregroundStyle(.secondary)
                     }
                     Image(systemName: "chevron.up.chevron.down")
@@ -361,7 +361,7 @@ private struct CategoryCreatorView: View {
                     TextField("Category Name", text: $name)
                     
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("Icon")
+                        Text(String(localized: "DayTypeEditorView.Icon.Title", bundle: .module))
                             .font(.subheadline)
                             .fontWeight(.medium)
                         
@@ -389,7 +389,7 @@ private struct CategoryCreatorView: View {
                 
                 Section {
                     HStack {
-                        Text("Preview")
+                        Text(String(localized: "DayTypeEditorView.Preview.Title", bundle: .module))
                             .fontWeight(.medium)
                         Spacer()
                         Label {
@@ -459,11 +459,11 @@ private struct DayCategoryPresetsView: View {
         NavigationStack {
             List {
                 Section {
-                    Text("Choose a preset that matches your lifestyle. You can customize it further after applying.")
+                    Text(String(localized: "DayTypeEditorView.PresetDescription", bundle: .module))
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 } header: {
-                    Text("Preset Schedules")
+                    Text(String(localized: "DayTypeEditorView.PresetSchedules.Title", bundle: .module))
                 }
                 
                 ForEach(Array(presets.enumerated()), id: \.offset) { index, preset in
@@ -614,9 +614,9 @@ private struct DayCategoryPresetsView: View {
 /// Legacy view for selecting day type presets
 private struct DayTypePresetsView: View {
     @Environment(\.dismiss) private var dismiss
-    let onSelect: (DayTypeSettings) -> Void
+    let onSelect: (DayCategorySettings) -> Void
     
-    private let presets: [(name: String, description: String, settings: DayTypeSettings)] = [
+    private let presets: [(name: String, description: String, settings: DayCategorySettings)] = [
         ("Standard Work Week", "Monday to Friday work, weekends off", createStandardWeek()),
         ("Sunday Work Week", "Sunday to Thursday work, Friday-Saturday off", createSundayWorkWeek()),
         ("4-Day Work Week", "Monday to Thursday work, Friday-Sunday off", createFourDayWeek()),
@@ -631,11 +631,11 @@ private struct DayTypePresetsView: View {
         NavigationStack {
             List {
                 Section {
-                    Text("Choose a preset schedule that matches your work pattern.")
+                    Text(String(localized: "DayTypeEditorView.WorkPatternDescription", bundle: .module))
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 } header: {
-                    Text("Preset Schedules")
+                    Text(String(localized: "DayTypeEditorView.PresetSchedules.Title", bundle: .module))
                 }
                 
                 ForEach(Array(presets.enumerated()), id: \.offset) { index, preset in
@@ -676,90 +676,90 @@ private struct DayTypePresetsView: View {
     
     // MARK: - Preset Creation Functions
     
-    private static func createStandardWeek() -> DayTypeSettings {
-        var settings = DayTypeSettings()
-        settings.setDayType(.weekday, for: .monday)
-        settings.setDayType(.weekday, for: .tuesday)
-        settings.setDayType(.weekday, for: .wednesday)
-        settings.setDayType(.weekday, for: .thursday)
-        settings.setDayType(.weekday, for: .friday)
-        settings.setDayType(.weekend, for: .saturday)
-        settings.setDayType(.weekend, for: .sunday)
+    private static func createStandardWeek() -> DayCategorySettings {
+        var settings = DayCategorySettings()
+        settings.setCategory("weekday", for: .monday)
+        settings.setCategory("weekday", for: .tuesday)
+        settings.setCategory("weekday", for: .wednesday)
+        settings.setCategory("weekday", for: .thursday)
+        settings.setCategory("weekday", for: .friday)
+        settings.setCategory("weekend", for: .saturday)
+        settings.setCategory("weekend", for: .sunday)
         return settings
     }
     
-    private static func createSundayWorkWeek() -> DayTypeSettings {
-        var settings = DayTypeSettings()
-        settings.setDayType(.weekday, for: .sunday)
-        settings.setDayType(.weekday, for: .monday)
-        settings.setDayType(.weekday, for: .tuesday)
-        settings.setDayType(.weekday, for: .wednesday)
-        settings.setDayType(.weekday, for: .thursday)
-        settings.setDayType(.weekend, for: .friday)
-        settings.setDayType(.weekend, for: .saturday)
+    private static func createSundayWorkWeek() -> DayCategorySettings {
+        var settings = DayCategorySettings()
+        settings.setCategory("weekday", for: .sunday)
+        settings.setCategory("weekday", for: .monday)
+        settings.setCategory("weekday", for: .tuesday)
+        settings.setCategory("weekday", for: .wednesday)
+        settings.setCategory("weekday", for: .thursday)
+        settings.setCategory("weekend", for: .friday)
+        settings.setCategory("weekend", for: .saturday)
         return settings
     }
     
-    private static func createFourDayWeek() -> DayTypeSettings {
-        var settings = DayTypeSettings()
-        settings.setDayType(.weekday, for: .monday)
-        settings.setDayType(.weekday, for: .tuesday)
-        settings.setDayType(.weekday, for: .wednesday)
-        settings.setDayType(.weekday, for: .thursday)
-        settings.setDayType(.weekend, for: .friday)
-        settings.setDayType(.weekend, for: .saturday)
-        settings.setDayType(.weekend, for: .sunday)
+    private static func createFourDayWeek() -> DayCategorySettings {
+        var settings = DayCategorySettings()
+        settings.setCategory("weekday", for: .monday)
+        settings.setCategory("weekday", for: .tuesday)
+        settings.setCategory("weekday", for: .wednesday)
+        settings.setCategory("weekday", for: .thursday)
+        settings.setCategory("weekend", for: .friday)
+        settings.setCategory("weekend", for: .saturday)
+        settings.setCategory("weekend", for: .sunday)
         return settings
     }
     
-    private static func createShiftWorkerA() -> DayTypeSettings {
-        var settings = DayTypeSettings()
-        settings.setDayType(.weekday, for: .monday)
-        settings.setDayType(.weekday, for: .tuesday)
-        settings.setDayType(.weekday, for: .wednesday)
-        settings.setDayType(.weekend, for: .thursday)
-        settings.setDayType(.weekend, for: .friday)
-        settings.setDayType(.weekend, for: .saturday)
-        settings.setDayType(.weekend, for: .sunday)
+    private static func createShiftWorkerA() -> DayCategorySettings {
+        var settings = DayCategorySettings()
+        settings.setCategory("weekday", for: .monday)
+        settings.setCategory("weekday", for: .tuesday)
+        settings.setCategory("weekday", for: .wednesday)
+        settings.setCategory("weekend", for: .thursday)
+        settings.setCategory("weekend", for: .friday)
+        settings.setCategory("weekend", for: .saturday)
+        settings.setCategory("weekend", for: .sunday)
         return settings
     }
     
-    private static func createShiftWorkerB() -> DayTypeSettings {
-        var settings = DayTypeSettings()
-        settings.setDayType(.weekend, for: .monday)
-        settings.setDayType(.weekend, for: .tuesday)
-        settings.setDayType(.weekend, for: .wednesday)
-        settings.setDayType(.weekday, for: .thursday)
-        settings.setDayType(.weekday, for: .friday)
-        settings.setDayType(.weekday, for: .saturday)
-        settings.setDayType(.weekday, for: .sunday)
+    private static func createShiftWorkerB() -> DayCategorySettings {
+        var settings = DayCategorySettings()
+        settings.setCategory("weekend", for: .monday)
+        settings.setCategory("weekend", for: .tuesday)
+        settings.setCategory("weekend", for: .wednesday)
+        settings.setCategory("weekday", for: .thursday)
+        settings.setCategory("weekday", for: .friday)
+        settings.setCategory("weekday", for: .saturday)
+        settings.setCategory("weekday", for: .sunday)
         return settings
     }
     
-    private static func createAlternatingSchedule() -> DayTypeSettings {
-        var settings = DayTypeSettings()
-        settings.setDayType(.weekday, for: .monday)
-        settings.setDayType(.weekend, for: .tuesday)
-        settings.setDayType(.weekday, for: .wednesday)
-        settings.setDayType(.weekend, for: .thursday)
-        settings.setDayType(.weekday, for: .friday)
-        settings.setDayType(.weekend, for: .saturday)
-        settings.setDayType(.weekday, for: .sunday)
+    private static func createAlternatingSchedule() -> DayCategorySettings {
+        var settings = DayCategorySettings()
+        settings.setCategory("weekday", for: .monday)
+        settings.setCategory("weekend", for: .tuesday)
+        settings.setCategory("weekday", for: .wednesday)
+        settings.setCategory("weekend", for: .thursday)
+        settings.setCategory("weekday", for: .friday)
+        settings.setCategory("weekend", for: .saturday)
+        settings.setCategory("weekday", for: .sunday)
         return settings
     }
     
-    private static func createAllWeekdays() -> DayTypeSettings {
-        var settings = DayTypeSettings()
+    private static func createAllWeekdays() -> DayCategorySettings {
+        var settings = DayCategorySettings()
         for weekday in Weekday.allCases {
-            settings.setDayType(.weekday, for: weekday)
+            settings.setCategory("weekday", for: weekday)
         }
         return settings
     }
     
-    private static func createAllWeekends() -> DayTypeSettings {
-        var settings = DayTypeSettings()
+    private static func createAllWeekends() -> DayCategorySettings {
+        var settings = DayCategorySettings()
         for weekday in Weekday.allCases {
-            settings.setDayType(.weekend, for: weekday)
+            settings.setCategory("weekend", for: weekday)
         }
         return settings
     }

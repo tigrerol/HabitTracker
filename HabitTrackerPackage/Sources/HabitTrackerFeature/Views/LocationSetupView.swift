@@ -25,12 +25,12 @@ struct LocationSetupView: View {
         NavigationStack {
             List {
                 Section {
-                    Text("Teach the app your important locations to automatically select the best routine based on where you are.")
+                    Text(String(localized: "LocationSetupView.MainDescription", bundle: .module))
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
                 
-                Section("Built-in Locations") {
+                Section(String(localized: "LocationSetupView.BuiltInLocations.Title", bundle: .module)) {
                     ForEach(LocationType.allCases.filter { $0 != .unknown }, id: \.self) { locationType in
                         LocationRow(
                             locationType: locationType,
@@ -47,7 +47,7 @@ struct LocationSetupView: View {
                     }
                 }
                 
-                Section("Custom Locations") {
+                Section(String(localized: "LocationSetupView.CustomLocations.Title", bundle: .module)) {
                     ForEach(locationManager.allCustomLocations) { customLocation in
                         CustomLocationRow(
                             customLocation: customLocation,
@@ -70,35 +70,35 @@ struct LocationSetupView: View {
                         editingCustomLocation = nil
                         showingCustomLocationEditor = true
                     } label: {
-                        Label("Add Custom Location", systemImage: "plus")
+                        Label(String(localized: "LocationSetupView.AddCustomLocation.Label", bundle: .module), systemImage: "plus")
                             .foregroundStyle(.blue)
                     }
                 }
                 
                 Section {
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("How it works:")
+                        Text(String(localized: "LocationSetupView.HowItWorks.Title", bundle: .module))
                             .font(.subheadline)
                             .fontWeight(.medium)
                         
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("• Go to each location (home, office, etc.)")
-                            Text("• Tap 'Set Current Location' for that place")
-                            Text("• The app will detect when you're within 150m")
-                            Text("• Your location data stays private on your device")
+                            Text(String(localized: "LocationSetupView.HowItWorks.Step1", bundle: .module))
+                            Text(String(localized: "LocationSetupView.HowItWorks.Step2", bundle: .module))
+                            Text(String(localized: "LocationSetupView.HowItWorks.Step3", bundle: .module))
+                            Text(String(localized: "LocationSetupView.HowItWorks.Step4", bundle: .module))
                         }
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     }
                 } header: {
-                    Text("Privacy & How It Works")
+                    Text(String(localized: "LocationSetupView.PrivacyTitle", bundle: .module))
                 }
             }
-            .navigationTitle("Location Setup")
+            .navigationTitle(String(localized: "LocationSetupView.NavigationTitle", bundle: .module))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") {
+                    Button(String(localized: "LocationSetupView.Done.Button", bundle: .module)) {
                         dismiss()
                     }
                 }
@@ -130,16 +130,16 @@ struct LocationSetupView: View {
                 editingCustomLocation = nil
             }
         }
-        .alert("Delete Location", isPresented: $showingCustomDeleteAlert) {
-            Button("Cancel", role: .cancel) { }
-            Button("Delete", role: .destructive) {
+        .alert(String(localized: "LocationSetupView.DeleteAlert.Title", bundle: .module), isPresented: $showingCustomDeleteAlert) {
+            Button(String(localized: "LocationSetupView.DeleteAlert.Cancel", bundle: .module), role: .cancel) { }
+            Button(String(localized: "LocationSetupView.DeleteAlert.Delete", bundle: .module), role: .destructive) {
                 if let customLocation = customLocationToDelete {
                     locationManager.deleteCustomLocation(id: customLocation.id)
                 }
             }
         } message: {
             if let customLocation = customLocationToDelete {
-                Text("Are you sure you want to delete \"\(customLocation.name)\"? This action cannot be undone.")
+                Text(String(localized: "LocationSetupView.DeleteAlert.Message", bundle: .module).replacingOccurrences(of: "%@", with: customLocation.name))
             }
         }
     }
@@ -160,11 +160,11 @@ private struct LocationRow: View {
                         .foregroundStyle(.primary)
                     
                     if let savedLocation = savedLocation {
-                        Text("Set \(savedLocation.dateCreated.formatted(date: .abbreviated, time: .omitted))")
+                        Text(String(localized: "LocationSetupView.LocationSet.Date", bundle: .module).replacingOccurrences(of: "%@", with: savedLocation.dateCreated.formatted(date: .abbreviated, time: .omitted)))
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     } else {
-                        Text("Not set")
+                        Text(String(localized: "LocationSetupView.LocationSet.NotSet", bundle: .module))
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -177,15 +177,15 @@ private struct LocationRow: View {
             Spacer()
             
             if savedLocation != nil {
-                Button("Change", action: onAdd)
+                Button(String(localized: "LocationSetupView.Change.Button", bundle: .module), action: onAdd)
                     .font(.caption)
                     .foregroundStyle(.blue)
                 
-                Button("Remove", action: onRemove)
+                Button(String(localized: "LocationSetupView.Remove.Button", bundle: .module), action: onRemove)
                     .font(.caption)
                     .foregroundStyle(.red)
             } else {
-                Button("Set Current Location", action: onAdd)
+                Button(String(localized: "LocationSetupView.SetCurrentLocation.Button", bundle: .module), action: onAdd)
                     .font(.caption)
                     .foregroundStyle(.blue)
             }
@@ -208,11 +208,11 @@ private struct CustomLocationRow: View {
                         .foregroundStyle(.primary)
                     
                     if customLocation.hasCoordinates {
-                        Text("Set \(customLocation.dateCreated.formatted(date: .abbreviated, time: .omitted))")
+                        Text(String(localized: "LocationSetupView.LocationSet.Date", bundle: .module).replacingOccurrences(of: "%@", with: customLocation.dateCreated.formatted(date: .abbreviated, time: .omitted)))
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     } else {
-                        Text("Not set")
+                        Text(String(localized: "LocationSetupView.LocationSet.NotSet", bundle: .module))
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -226,20 +226,20 @@ private struct CustomLocationRow: View {
             
             HStack(spacing: 8) {
                 if customLocation.hasCoordinates {
-                    Button("Change", action: onSetLocation)
+                    Button(String(localized: "LocationSetupView.Change.Button", bundle: .module), action: onSetLocation)
                         .font(.caption)
                         .foregroundStyle(.blue)
                 } else {
-                    Button("Set Location", action: onSetLocation)
+                    Button(String(localized: "LocationSetupView.SetLocation.Button", bundle: .module), action: onSetLocation)
                         .font(.caption)
                         .foregroundStyle(.blue)
                 }
                 
-                Button("Edit", action: onEdit)
+                Button(String(localized: "LocationSetupView.Edit.Button", bundle: .module), action: onEdit)
                     .font(.caption)
                     .foregroundStyle(.orange)
                 
-                Button("Delete", action: onDelete)
+                Button(String(localized: "LocationSetupView.Delete.Button", bundle: .module), action: onDelete)
                     .font(.caption)
                     .foregroundStyle(.red)
             }
@@ -278,7 +278,7 @@ private struct CustomLocationPickerView: View {
                             .font(.system(size: 60))
                             .foregroundStyle(.blue)
                         
-                        Text("Set \(customLocation.name) Location")
+                        Text(String(localized: "LocationSetupView.SetLocationTitle", bundle: .module).replacingOccurrences(of: "%@", with: customLocation.name))
                             .font(.title2)
                             .fontWeight(.semibold)
                     }
@@ -288,7 +288,7 @@ private struct CustomLocationPickerView: View {
                             ProgressView()
                                 .scaleEffect(1.2)
                             
-                            Text("Getting your current location...")
+                            Text(String(localized: "LocationSetupView.GettingLocation", bundle: .module))
                                 .font(.subheadline)
                                 .foregroundStyle(.secondary)
                         }
@@ -299,18 +299,18 @@ private struct CustomLocationPickerView: View {
                             .multilineTextAlignment(.center)
                     } else if currentLocation != nil {
                         VStack(spacing: 12) {
-                            Text("✓ Location found!")
+                            Text(String(localized: "LocationSetupView.LocationFound", bundle: .module))
                                 .font(.headline)
                                 .foregroundStyle(.green)
                             
                             if let customLocation = customLocation {
-                                Text("This will set your \(customLocation.name.lowercased()) location to your current position.")
+                                Text(String(localized: "LocationSetupView.LocationDescription", bundle: .module).replacingOccurrences(of: "%@", with: customLocation.name.lowercased()))
                                     .font(.subheadline)
                                     .foregroundStyle(.secondary)
                                     .multilineTextAlignment(.center)
                             }
                             
-                            Text("The app will detect when you're within 150 meters of this spot.")
+                            Text(String(localized: "LocationSetupView.DetectionRadius", bundle: .module))
                                 .font(.caption)
                                 .foregroundStyle(.tertiary)
                                 .multilineTextAlignment(.center)
@@ -326,7 +326,7 @@ private struct CustomLocationPickerView: View {
                             onSave(location)
                             dismiss()
                         } label: {
-                            Text("Save This Location")
+                            Text(String(localized: "LocationSetupView.SaveThisLocation.Button", bundle: .module))
                                 .font(.headline)
                                 .foregroundStyle(.white)
                                 .frame(maxWidth: .infinity)
@@ -398,7 +398,7 @@ private struct LocationPickerView: View {
                         .font(.system(size: 60))
                         .foregroundStyle(.blue)
                     
-                    Text("Set \(locationType.displayName) Location")
+                    Text(String(localized: "LocationSetupView.SetLocationTitle", bundle: .module).replacingOccurrences(of: "%@", with: locationType.displayName))
                         .font(.title2)
                         .fontWeight(.semibold)
                     
@@ -407,7 +407,7 @@ private struct LocationPickerView: View {
                             ProgressView()
                                 .scaleEffect(1.2)
                             
-                            Text("Getting your current location...")
+                            Text(String(localized: "LocationSetupView.GettingLocation", bundle: .module))
                                 .font(.subheadline)
                                 .foregroundStyle(.secondary)
                         }
@@ -418,16 +418,16 @@ private struct LocationPickerView: View {
                             .multilineTextAlignment(.center)
                     } else if currentLocation != nil {
                         VStack(spacing: 12) {
-                            Text("✓ Location found!")
+                            Text(String(localized: "LocationSetupView.LocationFound", bundle: .module))
                                 .font(.headline)
                                 .foregroundStyle(.green)
                             
-                            Text("This will set your \(locationType.displayName.lowercased()) location to your current position.")
+                            Text(String(localized: "LocationSetupView.LocationDescription", bundle: .module).replacingOccurrences(of: "%@", with: locationType.displayName.lowercased()))
                                 .font(.subheadline)
                                 .foregroundStyle(.secondary)
                                 .multilineTextAlignment(.center)
                             
-                            Text("The app will detect when you're within 150 meters of this spot.")
+                            Text(String(localized: "LocationSetupView.DetectionRadius", bundle: .module))
                                 .font(.caption)
                                 .foregroundStyle(.tertiary)
                                 .multilineTextAlignment(.center)
@@ -443,7 +443,7 @@ private struct LocationPickerView: View {
                             onSave(location)
                             dismiss()
                         } label: {
-                            Text("Save This Location")
+                            Text(String(localized: "LocationSetupView.SaveThisLocation.Button", bundle: .module))
                                 .font(.headline)
                                 .foregroundStyle(.white)
                                 .frame(maxWidth: .infinity)

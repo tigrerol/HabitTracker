@@ -53,17 +53,17 @@ public struct ConditionalHabitEditorView: View {
                 optionsSection
                 depthWarningSection
             }
-            .navigationTitle(existingHabit == nil ? "New Question" : "Edit Question")
+            .navigationTitle(existingHabit == nil ? String(localized: "ConditionalHabitEditorView.NewQuestion.NavigationTitle", bundle: .module) : String(localized: "ConditionalHabitEditorView.EditQuestion.NavigationTitle", bundle: .module))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
+                    Button(String(localized: "ConditionalHabitEditorView.Cancel.Button", bundle: .module)) {
                         dismiss()
                     }
                 }
                 
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") {
+                    Button(String(localized: "ConditionalHabitEditorView.Save.Button", bundle: .module)) {
                         saveHabit()
                     }
                     .disabled(!isValid)
@@ -81,11 +81,11 @@ public struct ConditionalHabitEditorView: View {
                 } else {
                     let _ = print("🔍 Sheet: Could not find option in current list")
                     VStack {
-                        Text("Error: Option not found")
+                        Text(String(localized: "ConditionalHabitEditorView.Error.OptionNotFound", bundle: .module))
                             .foregroundStyle(.red)
                         Text("Option: \(option.text)")
                             .font(.caption)
-                        Button("Close") {
+                        Button(String(localized: "ConditionalHabitEditorView.Close.Button", bundle: .module)) {
                             selectedOptionForBuilder = nil
                         }
                     }
@@ -116,8 +116,8 @@ public struct ConditionalHabitEditorView: View {
                     )
                 }
             }
-            .alert("Delete Option", isPresented: $showingDeleteAlert) {
-                Button("Delete", role: .destructive) {
+            .alert(String(localized: "ConditionalHabitEditorView.DeleteOption.AlertTitle", bundle: .module), isPresented: $showingDeleteAlert) {
+                Button(String(localized: "ConditionalHabitEditorView.Delete.Button", bundle: .module), role: .destructive) {
                     if let option = optionToDelete {
                         options.removeAll { $0.id == option.id }
                         // Reset selection if deleted option was selected
@@ -131,7 +131,7 @@ public struct ConditionalHabitEditorView: View {
                 }
                 Button("Cancel", role: .cancel) {}
             } message: {
-                Text("Are you sure you want to delete this option? This will also delete all habits in its path.")
+                Text(String(localized: "ConditionalHabitEditorView.DeleteOption.Message", bundle: .module))
             }
         }
     }
@@ -140,9 +140,9 @@ public struct ConditionalHabitEditorView: View {
     
     @ViewBuilder
     private var habitDetailsSection: some View {
-        Section("Habit Details") {
-            TextField("Habit Name", text: $habitName)
-            TextField("Question", text: $question)
+        Section(String(localized: "ConditionalHabitEditorView.HabitDetails.Section", bundle: .module)) {
+            TextField(String(localized: "ConditionalHabitEditorView.HabitName.Placeholder", bundle: .module), text: $habitName)
+            TextField(String(localized: "ConditionalHabitEditorView.Question.Placeholder", bundle: .module), text: $question)
             colorPickerView
         }
     }
@@ -150,7 +150,7 @@ public struct ConditionalHabitEditorView: View {
     @ViewBuilder
     private var colorPickerView: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Color")
+            Text(String(localized: "ConditionalHabitEditorView.Color.Label", bundle: .module))
                 .font(.caption)
                 .foregroundStyle(.secondary)
             
@@ -177,7 +177,7 @@ public struct ConditionalHabitEditorView: View {
     
     @ViewBuilder
     private var optionsSection: some View {
-        Section("Options") {
+        Section(String(localized: "ConditionalHabitEditorView.Options.Section", bundle: .module)) {
             ForEach(Array(options.enumerated()), id: \.element.id) { index, option in
                 OptionCard(
                     option: optionBinding(for: index),
@@ -195,7 +195,7 @@ public struct ConditionalHabitEditorView: View {
                 Button {
                     addNewOption()
                 } label: {
-                    Label("Add Option", systemImage: "plus.circle.fill")
+                    Label(String(localized: "ConditionalHabitEditorView.AddOption.Label", bundle: .module), systemImage: "plus.circle.fill")
                 }
             }
         }
@@ -205,7 +205,7 @@ public struct ConditionalHabitEditorView: View {
     private var depthWarningSection: some View {
         if existingConditionalDepth >= 2 {
             Section {
-                Label("Maximum nesting depth reached", systemImage: "exclamationmark.triangle")
+                Label(String(localized: "ConditionalHabitEditorView.MaximumNesting.Warning", bundle: .module), systemImage: "exclamationmark.triangle")
                     .foregroundStyle(.orange)
             }
         }
@@ -228,7 +228,7 @@ public struct ConditionalHabitEditorView: View {
     
     private func addNewOption() {
         let newOption = ConditionalOption(
-            text: "Option \(options.count + 1)",
+            text: "\(String(localized: "ConditionalHabitEditorView.Option.DefaultPrefix", bundle: .module)) \(options.count + 1)",
             habits: []
         )
         options.append(newOption)
@@ -266,7 +266,7 @@ private struct OptionCard: View {
         VStack(alignment: .leading, spacing: 12) {
             // Header with editable text and delete button
             HStack {
-                TextField("Option text", text: Binding(
+                TextField(String(localized: "ConditionalHabitEditorView.OptionText.Placeholder", bundle: .module), text: Binding(
                     get: { option.text },
                     set: { option.text = $0 }
                 ))
@@ -285,20 +285,20 @@ private struct OptionCard: View {
             // Habits preview and actions
             if option.habits.isEmpty {
                 VStack(spacing: 8) {
-                    Text("No habits yet")
+                    Text(String(localized: "ConditionalHabitEditorView.NoHabitsYet.Message", bundle: .module))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .frame(maxWidth: .infinity)
                     
                     HStack(spacing: 12) {
-                        QuickHabitButton(title: "Timer", icon: "timer") {
+                        QuickHabitButton(title: String(localized: "ConditionalHabitEditorView.Timer.QuickButton", bundle: .module), icon: "timer") {
                             addQuickHabit(.timer(defaultDuration: 300))
                         }
-                        QuickHabitButton(title: "Task", icon: "checkmark.square") {
+                        QuickHabitButton(title: String(localized: "ConditionalHabitEditorView.Task.QuickButton", bundle: .module), icon: "checkmark.square") {
                             addQuickHabit(.checkbox)
                         }
-                        QuickHabitButton(title: "Counter", icon: "list.bullet") {
-                            addQuickHabit(.counter(items: ["Item 1"]))
+                        QuickHabitButton(title: String(localized: "ConditionalHabitEditorView.Counter.QuickButton", bundle: .module), icon: "list.bullet") {
+                            addQuickHabit(.counter(items: [String(localized: "ConditionalHabitEditorView.CounterItem.Default", bundle: .module)]))
                         }
                     }
                 }
@@ -327,7 +327,7 @@ private struct OptionCard: View {
                     HStack {
                         Spacer()
                         
-                        Button("Edit Path") {
+                        Button(String(localized: "ConditionalHabitEditorView.EditPath.Button", bundle: .module)) {
                             onEditPath()
                         }
                         .font(.caption)
@@ -393,7 +393,7 @@ private struct CompactHabitRow: View {
                 .fill(Color(hex: habit.color) ?? .blue)
                 .frame(width: 6, height: 6)
             
-            TextField("Habit name", text: $habitName)
+            TextField(String(localized: "ConditionalHabitEditorView.HabitName.CompactPlaceholder", bundle: .module), text: $habitName)
                 .font(.caption)
                 .textFieldStyle(.plain)
                 .lineLimit(1)
@@ -475,19 +475,19 @@ struct PathBuilderView: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section("Option Details") {
-                    TextField("Option Text", text: $optionText)
+                Section(String(localized: "ConditionalHabitEditorView.OptionDetails.Section", bundle: .module)) {
+                    TextField(String(localized: "ConditionalHabitEditorView.OptionText.PathPlaceholder", bundle: .module), text: $optionText)
                         .onChange(of: optionText) {
                             saveChanges()
                         }
                 }
                 
-                Section("Path Habits") {
+                Section(String(localized: "ConditionalHabitEditorView.PathHabits.Section", bundle: .module)) {
                     if habits.isEmpty {
                         ContentUnavailableView(
-                            "No Habits",
+                            String(localized: "ConditionalHabitEditorView.NoHabits.Title", bundle: .module),
                             systemImage: "list.bullet",
-                            description: Text("Tap the + button to add habits to this path")
+                            description: Text(String(localized: "ConditionalHabitEditorView.NoHabits.Description", bundle: .module))
                         )
                     } else {
                         ForEach(Array(habits.enumerated()), id: \.element.id) { index, habit in
@@ -509,11 +509,11 @@ struct PathBuilderView: View {
                     }
                 }
             }
-            .navigationTitle("Path for '\(optionText)'")
+            .navigationTitle(String(format: String(localized: "ConditionalHabitEditorView.PathFor.NavigationTitle", bundle: .module), optionText))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Done") {
+                    Button(String(localized: "ConditionalHabitEditorView.Done.Button", bundle: .module)) {
                         saveChanges()
                         dismiss()
                     }
@@ -585,7 +585,7 @@ struct HabitRow: View {
                 .frame(width: 8, height: 8)
             
             VStack(alignment: .leading) {
-                TextField("Habit name", text: $habitName)
+                TextField(String(localized: "ConditionalHabitEditorView.HabitName.CompactPlaceholder", bundle: .module), text: $habitName)
                     .font(.subheadline)
                     .textFieldStyle(.plain)
                     .onSubmit {
@@ -664,7 +664,7 @@ struct HabitPickerView: View {
     var body: some View {
         NavigationStack {
             List {
-                Section("Create New") {
+                Section(String(localized: "ConditionalHabitEditorView.CreateNew.Section", bundle: .module)) {
                     ForEach(HabitTypeCategory.allCases, id: \.self) { category in
                         // Hide conditional if at max depth
                         if !(category == .conditional && existingConditionalDepth >= 2) {
@@ -680,7 +680,7 @@ struct HabitPickerView: View {
                 }
                 
                 if !habitLibrary.isEmpty {
-                    Section("Duplicate from Library") {
+                    Section(String(localized: "ConditionalHabitEditorView.DuplicateFromLibrary.Section", bundle: .module)) {
                         ForEach(habitLibrary.filter { filterHabit($0) }) { habit in
                             Button {
                                 onSelect(habit)
@@ -703,11 +703,11 @@ struct HabitPickerView: View {
                     }
                 }
             }
-            .navigationTitle("Add Habit")
+            .navigationTitle(String(localized: "ConditionalHabitEditorView.AddHabit.NavigationTitle", bundle: .module))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
+                    Button(String(localized: "ConditionalHabitEditorView.Cancel.Button", bundle: .module)) {
                         dismiss()
                     }
                 }
@@ -732,13 +732,13 @@ struct HabitPickerView: View {
         switch type {
         case .checkbox:
             HabitEditorView(
-                habit: Habit(name: "New Task", type: .checkbox)
+                habit: Habit(name: String(localized: "ConditionalHabitEditorView.NewTask.DefaultName", bundle: .module), type: .checkbox)
             ) { habit in
                 onSelect(habit)
                 dismiss()
             }
         case .timer:
-            let timerHabit = Habit(name: "New Timer", type: .timer(defaultDuration: 300))
+            let timerHabit = Habit(name: String(localized: "ConditionalHabitEditorView.NewTimer.DefaultName", bundle: .module), type: .timer(defaultDuration: 300))
             let _ = print("🔍 HabitPickerView: Creating timer habit - name: '\(timerHabit.name)', type: \(timerHabit.type)")
             HabitEditorView(habit: timerHabit) { habit in
                 print("🔍 HabitPickerView: Timer habit saved - name: '\(habit.name)', type: \(habit.type)")
@@ -747,35 +747,35 @@ struct HabitPickerView: View {
             }
         case .counter:
             HabitEditorView(
-                habit: Habit(name: "New Counter", type: .counter(items: ["Item 1"]))
+                habit: Habit(name: String(localized: "ConditionalHabitEditorView.NewCounter.DefaultName", bundle: .module), type: .counter(items: [String(localized: "ConditionalHabitEditorView.CounterItem.Default", bundle: .module)]))
             ) { habit in
                 onSelect(habit)
                 dismiss()
             }
         case .measurement:
             HabitEditorView(
-                habit: Habit(name: "New Measurement", type: .measurement(unit: "kg", targetValue: nil))
+                habit: Habit(name: String(localized: "ConditionalHabitEditorView.NewMeasurement.DefaultName", bundle: .module), type: .measurement(unit: "kg", targetValue: nil))
             ) { habit in
                 onSelect(habit)
                 dismiss()
             }
         case .appLaunch:
             HabitEditorView(
-                habit: Habit(name: "New App", type: .appLaunch(bundleId: "", appName: ""))
+                habit: Habit(name: String(localized: "ConditionalHabitEditorView.NewApp.DefaultName", bundle: .module), type: .appLaunch(bundleId: "", appName: ""))
             ) { habit in
                 onSelect(habit)
                 dismiss()
             }
         case .website:
             HabitEditorView(
-                habit: Habit(name: "New Website", type: .website(url: URL(string: "https://example.com")!, title: ""))
+                habit: Habit(name: String(localized: "ConditionalHabitEditorView.NewWebsite.DefaultName", bundle: .module), type: .website(url: URL(string: "https://example.com")!, title: ""))
             ) { habit in
                 onSelect(habit)
                 dismiss()
             }
         case .guidedSequence:
             HabitEditorView(
-                habit: Habit(name: "New Sequence", type: .guidedSequence(steps: []))
+                habit: Habit(name: String(localized: "ConditionalHabitEditorView.NewSequence.DefaultName", bundle: .module), type: .guidedSequence(steps: []))
             ) { habit in
                 onSelect(habit)
                 dismiss()
@@ -807,14 +807,14 @@ enum HabitTypeCategory: CaseIterable, Identifiable {
     
     var displayName: String {
         switch self {
-        case .checkbox: return "Checkbox"
-        case .timer: return "Timer"
-        case .counter: return "Counter"
-        case .measurement: return "Measurement"
-        case .appLaunch: return "App Launch"
-        case .website: return "Website/Shortcut"
-        case .guidedSequence: return "Guided Sequence"
-        case .conditional: return "Question"
+        case .checkbox: return String(localized: "HabitTypeCategory.Checkbox.DisplayName", bundle: .module)
+        case .timer: return String(localized: "HabitTypeCategory.Timer.DisplayName", bundle: .module)
+        case .counter: return String(localized: "HabitTypeCategory.Counter.DisplayName", bundle: .module)
+        case .measurement: return String(localized: "HabitTypeCategory.Measurement.DisplayName", bundle: .module)
+        case .appLaunch: return String(localized: "HabitTypeCategory.AppLaunch.DisplayName", bundle: .module)
+        case .website: return String(localized: "HabitTypeCategory.Website.DisplayName", bundle: .module)
+        case .guidedSequence: return String(localized: "HabitTypeCategory.GuidedSequence.DisplayName", bundle: .module)
+        case .conditional: return String(localized: "HabitTypeCategory.Question.DisplayName", bundle: .module)
         }
     }
     

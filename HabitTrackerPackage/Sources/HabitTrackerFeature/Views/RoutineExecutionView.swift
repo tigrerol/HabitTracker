@@ -20,11 +20,11 @@ public struct RoutineExecutionView: View {
                         activeRoutineView(session)
                     }
                 } else {
-                    Text("No active routine")
+                    Text(String(localized: "RoutineExecutionView.NoActiveRoutine", bundle: .module))
                         .foregroundStyle(.secondary)
                 }
             }
-            .navigationTitle(session?.template.name ?? "Routine")
+            .navigationTitle(session?.template.name ?? String(localized: "RoutineExecutionView.NavigationTitle", bundle: .module))
             .navigationBarTitleDisplayMode(.inline)
             .onReceive(NotificationCenter.default.publisher(for: .routineQueueDidChange)) { _ in
                 // Force view refresh when routine queue changes (for conditional habits)
@@ -79,7 +79,7 @@ public struct RoutineExecutionView: View {
             
             // Progress text
             HStack {
-                Text("\(session.completions.count) of \(session.activeHabits.count) completed")
+                Text(String(format: String(localized: "RoutineExecutionView.CompletedOfTotal", bundle: .module), session.completions.count, session.activeHabits.count))
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                 
@@ -119,9 +119,9 @@ public struct RoutineExecutionView: View {
                 // Handle conditional habits specially
                 if case .conditional(let info) = habit.type,
                    let notes = notes,
-                   notes.hasPrefix("Selected: ") {
+                   notes.hasPrefix(String(localized: "RoutineExecutionView.SelectedOptionPrefix", bundle: .module)) {
                     // Extract selected option text
-                    let optionText = String(notes.dropFirst("Selected: ".count))
+                    let optionText = String(notes.dropFirst(String(localized: "RoutineExecutionView.SelectedOptionPrefix", bundle: .module).count))
                     
                     // Find the selected option
                     if let selectedOption = info.options.first(where: { $0.text == optionText }) {
@@ -134,7 +134,7 @@ public struct RoutineExecutionView: View {
                     }
                 } else if case .conditional(let info) = habit.type,
                           let notes = notes,
-                          notes == "Skipped" {
+                          notes == String(localized: "RoutineExecutionView.Skipped", bundle: .module) {
                     // Handle conditional habit skip
                     routineService.skipConditionalHabit(habitId: habit.id, question: info.question)
                 }
@@ -184,7 +184,7 @@ public struct RoutineExecutionView: View {
                 } label: {
                     HStack(spacing: 4) {
                         Image(systemName: "forward.fill")
-                        Text("Skip")
+                        Text(String(localized: "RoutineExecutionView.Skip", bundle: .module))
                     }
                     .font(.subheadline)
                     .fontWeight(.medium)
@@ -243,11 +243,11 @@ public struct RoutineExecutionView: View {
                 Text("🎉")
                     .font(.system(size: 60))
                 
-                Text("Routine Complete!")
+                Text(String(localized: "RoutineExecutionView.RoutineComplete", bundle: .module))
                     .font(.title)
                     .fontWeight(.bold)
                 
-                Text("You completed \(session.completions.filter { !$0.isSkipped }.count) of \(session.activeHabits.count) habits in \(session.duration.formattedDuration)")
+                Text(String(format: String(localized: "RoutineExecutionView.CompletionSummary", bundle: .module), session.completions.filter { !$0.isSkipped }.count, session.activeHabits.count, session.duration.formattedDuration))
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
@@ -264,7 +264,7 @@ public struct RoutineExecutionView: View {
             } label: {
                 HStack {
                     Image(systemName: "checkmark.circle.fill")
-                    Text("All Done!")
+                    Text(String(localized: "RoutineExecutionView.AllDone", bundle: .module))
                 }
                 .font(.headline)
                 .foregroundStyle(.white)

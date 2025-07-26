@@ -22,7 +22,15 @@
       "mcp__XcodeBuildMCP__stop_sim_log_cap",
       "mcp__XcodeBuildMCP__clean_ws",
       "mcp__XcodeBuildMCP__button",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "mcp__XcodeBuildMCP__build_run_sim_name_ws",
+      "Bash(mkdir:*)",
+      "mcp__XcodeBuildMCP__swift_package_build",
+      "mcp__XcodeBuildMCP__discover_projs",
+      "mcp__XcodeBuildMCP__list_sims",
+      "mcp__XcodeBuildMCP__stop_app_sim"
     ],
     "deny": []
   }

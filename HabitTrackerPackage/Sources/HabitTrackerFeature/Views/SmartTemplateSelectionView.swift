@@ -31,10 +31,10 @@ struct SmartTemplateSelectionView: View {
                 Spacer()
             }
             .padding()
-            .navigationTitle("Good Morning!")
+            .navigationTitle(String(localized: "SmartTemplateSelectionView.NavigationTitle", bundle: .module))
             .navigationBarTitleDisplayMode(.large)
             .safeAreaInset(edge: .bottom) {
-                Text("Build: 2024.12.24.1847")
+                Text(String(localized: "SmartTemplateSelectionView.BuildNumber", bundle: .module))
                     .font(.caption2)
                     .foregroundStyle(.secondary)
                     .padding(.bottom, 8)
@@ -66,15 +66,23 @@ struct SmartTemplateSelectionView: View {
         .sheet(item: $editingTemplate) { template in
             RoutineBuilderView(editingTemplate: template)
         }
+        .onChange(of: routineService.templates.count) {
+            // Re-select smart template when templates are added/removed
+            selectSmartTemplate()
+        }
+        .onChange(of: routineService.templates) {
+            // Re-select smart template when templates are modified
+            selectSmartTemplate()
+        }
         .sheet(isPresented: $showingLocationSetup) {
             LocationSetupView()
         }
         .sheet(isPresented: $showingContextSettings) {
             ContextSettingsView()
         }
-        .alert("Delete Routine", isPresented: $showingDeleteAlert) {
-            Button("Cancel", role: .cancel) { }
-            Button("Delete", role: .destructive) {
+        .alert(String(localized: "SmartTemplateSelectionView.DeleteAlert.Title", bundle: .module), isPresented: $showingDeleteAlert) {
+            Button(String(localized: "SmartTemplateSelectionView.DeleteAlert.Cancel", bundle: .module), role: .cancel) { }
+            Button(String(localized: "SmartTemplateSelectionView.DeleteAlert.Delete", bundle: .module), role: .destructive) {
                 if let template = templateToDelete {
                     routineService.deleteTemplate(withId: template.id)
                     // Update selected template if it was deleted
@@ -85,7 +93,7 @@ struct SmartTemplateSelectionView: View {
             }
         } message: {
             if let template = templateToDelete {
-                Text("Are you sure you want to delete \"\(template.name)\"? This action cannot be undone.")
+                Text(String(localized: "SmartTemplateSelectionView.DeleteAlert.Message", bundle: .module).replacingOccurrences(of: "%@", with: template.name))
             }
         }
     }
@@ -95,7 +103,7 @@ struct SmartTemplateSelectionView: View {
             contextIndicatorView
                 .padding(.bottom, 8)
             
-            Text("Ready to start?")
+            Text(String(localized: "SmartTemplateSelectionView.ReadyToStart", bundle: .module))
                 .font(.title2)
                 .fontWeight(.medium)
             
@@ -105,7 +113,7 @@ struct SmartTemplateSelectionView: View {
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
             } else {
-                Text("Tap Quick Start or choose a different routine")
+                Text(String(localized: "SmartTemplateSelectionView.TapQuickStart", bundle: .module))
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
@@ -125,10 +133,10 @@ struct SmartTemplateSelectionView: View {
             
             // Day indicator
             Label {
-                Text(routineService.smartSelector.currentContext.effectiveDayCategory.displayName)
+                Text(routineService.smartSelector.currentContext.dayCategory.displayName)
             } icon: {
-                Image(systemName: routineService.smartSelector.currentContext.effectiveDayCategory.icon)
-                    .foregroundStyle(routineService.smartSelector.currentContext.effectiveDayCategory.color)
+                Image(systemName: routineService.smartSelector.currentContext.dayCategory.icon)
+                    .foregroundStyle(routineService.smartSelector.currentContext.dayCategory.color)
             }
             .font(.caption)
             .foregroundStyle(.secondary)
@@ -148,7 +156,7 @@ struct SmartTemplateSelectionView: View {
                     showingLocationSetup = true
                 } label: {
                     Label {
-                        Text("Set Locations")
+                        Text(String(localized: "SmartTemplateSelectionView.SetLocations", bundle: .module))
                     } icon: {
                         Image(systemName: "location.badge.plus")
                     }
@@ -175,7 +183,7 @@ struct SmartTemplateSelectionView: View {
                 VStack(spacing: 12) {
                     HStack {
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("Quick Start")
+                            Text(String(localized: "SmartTemplateSelectionView.QuickStart", bundle: .module))
                                 .font(.caption)
                                 .fontWeight(.semibold)
                                 .foregroundStyle(.secondary)
@@ -205,7 +213,7 @@ struct SmartTemplateSelectionView: View {
                     }
                     
                     HStack {
-                        Label("\(template.activeHabitsCount) habits", systemImage: "list.bullet")
+                        Label(String(format: String(localized: "SmartTemplateSelectionView.HabitsCount", bundle: .module), template.activeHabitsCount), systemImage: "list.bullet")
                         
                         Spacer()
                         
@@ -233,7 +241,7 @@ struct SmartTemplateSelectionView: View {
                 }
             } label: {
                 HStack {
-                    Text(showAllTemplates ? "Hide Options" : "Change Routine")
+                    Text(showAllTemplates ? String(localized: "SmartTemplateSelectionView.HideOptions", bundle: .module) : String(localized: "SmartTemplateSelectionView.ChangeRoutine", bundle: .module))
                         .font(.subheadline)
                         .fontWeight(.medium)
                     
@@ -280,17 +288,19 @@ struct SmartTemplateSelectionView: View {
     }
     
     private func selectSmartTemplate() {
-        // Use smart selection based on context
-        let smartSelection = routineService.smartTemplate
-        selectedTemplate = smartSelection.template
-        selectionReason = smartSelection.reason
-        
-        // Fallback to default logic if smart selection fails
-        if selectedTemplate == nil {
-            selectedTemplate = routineService.defaultTemplate 
-                            ?? routineService.lastUsedTemplate 
-                            ?? routineService.templates.first
-            selectionReason = ""
+        Task { @MainActor in
+            // Use smart selection based on context
+            let smartSelection = await routineService.getSmartTemplate()
+            selectedTemplate = smartSelection.template
+            selectionReason = smartSelection.reason
+            
+            // Fallback to default logic if smart selection fails
+            if selectedTemplate == nil {
+                selectedTemplate = routineService.defaultTemplate 
+                                ?? routineService.lastUsedTemplate 
+                                ?? routineService.templates.first
+                selectionReason = ""
+            }
         }
     }
     
@@ -316,7 +326,7 @@ private struct CompactTemplateCard: View {
                         .fontWeight(.medium)
                         .foregroundStyle(.primary)
                     
-                    Text("\(template.activeHabitsCount) habits • \(template.formattedDuration)")
+                    Text("\(String(format: String(localized: "SmartTemplateSelectionView.HabitsCount", bundle: .module), template.activeHabitsCount)) • \(template.formattedDuration)")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -331,13 +341,13 @@ private struct CompactTemplateCard: View {
                         Button {
                             onEdit()
                         } label: {
-                            Label("Edit", systemImage: "pencil")
+                            Label(String(localized: "SmartTemplateSelectionView.Edit", bundle: .module), systemImage: "pencil")
                         }
                         
                         Button(role: .destructive) {
                             onDelete()
                         } label: {
-                            Label("Delete", systemImage: "trash")
+                            Label(String(localized: "SmartTemplateSelectionView.Delete", bundle: .module), systemImage: "trash")
                         }
                     } label: {
                         Image(systemName: "ellipsis")

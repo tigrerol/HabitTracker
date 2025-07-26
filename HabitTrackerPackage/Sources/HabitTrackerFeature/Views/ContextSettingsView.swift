@@ -13,20 +13,20 @@ struct ContextSettingsView: View {
         NavigationStack {
             List {
                 Section {
-                    Text("Customize how the app determines the best routine for your current situation.")
+                    Text(String(localized: "ContextSettingsView.Description", bundle: .module))
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 } header: {
-                    Text("Smart Routine Settings")
+                    Text(String(localized: "ContextSettingsView.SmartRoutineSettings", bundle: .module))
                 }
                 
-                Section("Time of Day") {
+                Section(String(localized: "ContextSettingsView.TimeOfDay", bundle: .module)) {
                     Button {
                         showingTimeSlotEditor = true
                     } label: {
                         SettingsRow(
-                            title: "Time Slots",
-                            subtitle: "Customize when each time period occurs",
+                            title: String(localized: "ContextSettingsView.TimeSlots.Title", bundle: .module),
+                            subtitle: String(localized: "ContextSettingsView.TimeSlots.Subtitle", bundle: .module),
                             icon: "clock",
                             detail: timeSlotSummary
                         )
@@ -34,13 +34,13 @@ struct ContextSettingsView: View {
                     .buttonStyle(.plain)
                 }
                 
-                Section("Day Type") {
+                Section(String(localized: "ContextSettingsView.DayType", bundle: .module)) {
                     Button {
                         showingDayTypeEditor = true
                     } label: {
                         SettingsRow(
-                            title: "Weekdays & Weekends",
-                            subtitle: "Define which days are work vs rest days",
+                            title: String(localized: "ContextSettingsView.WeekdaysWeekends.Title", bundle: .module),
+                            subtitle: String(localized: "ContextSettingsView.WeekdaysWeekends.Subtitle", bundle: .module),
                             icon: "calendar",
                             detail: dayTypeSummary
                         )
@@ -48,13 +48,13 @@ struct ContextSettingsView: View {
                     .buttonStyle(.plain)
                 }
                 
-                Section("Location") {
+                Section(String(localized: "ContextSettingsView.Location", bundle: .module)) {
                     Button {
                         showingLocationSetup = true
                     } label: {
                         SettingsRow(
-                            title: "Locations",
-                            subtitle: "Set up your important places",
+                            title: String(localized: "ContextSettingsView.Locations.Title", bundle: .module),
+                            subtitle: String(localized: "ContextSettingsView.Locations.Subtitle", bundle: .module),
                             icon: "location",
                             detail: locationSummary
                         )
@@ -64,7 +64,7 @@ struct ContextSettingsView: View {
                 
                 Section {
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("Current Context:")
+                        Text(String(localized: "ContextSettingsView.CurrentContext", bundle: .module))
                             .font(.subheadline)
                             .fontWeight(.medium)
                         
@@ -72,8 +72,8 @@ struct ContextSettingsView: View {
                             Label(routineService.smartSelector.currentContext.timeSlot.displayName, 
                                   systemImage: routineService.smartSelector.currentContext.timeSlot.icon)
                             
-                            Label(routineService.smartSelector.currentContext.dayType.displayName, 
-                                  systemImage: routineService.smartSelector.currentContext.dayType.icon)
+                            Label(routineService.smartSelector.currentContext.dayCategory.displayName, 
+                                  systemImage: routineService.smartSelector.currentContext.dayCategory.icon)
                             
                             if routineService.smartSelector.currentContext.location != .unknown {
                                 Label(routineService.smartSelector.currentContext.location.displayName, 
@@ -84,14 +84,14 @@ struct ContextSettingsView: View {
                         .foregroundStyle(.secondary)
                     }
                 } header: {
-                    Text("Current Status")
+                    Text(String(localized: "ContextSettingsView.CurrentStatus", bundle: .module))
                 }
             }
-            .navigationTitle("Context Settings")
+            .navigationTitle(String(localized: "ContextSettingsView.NavigationTitle", bundle: .module))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") {
+                    Button(String(localized: "ContextSettingsView.Done", bundle: .module)) {
                         dismiss()
                     }
                 }
@@ -110,12 +110,12 @@ struct ContextSettingsView: View {
     
     private var timeSlotSummary: String {
         let currentSlot = TimeSlotManager.shared.getCurrentTimeSlot()
-        return "Currently: \(currentSlot.displayName)"
+        return String(format: String(localized: "ContextSettingsView.TimeSlotSummary", bundle: .module), currentSlot.displayName)
     }
     
     private var dayTypeSummary: String {
         let currentCategory = DayCategoryManager.shared.getCurrentDayCategory()
-        return "Today: \(currentCategory.displayName)"
+        return String(format: String(localized: "ContextSettingsView.DayTypeSummary", bundle: .module), currentCategory.displayName)
     }
     
     private var locationSummary: String {
@@ -124,9 +124,9 @@ struct ContextSettingsView: View {
         let total = builtInCount + customCount
         
         if total == 0 {
-            return "No locations set"
+            return String(localized: "ContextSettingsView.NoLocationsSet", bundle: .module)
         } else {
-            return "\(total) location\(total == 1 ? "" : "s") configured"
+            return String(format: String(localized: "ContextSettingsView.LocationsConfigured", bundle: .module), total, total == 1 ? "" : "s")
         }
     }
 }

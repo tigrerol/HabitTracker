@@ -20,7 +20,7 @@ struct HabitQuickAddView: View {
                     .foregroundStyle(detectedTypeColor)
                     .frame(width: 24)
                 
-                TextField("Add a habit...", text: $inputText)
+                TextField(String(localized: "HabitQuickAddView.AddHabit.Placeholder", bundle: .module), text: $inputText)
                     .textFieldStyle(.plain)
                     .focused($isInputFocused)
                     .onSubmit {
@@ -142,7 +142,7 @@ struct HabitQuickAddView: View {
         
         // Website detection
         if lowercased.contains("website") || lowercased.contains("http") || lowercased.contains("www") {
-            return .website(url: URL(string: "https://example.com")!, title: "Website")
+            return .website(url: URL(string: String(localized: "HabitTypePickerView.ExampleURL", bundle: .module))!, title: String(localized: "HabitQuickAddView.Website.Title", bundle: .module))
         }
         
         // Counter detection
@@ -242,13 +242,13 @@ struct HabitQuickAddView: View {
             switch type {
             case .timer(let duration):
                 if duration != 300 {
-                    suggestions.append(("\(cleanName) (5 min)", .timer(defaultDuration: 300)))
+                    suggestions.append((String(format: String(localized: "HabitQuickAddView.Suggestion.5min", bundle: .module), cleanName), .timer(defaultDuration: 300)))
                 }
                 if duration != 600 {
-                    suggestions.append(("\(cleanName) (10 min)", .timer(defaultDuration: 600)))
+                    suggestions.append((String(format: String(localized: "HabitQuickAddView.Suggestion.10min", bundle: .module), cleanName), .timer(defaultDuration: 600)))
                 }
             case .checkbox:
-                suggestions.append(("\(cleanName) checklist", .checkboxWithSubtasks(subtasks: [])))
+                suggestions.append((String(format: String(localized: "HabitQuickAddView.Suggestion.Checklist", bundle: .module), cleanName), .checkboxWithSubtasks(subtasks: [])))
             default:
                 break
             }
@@ -360,25 +360,25 @@ struct HabitQuickAddView: View {
     private func getDefaultName(for type: HabitType) -> String {
         switch type {
         case .checkbox:
-            return "New Task"
+            return String(localized: "HabitQuickAddView.DefaultName.NewTask", bundle: .module)
         case .checkboxWithSubtasks:
-            return "Task with Steps"
+            return String(localized: "HabitQuickAddView.DefaultName.TaskWithSteps", bundle: .module)
         case .timer:
-            return "Timed Activity"
+            return String(localized: "HabitQuickAddView.DefaultName.TimedActivity", bundle: .module)
         case .restTimer:
-            return "Rest Period"
+            return String(localized: "HabitQuickAddView.DefaultName.RestPeriod", bundle: .module)
         case .appLaunch:
-            return "Run Shortcut"
+            return String(localized: "HabitQuickAddView.DefaultName.RunShortcut", bundle: .module)
         case .website:
-            return "Visit Website"
+            return String(localized: "HabitQuickAddView.DefaultName.VisitWebsite", bundle: .module)
         case .counter:
-            return "Track Items"
+            return String(localized: "HabitQuickAddView.DefaultName.TrackItems", bundle: .module)
         case .measurement:
-            return "Record Measurement"
+            return String(localized: "HabitQuickAddView.DefaultName.RecordMeasurement", bundle: .module)
         case .guidedSequence:
-            return "Guided Activity"
+            return String(localized: "HabitQuickAddView.DefaultName.GuidedActivity", bundle: .module)
         case .conditional:
-            return "Question"
+            return String(localized: "HabitQuickAddView.DefaultName.Question", bundle: .module)
         }
     }
 }
@@ -395,8 +395,8 @@ private struct HabitTypePickerView: View {
                 Section {
                     TypeOptionRow(
                         icon: "checkmark.square",
-                        title: "Simple Task",
-                        description: "Tap to complete",
+                        title: String(localized: "HabitTypePickerView.SimpleTask.Title", bundle: .module),
+                        description: String(localized: "HabitTypePickerView.SimpleTask.Description", bundle: .module),
                         color: .green
                     ) {
                         onSelect(.checkbox)
@@ -405,8 +405,8 @@ private struct HabitTypePickerView: View {
                     
                     TypeOptionRow(
                         icon: "checklist",
-                        title: "Task with Subtasks",
-                        description: "Break down into steps",
+                        title: String(localized: "HabitTypePickerView.TaskWithSubtasks.Title", bundle: .module),
+                        description: String(localized: "HabitTypePickerView.TaskWithSubtasks.Description", bundle: .module),
                         color: .green
                     ) {
                         onSelect(.checkboxWithSubtasks(subtasks: []))
@@ -417,8 +417,8 @@ private struct HabitTypePickerView: View {
                 Section {
                     TypeOptionRow(
                         icon: "timer",
-                        title: "Timer",
-                        description: "Count down from set time",
+                        title: String(localized: "HabitTypePickerView.Timer.Title", bundle: .module),
+                        description: String(localized: "HabitTypePickerView.Timer.Description", bundle: .module),
                         color: .blue
                     ) {
                         onSelect(.timer(defaultDuration: 300))
@@ -428,8 +428,8 @@ private struct HabitTypePickerView: View {
                     
                     TypeOptionRow(
                         icon: "pause.circle",
-                        title: "Rest Timer",
-                        description: "Count up to track rest",
+                        title: String(localized: "HabitTypePickerView.RestTimer.Title", bundle: .module),
+                        description: String(localized: "HabitTypePickerView.RestTimer.Description", bundle: .module),
                         color: .blue
                     ) {
                         onSelect(.restTimer(targetDuration: 120))
@@ -440,21 +440,21 @@ private struct HabitTypePickerView: View {
                 Section {
                     TypeOptionRow(
                         icon: "shortcuts",
-                        title: "Run Shortcut",
-                        description: "Execute a Shortcuts shortcut or open app via URL",
+                        title: String(localized: "HabitTypePickerView.RunShortcut.Title", bundle: .module),
+                        description: String(localized: "HabitTypePickerView.RunShortcut.Description", bundle: .module),
                         color: .red
                     ) {
-                        onSelect(.appLaunch(bundleId: "", appName: "Shortcut"))
+                        onSelect(.appLaunch(bundleId: "", appName: String(localized: "HabitTypePickerView.Shortcut.AppName", bundle: .module)))
                         dismiss()
                     }
                     
                     TypeOptionRow(
                         icon: "safari",
-                        title: "Open Website",
-                        description: "Visit a URL",
+                        title: String(localized: "HabitTypePickerView.OpenWebsite.Title", bundle: .module),
+                        description: String(localized: "HabitTypePickerView.OpenWebsite.Description", bundle: .module),
                         color: .orange
                     ) {
-                        onSelect(.website(url: URL(string: "https://example.com")!, title: "Website"))
+                        onSelect(.website(url: URL(string: String(localized: "HabitTypePickerView.ExampleURL", bundle: .module))!, title: String(localized: "HabitQuickAddView.Website.Title", bundle: .module)))
                         dismiss()
                     }
                 }
@@ -462,28 +462,28 @@ private struct HabitTypePickerView: View {
                 Section {
                     TypeOptionRow(
                         icon: "list.bullet",
-                        title: "Checklist",
-                        description: "Track multiple items",
+                        title: String(localized: "HabitTypePickerView.Checklist.Title", bundle: .module),
+                        description: String(localized: "HabitTypePickerView.Checklist.Description", bundle: .module),
                         color: .yellow
                     ) {
-                        onSelect(.counter(items: ["Item 1", "Item 2"]))
+                        onSelect(.counter(items: [String(localized: "HabitTypePickerView.CounterItem1", bundle: .module), String(localized: "HabitTypePickerView.CounterItem2", bundle: .module)]))
                         dismiss()
                     }
                     
                     TypeOptionRow(
                         icon: "chart.line.uptrend.xyaxis",
-                        title: "Measurement",
-                        description: "Record a value",
+                        title: String(localized: "HabitTypePickerView.Measurement.Title", bundle: .module),
+                        description: String(localized: "HabitTypePickerView.Measurement.Description", bundle: .module),
                         color: .purple
                     ) {
-                        onSelect(.measurement(unit: "value", targetValue: nil))
+                        onSelect(.measurement(unit: String(localized: "HabitTypePickerView.MeasurementUnit", bundle: .module), targetValue: nil))
                         dismiss()
                     }
                     
                     TypeOptionRow(
                         icon: "list.number",
-                        title: "Guided Sequence",
-                        description: "Step-by-step instructions",
+                        title: String(localized: "HabitTypePickerView.GuidedSequence.Title", bundle: .module),
+                        description: String(localized: "HabitTypePickerView.GuidedSequence.Description", bundle: .module),
                         color: .cyan
                     ) {
                         onSelect(.guidedSequence(steps: []))
@@ -492,8 +492,8 @@ private struct HabitTypePickerView: View {
                     
                     TypeOptionRow(
                         icon: "questionmark.circle",
-                        title: "Question",
-                        description: "Branch based on answer",
+                        title: String(localized: "HabitTypePickerView.Question.Title", bundle: .module),
+                        description: String(localized: "HabitTypePickerView.Question.Description", bundle: .module),
                         color: .indigo
                     ) {
                         onSelect(.conditional(ConditionalHabitInfo(question: "", options: [])))
@@ -501,11 +501,11 @@ private struct HabitTypePickerView: View {
                     }
                 }
             }
-            .navigationTitle("Choose Habit Type")
+            .navigationTitle(String(localized: "HabitTypePickerView.NavigationTitle", bundle: .module))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
+                    Button(String(localized: "HabitTypePickerView.Cancel.Button", bundle: .module)) {
                         dismiss()
                     }
                 }
@@ -590,7 +590,7 @@ private struct PreviewCard: View {
                     .font(.title3)
                     .foregroundStyle(.white, .blue)
             }
-            .accessibilityLabel("Add habit")
+            .accessibilityLabel(String(localized: "HabitQuickAddView.AddHabit.AccessibilityLabel", bundle: .module))
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 10)

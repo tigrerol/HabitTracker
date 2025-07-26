@@ -1,0 +1,451 @@
+/* HabitEditorView Strings */
+"HabitEditorView.BasicInformation.Title" = "Basic Information";
+"HabitEditorView.BasicInformation.HabitName.Placeholder" = "Habit Name";
+"HabitEditorView.BasicInformation.OptionalHabit.Label" = "Optional Habit";
+"HabitEditorView.BasicInformation.Color.Label" = "Color";
+"HabitEditorView.BasicInformation.Notes.Title" = "Additional Notes";
+"HabitEditorView.BasicInformation.Notes.Placeholder" = "Notes (optional)";
+"HabitEditorView.NavigationTitle" = "Edit Habit";
+"HabitEditorView.Cancel.Button" = "Cancel";
+"HabitEditorView.Save.Button" = "Save";
+
+/* HabitEditorView - Question Type */
+"HabitEditorView.Question.Instructions" = "Use the question editor to modify this habit";
+"HabitEditorView.Question.OpenEditor.Label" = "Open Question Editor";
+
+/* HabitEditorView - Timer Settings */
+"HabitEditorView.Timer.Duration.Label" = "Duration";
+"HabitEditorView.Timer.Minutes.Label" = "Minutes";
+"HabitEditorView.Timer.Seconds.Label" = "Seconds";
+"HabitEditorView.Timer.QuickPresets.Title" = "Quick presets";
+"HabitEditorView.Timer.Preset.30s" = "30s";
+"HabitEditorView.Timer.Preset.1m" = "1m";
+"HabitEditorView.Timer.Preset.2m" = "2m";
+"HabitEditorView.Timer.Preset.5m" = "5m";
+"HabitEditorView.Timer.Preset.10m" = "10m";
+"HabitEditorView.Timer.Preset.15m" = "15m";
+"HabitEditorView.Timer.Preset.20m" = "20m";
+"HabitEditorView.Timer.Preset.30m" = "30m";
+
+/* HabitEditorView - Rest Timer Settings */
+"HabitEditorView.RestTimer.SetTarget.Toggle" = "Set target duration";
+"HabitEditorView.RestTimer.Target.Label" = "Target";
+"HabitEditorView.RestTimer.Preset.90s" = "90s";
+
+/* HabitEditorView - App Launch Settings */
+"HabitEditorView.AppLaunch.DisplayName.Placeholder" = "Display Name";
+"HabitEditorView.AppLaunch.LaunchMethod.Label" = "Launch Method";
+"HabitEditorView.AppLaunch.LaunchMethod.Picker.Label" = "Launch Method";
+"HabitEditorView.AppLaunch.Shortcut.Label" = "Shortcut";
+"HabitEditorView.AppLaunch.URLScheme.Label" = "URL Scheme";
+"HabitEditorView.AppLaunch.ShortcutName.Placeholder" = "Shortcut Name";
+"HabitEditorView.AppLaunch.ShortcutName.Instructions" = "Enter the exact name of your shortcut";
+"HabitEditorView.AppLaunch.URLScheme.Placeholder" = "URL Scheme";
+"HabitEditorView.AppLaunch.URLScheme.Examples" = "Examples: instagram://, spotify://, todoist://";
+
+/* HabitEditorView - Website Settings */
+"HabitEditorView.Website.Title.Placeholder" = "Title";
+"HabitEditorView.Website.URL.Placeholder" = "URL";
+
+/* HabitEditorView - Measurement Settings */
+"HabitEditorView.Measurement.Unit.Placeholder" = "Unit (kg, lbs, bpm, etc.)";
+"HabitEditorView.Measurement.SetTarget.Toggle" = "Set target";
+"HabitEditorView.Measurement.Target.Placeholder" = "Target";
+
+/* HabitEditorView - Subtasks */
+"HabitEditorView.Subtasks.NoSubtasks.Message" = "No subtasks yet";
+"HabitEditorView.Subtasks.Subtask.Placeholder" = "Subtask";
+"HabitEditorView.Subtasks.NewSubtask.Default" = "New subtask";
+"HabitEditorView.Subtasks.AddSubtask.Label" = "Add Subtask";
+
+/* HabitEditorView - Counter Items */
+"HabitEditorView.Counter.ItemsToTrack.Title" = "Items to track:";
+"HabitEditorView.Counter.Items.Placeholder" = "Enter items separated by commas";
+"HabitEditorView.Counter.Instructions" = "Separate multiple items with commas";
+
+/* HabitEditorView - Sequence Steps */
+"HabitEditorView.Sequence.StepName.Placeholder" = "Step name";
+"HabitEditorView.Sequence.Duration.Placeholder" = "Duration";
+"HabitEditorView.Sequence.Seconds.Label" = "sec";
+"HabitEditorView.Sequence.Instructions.Placeholder" = "Instructions (optional)";
+"HabitEditorView.Sequence.NewStep.Default" = "New step";
+"HabitEditorView.Sequence.AddStep.Label" = "Add Step";
+
+/* Habit Type Titles */
+"HabitType.Checkbox.Title" = "Simple Task";
+"HabitType.CheckboxWithSubtasks.Title" = "Subtasks";
+"HabitType.Timer.Title" = "Timer Settings";
+"HabitType.RestTimer.Title" = "Rest Timer";
+"HabitType.AppLaunch.Title" = "App Launch";
+"HabitType.Website.Title" = "Website";
+"HabitType.Counter.Title" = "Checklist Items";
+"HabitType.Measurement.Title" = "Measurement";
+"HabitType.Sequence.Title" = "Sequence Steps";
+"HabitType.Question.Title" = "Question Settings";
+
+/* RoutineBuilderView Strings */
+"RoutineBuilderView.EditRoutine.NavigationTitle" = "Edit Routine";
+"RoutineBuilderView.CreateRoutine.NavigationTitle" = "Create Routine";
+"RoutineBuilderView.Cancel.Button" = "Cancel";
+"RoutineBuilderView.Build.Version" = "Build: 2024.12.24.1847";
+"RoutineBuilderView.Naming.Title" = "Let's name your routine";
+"RoutineBuilderView.Naming.Subtitle" = "Choose a name that describes when you'll use this routine";
+"RoutineBuilderView.Naming.RoutineName.Placeholder" = "Routine Name";
+"RoutineBuilderView.Naming.Color.Label" = "Color";
+"RoutineBuilderView.Naming.Next.Button" = "Next";
+"RoutineBuilderView.Building.Question" = "What's the first thing you do?";
+"RoutineBuilderView.Building.HabitsCount" = "%lld habits • %@ total";
+"RoutineBuilderView.Building.Instructions" = "Keep adding habits or continue to review";
+"RoutineBuilderView.Building.YourRoutine.Title" = "Your routine";
+"RoutineBuilderView.Building.HabitCount" = "%lld habit";
+"RoutineBuilderView.Building.HabitsCount.Plural" = "%lld habits";
+"RoutineBuilderView.Building.Back.Button" = "Back";
+"RoutineBuilderView.Building.Skip.Button" = "Skip";
+"RoutineBuilderView.Building.Review.Button" = "Review";
+"RoutineBuilderView.Error.InvalidHabitIndex" = "Error: Invalid habit index";
+"RoutineBuilderView.Error.InvalidSubHabitReference" = "Error: Invalid sub-habit reference";
+"RoutineBuilderView.Error.Close.Button" = "Close";
+"RoutineBuilderView.AddHabitType.Title" = "Add habit type";
+"RoutineBuilderView.AddHabitType.Subtitle" = "Tap to create";
+"RoutineBuilderView.Summary.HabitsCount" = "%d habits • %@";
+"RoutineBuilderView.Summary.SmartSelectionRules" = "Smart Selection Rules";
+"RoutineBuilderView.Summary.NotConfigured" = "Not configured";
+"RoutineBuilderView.Summary.NoHabitsAdded" = "No habits added";
+"RoutineBuilderView.Summary.AddHabits.Button" = "Add Habits";
+"RoutineBuilderView.Summary.Edit.Button" = "Edit";
+"RoutineBuilderView.AddToQuestion" = "Add to '%@'";
+"RoutineBuilderView.Selected.Label" = "Selected";
+"RoutineBuilderView.AddOption.Button" = "Add Option";
+"RoutineBuilderView.CreateAnswerChoice" = "Create a new answer choice";
+"RoutineBuilderView.AddHabitToOption" = "Add habit to '%@'";
+"RoutineBuilderView.Duration.Label" = "%@";
+"RoutineBuilderView.Duration.Default" = "0:30";
+"RoutineBuilderView.Subtasks.Title" = "Subtasks (%d):";
+"RoutineBuilderView.Subtasks.NoSubtasks" = "No subtasks yet";
+
+/* Habit Type Descriptions */
+"HabitType.Task.Name" = "Task";
+"HabitType.Task.Description" = "Simple checkbox";
+"HabitType.Checklist.Name" = "Checklist";
+"HabitType.Checklist.Description" = "Multiple steps";
+"HabitType.Timer.Name" = "Timer";
+"HabitType.Timer.Description" = "Timed activity";
+"HabitType.RestTimer.Name" = "Rest Timer";
+"HabitType.RestTimer.Description" = "Track rest time";
+"HabitType.AppShortcut.Name" = "App/Shortcut";
+"HabitType.AppShortcut.Description" = "Launch app";
+"HabitType.Website.Name" = "Website";
+"HabitType.Website.Description" = "Open URL";
+"HabitType.Counter.Name" = "Counter";
+"HabitType.Counter.Description" = "Track items";
+"HabitType.Measurement.Name" = "Measurement";
+"HabitType.Measurement.Description" = "Record value";
+"HabitType.Sequence.Name" = "Sequence";
+"HabitType.Sequence.Description" = "Guided steps";
+
+/* Color Names */
+"Color.Green" = "Green";
+"Color.Blue" = "Blue";
+"Color.Orange" = "Orange";
+"Color.Red" = "Red";
+"Color.Purple" = "Purple";
+"Color.LightBlue" = "Light Blue";
+"Color.Selected" = "Selected";
+"Color.NotSelected" = "Not selected";
+
+/* Accessibility Labels */
+"Accessibility.Step1.Naming" = "Step 1 of 3: Naming routine";
+"Accessibility.Step2.Building" = "Step 2 of 3: Building routine";
+"Accessibility.ColorButton" = "%@ color";
+
+/* Routine Name Suggestions */
+"RoutineSuggestion.WeekdayMorning" = "Weekday Morning";
+"RoutineSuggestion.Weekend" = "Weekend";
+"RoutineSuggestion.QuickStart" = "Quick Start";
+"RoutineSuggestion.FullRoutine" = "Full Routine";
+"RoutineSuggestion.Travel" = "Travel";
+
+/* LocationSetupView Strings */
+"LocationSetupView.NavigationTitle" = "Location Setup";
+"LocationSetupView.MainDescription" = "Teach the app your important locations to automatically select the best routine based on where you are.";
+"LocationSetupView.BuiltInLocations.Title" = "Built-in Locations";
+"LocationSetupView.CustomLocations.Title" = "Custom Locations";
+"LocationSetupView.AddCustomLocation.Label" = "Add Custom Location";
+"LocationSetupView.HowItWorks.Title" = "How it works:";
+"LocationSetupView.HowItWorks.Step1" = "• Go to each location (home, office, etc.)";
+"LocationSetupView.HowItWorks.Step2" = "• Tap 'Set Current Location' for that place";
+"LocationSetupView.HowItWorks.Step3" = "• The app will detect when you're within 150m";
+"LocationSetupView.HowItWorks.Step4" = "• Your location data stays private on your device";
+"LocationSetupView.PrivacyTitle" = "Privacy & How It Works";
+"LocationSetupView.Done.Button" = "Done";
+"LocationSetupView.DeleteAlert.Title" = "Delete Location";
+"LocationSetupView.DeleteAlert.Cancel" = "Cancel";
+"LocationSetupView.DeleteAlert.Delete" = "Delete";
+"LocationSetupView.DeleteAlert.Message" = "Are you sure you want to delete \"%@\"? This action cannot be undone.";
+"LocationSetupView.LocationSet.Date" = "Set %@";
+"LocationSetupView.LocationSet.NotSet" = "Not set";
+"LocationSetupView.Change.Button" = "Change";
+"LocationSetupView.Remove.Button" = "Remove";
+"LocationSetupView.SetCurrentLocation.Button" = "Set Current Location";
+"LocationSetupView.SetLocation.Button" = "Set Location";
+"LocationSetupView.Edit.Button" = "Edit";
+"LocationSetupView.Delete.Button" = "Delete";
+"LocationSetupView.SetLocationTitle" = "Set %@ Location";
+"LocationSetupView.GettingLocation" = "Getting your current location...";
+"LocationSetupView.LocationFound" = "✓ Location found!";
+"LocationSetupView.LocationDescription" = "This will set your %@ location to your current position.";
+"LocationSetupView.DetectionRadius" = "The app will detect when you're within 150 meters of this spot.";
+"LocationSetupView.SaveThisLocation.Button" = "Save This Location";
+
+/* HabitInteractionView Strings */
+"HabitInteractionView.Question.Selected" = "Selected: %@";
+"HabitInteractionView.Question.Skipped" = "Skipped";
+"HabitInteractionView.Checkbox.Completed" = "Completed!";
+"HabitInteractionView.Checkbox.TapToComplete" = "Tap to Complete";
+"HabitInteractionView.Timer.Start" = "Start";
+"HabitInteractionView.Timer.Resume" = "Resume";
+"HabitInteractionView.Timer.Pause" = "Pause";
+"HabitInteractionView.Timer.MarkCompleteEarly" = "Mark Complete Early";
+"HabitInteractionView.Timer.QuickCompletion" = "Quick %@ completion";
+"HabitInteractionView.Timer.StoppedEarly" = "Stopped early";
+"HabitInteractionView.AppLaunch.ReturnWhenFinished" = "Return here when finished";
+"HabitInteractionView.AppLaunch.TapToRunShortcut" = "Tap to run shortcut";
+"HabitInteractionView.AppLaunch.TapToLaunch" = "Tap to launch %@";
+"HabitInteractionView.AppLaunch.RunShortcut" = "Run Shortcut";
+"HabitInteractionView.AppLaunch.Launch" = "Launch %@";
+"HabitInteractionView.AppLaunch.ImDone" = "I'm Done";
+"HabitInteractionView.Website.ReturnWhenFinished" = "Return here when finished with %@";
+"HabitInteractionView.Website.TapToOpen" = "Tap to open %@";
+"HabitInteractionView.Website.Open" = "Open %@";
+"HabitInteractionView.Counter.CompletedItems" = "%1$d of %2$d completed";
+"HabitInteractionView.Counter.NoItemsCompleted" = "No items completed";
+"HabitInteractionView.Counter.CompletedList" = "Completed: %@";
+"HabitInteractionView.Complete.Button" = "Complete";
+"HabitInteractionView.Optional.Label" = "Optional";
+"HabitInteractionView.RestTimer.Target" = "Target: %@";
+"HabitInteractionView.RestTimer.StartRest" = "Start Rest";
+"HabitInteractionView.RestTimer.EndRest" = "End Rest";
+"HabitInteractionView.Measurement.Enter" = "Enter %@";
+"HabitInteractionView.Measurement.Record" = "Record";
+"HabitInteractionView.Sequence.StepProgress" = "Step %1$d of %2$d";
+"HabitInteractionView.Sequence.Skip" = "Skip";
+"HabitInteractionView.Sequence.Complete" = "Sequence Complete!";
+"HabitInteractionView.Sequence.TotalTime" = "Total time: %@";
+"HabitInteractionView.Sequence.Done" = "Done";
+
+/* DayTypeEditorView Strings */
+"DayTypeEditorView.Description" = "Create custom day categories and assign them to different days to match your personal schedule.";
+"DayTypeEditorView.DayCategories.Title" = "Day Categories";
+"DayTypeEditorView.CurrentSetting.Title" = "Current Setting";
+"DayTypeEditorView.Summary.Title" = "Summary";
+"DayTypeEditorView.Examples.Title" = "Examples:";
+"DayTypeEditorView.Examples.WorkRest" = "• 'Work Days' and 'Rest Days'";
+"DayTypeEditorView.Examples.GymStudy" = "• 'Gym Days', 'Study Days', 'Free Days'";
+"DayTypeEditorView.Examples.FirstSecond" = "• 'First Half' and 'Second Half'";
+"DayTypeEditorView.Examples.LazyProductive" = "• 'Lazy Days', 'Productive Days'";
+"DayTypeEditorView.Ideas.Title" = "Ideas";
+"DayTypeEditorView.SelectCategory.Title" = "Select Category";
+"DayTypeEditorView.Icon.Title" = "Icon";
+"DayTypeEditorView.Preview.Title" = "Preview";
+"DayTypeEditorView.PresetDescription" = "Choose a preset that matches your lifestyle. You can customize it further after applying.";
+"DayTypeEditorView.PresetSchedules.Title" = "Preset Schedules";
+"DayTypeEditorView.WorkPatternDescription" = "Choose a preset schedule that matches your work pattern.";
+
+/* SmartTemplateSelectionView Strings */
+"SmartTemplateSelectionView.NavigationTitle" = "Good Morning!";
+"SmartTemplateSelectionView.BuildNumber" = "Build: 2024.12.24.1847";
+"SmartTemplateSelectionView.DeleteAlert.Title" = "Delete Routine";
+"SmartTemplateSelectionView.DeleteAlert.Cancel" = "Cancel";
+"SmartTemplateSelectionView.DeleteAlert.Delete" = "Delete";
+"SmartTemplateSelectionView.DeleteAlert.Message" = "Are you sure you want to delete \"%@\"? This action cannot be undone.";
+"SmartTemplateSelectionView.ReadyToStart" = "Ready to start?";
+"SmartTemplateSelectionView.TapQuickStart" = "Tap Quick Start or choose a different routine";
+"SmartTemplateSelectionView.SetLocations" = "Set Locations";
+"SmartTemplateSelectionView.QuickStart" = "Quick Start";
+"SmartTemplateSelectionView.HideOptions" = "Hide Options";
+"SmartTemplateSelectionView.ChangeRoutine" = "Change Routine";
+"SmartTemplateSelectionView.Edit" = "Edit";
+"SmartTemplateSelectionView.Delete" = "Delete";
+"SmartTemplateSelectionView.HabitsCount" = "%d habits";
+
+/* RoutineExecutionView Strings */
+"RoutineExecutionView.NoActiveRoutine" = "No active routine";
+"RoutineExecutionView.NavigationTitle" = "Routine";
+"RoutineExecutionView.SelectedOptionPrefix" = "Selected: ";
+"RoutineExecutionView.Skipped" = "Skipped";
+"RoutineExecutionView.Skip" = "Skip";
+"RoutineExecutionView.RoutineComplete" = "Routine Complete!";
+"RoutineExecutionView.CompletionSummary" = "You completed %1$d of %2$d habits in %@";
+"RoutineExecutionView.AllDone" = "All Done!";
+"RoutineExecutionView.CompletedOfTotal" = "%1$d of %2$d completed";
+
+/* TemplateSelectionView Strings */
+"TemplateSelectionView.NavigationTitle" = "Good Morning!";
+"TemplateSelectionView.ChooseRoutine" = "Choose your routine";
+"TemplateSelectionView.SelectTemplate" = "Select the template that fits your day";
+"TemplateSelectionView.StartRoutine" = "Start Routine";
+"TemplateSelectionView.Default" = "DEFAULT";
+"TemplateSelectionView.HabitsCount" = "%d habits";
+
+/* ContextSettingsView Strings */
+"ContextSettingsView.Description" = "Customize how the app determines the best routine for your current situation.";
+"ContextSettingsView.SmartRoutineSettings" = "Smart Routine Settings";
+"ContextSettingsView.TimeOfDay" = "Time of Day";
+"ContextSettingsView.TimeSlots.Title" = "Time Slots";
+"ContextSettingsView.TimeSlots.Subtitle" = "Customize when each time period occurs";
+"ContextSettingsView.DayType" = "Day Type";
+"ContextSettingsView.WeekdaysWeekends.Title" = "Weekdays & Weekends";
+"ContextSettingsView.WeekdaysWeekends.Subtitle" = "Define which days are work vs rest days";
+"ContextSettingsView.Location" = "Location";
+"ContextSettingsView.Locations.Title" = "Locations";
+"ContextSettingsView.Locations.Subtitle" = "Set up your important places";
+"ContextSettingsView.CurrentContext" = "Current Context:";
+"ContextSettingsView.CurrentStatus" = "Current Status";
+"ContextSettingsView.NavigationTitle" = "Context Settings";
+"ContextSettingsView.Done" = "Done";
+"ContextSettingsView.TimeSlotSummary" = "Currently: %@";
+"ContextSettingsView.DayTypeSummary" = "Today: %@";
+"ContextSettingsView.NoLocationsSet" = "No locations set";
+"ContextSettingsView.LocationsConfigured" = "%d location%@ configured";
+
+/* TimeSlotEditorView Strings */
+"TimeSlotEditorView.Description" = "Customize when each time slot occurs to match your personal schedule.";
+"TimeSlotEditorView.TimeSlots.Title" = "Time Slots";
+"TimeSlotEditorView.AddCustomTimeSlot.Label" = "Add Custom Time Slot";
+"TimeSlotEditorView.HowItWorks.Title" = "How it works:";
+"TimeSlotEditorView.HowItWorks.Step1" = "• Adjust the time ranges to match your schedule";
+"TimeSlotEditorView.HowItWorks.Step2" = "• Times automatically wrap around midnight";
+"TimeSlotEditorView.HowItWorks.Step3" = "• Changes apply to all smart routine suggestions";
+"TimeSlotEditorView.Tips.Title" = "Tips";
+"TimeSlotEditorView.NavigationTitle" = "Time Slots";
+"TimeSlotEditorView.Cancel.Button" = "Cancel";
+"TimeSlotEditorView.Save.Button" = "Save";
+"TimeSlotEditorView.Custom.Label" = "Custom";
+"TimeSlotEditorView.StartTime.Label" = "Start Time";
+"TimeSlotEditorView.EndTime.Label" = "End Time";
+"TimeSlotEditorView.AddTimeSlot.NavigationTitle" = "Add Time Slot";
+"TimeSlotEditorView.TimeSlotDetails.Section" = "Time Slot Details";
+"TimeSlotEditorView.Name.Placeholder" = "Name";
+"TimeSlotEditorView.Icon.Title" = "Icon";
+"TimeSlotEditorView.TimeRange.Section" = "Time Range";
+"TimeSlotEditorView.Add.Button" = "Add";
+"TimeSlotEditorView.Start.DatePickerLabel" = "Start";
+"TimeSlotEditorView.End.DatePickerLabel" = "End";
+
+/* HabitQuickAddView Strings */
+"HabitQuickAddView.AddHabit.Placeholder" = "Add a habit...";
+"HabitQuickAddView.AddHabit.AccessibilityLabel" = "Add habit";
+"HabitQuickAddView.Website.Title" = "Website";
+"HabitQuickAddView.Suggestion.5min" = "%@ (5 min)";
+"HabitQuickAddView.Suggestion.10min" = "%@ (10 min)";
+"HabitQuickAddView.Suggestion.Checklist" = "%@ checklist";
+"HabitQuickAddView.DefaultName.NewTask" = "New Task";
+"HabitQuickAddView.DefaultName.TaskWithSteps" = "Task with Steps";
+"HabitQuickAddView.DefaultName.TimedActivity" = "Timed Activity";
+"HabitQuickAddView.DefaultName.RestPeriod" = "Rest Period";
+"HabitQuickAddView.DefaultName.RunShortcut" = "Run Shortcut";
+"HabitQuickAddView.DefaultName.VisitWebsite" = "Visit Website";
+"HabitQuickAddView.DefaultName.TrackItems" = "Track Items";
+"HabitQuickAddView.DefaultName.RecordMeasurement" = "Record Measurement";
+"HabitQuickAddView.DefaultName.GuidedActivity" = "Guided Activity";
+"HabitQuickAddView.DefaultName.Question" = "Question";
+
+/* HabitTypePickerView Strings */
+"HabitTypePickerView.NavigationTitle" = "Choose Habit Type";
+"HabitTypePickerView.Cancel.Button" = "Cancel";
+"HabitTypePickerView.SimpleTask.Title" = "Simple Task";
+"HabitTypePickerView.SimpleTask.Description" = "Tap to complete";
+"HabitTypePickerView.TaskWithSubtasks.Title" = "Task with Subtasks";
+"HabitTypePickerView.TaskWithSubtasks.Description" = "Break down into steps";
+"HabitTypePickerView.Timer.Title" = "Timer";
+"HabitTypePickerView.Timer.Description" = "Count down from set time";
+"HabitTypePickerView.RestTimer.Title" = "Rest Timer";
+"HabitTypePickerView.RestTimer.Description" = "Count up to track rest";
+"HabitTypePickerView.RunShortcut.Title" = "Run Shortcut";
+"HabitTypePickerView.RunShortcut.Description" = "Execute a Shortcuts shortcut or open app via URL";
+"HabitTypePickerView.OpenWebsite.Title" = "Open Website";
+"HabitTypePickerView.OpenWebsite.Description" = "Visit a URL";
+"HabitTypePickerView.Checklist.Title" = "Checklist";
+"HabitTypePickerView.Checklist.Description" = "Track multiple items";
+"HabitTypePickerView.Measurement.Title" = "Measurement";
+"HabitTypePickerView.Measurement.Description" = "Record a value";
+"HabitTypePickerView.GuidedSequence.Title" = "Guided Sequence";
+"HabitTypePickerView.GuidedSequence.Description" = "Step-by-step instructions";
+"HabitTypePickerView.Question.Title" = "Question";
+"HabitTypePickerView.Question.Description" = "Branch based on answer";
+"HabitTypePickerView.Shortcut.AppName" = "Shortcut";
+"HabitTypePickerView.ExampleURL" = "https://example.com";
+"HabitTypePickerView.CounterItem1" = "Item 1";
+"HabitTypePickerView.CounterItem2" = "Item 2";
+"HabitTypePickerView.MeasurementUnit" = "value";
+
+/* ContextRuleEditorView Strings */
+"ContextRuleEditorView.EnableSmartSelection.Toggle" = "Enable Smart Selection";
+"ContextRuleEditorView.SmartSelection.Header" = "Smart Selection";
+"ContextRuleEditorView.SmartSelection.Footer" = "When enabled, this routine will be automatically selected based on time, day, and location.";
+"ContextRuleEditorView.TimeOfDay.Header" = "Time of Day";
+"ContextRuleEditorView.TimeOfDay.Footer" = "Select when this routine should be suggested. Leave empty for any time.";
+"ContextRuleEditorView.DayType.Header" = "Day Type";
+"ContextRuleEditorView.DayType.Footer" = "Select which days this routine should be suggested. Leave empty for any day.";
+"ContextRuleEditorView.Location.Header" = "Location";
+"ContextRuleEditorView.Location.Footer" = "Select where this routine should be suggested. Leave empty for any location.";
+"ContextRuleEditorView.Priority.Header" = "Priority";
+"ContextRuleEditorView.Priority.Footer" = "Higher priority routines are selected when multiple routines match the current context.";
+"ContextRuleEditorView.Priority.Label" = "Priority";
+"ContextRuleEditorView.NavigationTitle" = "Smart Selection Rules";
+"ContextRuleEditorView.Cancel.Button" = "Cancel";
+"ContextRuleEditorView.Done.Button" = "Done";
+
+/* ConditionalHabitEditorView Strings */
+"ConditionalHabitEditorView.NewQuestion.NavigationTitle" = "New Question";
+"ConditionalHabitEditorView.EditQuestion.NavigationTitle" = "Edit Question";
+"ConditionalHabitEditorView.Cancel.Button" = "Cancel";
+"ConditionalHabitEditorView.Save.Button" = "Save";
+"ConditionalHabitEditorView.Error.OptionNotFound" = "Error: Option not found";
+"ConditionalHabitEditorView.Close.Button" = "Close";
+"ConditionalHabitEditorView.DeleteOption.AlertTitle" = "Delete Option";
+"ConditionalHabitEditorView.Delete.Button" = "Delete";
+"ConditionalHabitEditorView.DeleteOption.Message" = "Are you sure you want to delete this option? This will also delete all habits in its path.";
+"ConditionalHabitEditorView.HabitDetails.Section" = "Habit Details";
+"ConditionalHabitEditorView.HabitName.Placeholder" = "Habit Name";
+"ConditionalHabitEditorView.Question.Placeholder" = "Question";
+"ConditionalHabitEditorView.Color.Label" = "Color";
+"ConditionalHabitEditorView.Options.Section" = "Options";
+"ConditionalHabitEditorView.AddOption.Label" = "Add Option";
+"ConditionalHabitEditorView.MaximumNesting.Warning" = "Maximum nesting depth reached";
+"ConditionalHabitEditorView.OptionText.Placeholder" = "Option text";
+"ConditionalHabitEditorView.NoHabitsYet.Message" = "No habits yet";
+"ConditionalHabitEditorView.Timer.QuickButton" = "Timer";
+"ConditionalHabitEditorView.Task.QuickButton" = "Task";
+"ConditionalHabitEditorView.Counter.QuickButton" = "Counter";
+"ConditionalHabitEditorView.EditPath.Button" = "Edit Path";
+"ConditionalHabitEditorView.HabitName.CompactPlaceholder" = "Habit name";
+"ConditionalHabitEditorView.OptionDetails.Section" = "Option Details";
+"ConditionalHabitEditorView.OptionText.PathPlaceholder" = "Option Text";
+"ConditionalHabitEditorView.PathHabits.Section" = "Path Habits";
+"ConditionalHabitEditorView.NoHabits.Title" = "No Habits";
+"ConditionalHabitEditorView.NoHabits.Description" = "Tap the + button to add habits to this path";
+"ConditionalHabitEditorView.PathFor.NavigationTitle" = "Path for '%@'";
+"ConditionalHabitEditorView.Done.Button" = "Done";
+"ConditionalHabitEditorView.AddHabit.NavigationTitle" = "Add Habit";
+"ConditionalHabitEditorView.CreateNew.Section" = "Create New";
+"ConditionalHabitEditorView.DuplicateFromLibrary.Section" = "Duplicate from Library";
+"ConditionalHabitEditorView.NewTask.DefaultName" = "New Task";
+"ConditionalHabitEditorView.NewTimer.DefaultName" = "New Timer";
+"ConditionalHabitEditorView.NewCounter.DefaultName" = "New Counter";
+"ConditionalHabitEditorView.NewMeasurement.DefaultName" = "New Measurement";
+"ConditionalHabitEditorView.NewApp.DefaultName" = "New App";
+"ConditionalHabitEditorView.NewWebsite.DefaultName" = "New Website";
+"ConditionalHabitEditorView.NewSequence.DefaultName" = "New Sequence";
+"ConditionalHabitEditorView.Option.DefaultPrefix" = "Option";
+"ConditionalHabitEditorView.CounterItem.Default" = "Item 1";
+
+/* HabitTypeCategory Strings */
+"HabitTypeCategory.Checkbox.DisplayName" = "Checkbox";
+"HabitTypeCategory.Timer.DisplayName" = "Timer";
+"HabitTypeCategory.Counter.DisplayName" = "Counter";
+"HabitTypeCategory.Measurement.DisplayName" = "Measurement";
+"HabitTypeCategory.AppLaunch.DisplayName" = "App Launch";
+"HabitTypeCategory.Website.DisplayName" = "Website/Shortcut";
+"HabitTypeCategory.GuidedSequence.DisplayName" = "Guided Sequence";
+"HabitTypeCategory.Question.DisplayName" = "Question";

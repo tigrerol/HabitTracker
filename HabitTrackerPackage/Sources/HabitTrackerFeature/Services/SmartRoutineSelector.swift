@@ -57,46 +57,49 @@ public final class SmartRoutineSelector {
     }
     
     /// Update the current context
-    public func updateContext() {
+    @MainActor
+    public func updateContext() async {
         let location = locationManager.currentLocationType
         let timeSlot = TimeSlotManager.shared.getCurrentTimeSlot()
+        let dayCategory = DayCategoryManager.shared.getCurrentDayCategory()
         
-        // Try to use the new category system if available on main actor
-        if Thread.isMainThread {
-            let dayCategory = DayCategoryManager.shared.getCurrentDayCategory()
-            self.currentContext = RoutineContext(
-                timeSlot: timeSlot,
-                dayCategory: dayCategory,
-                location: location
-            )
-        } else {
-            // Fallback to legacy system for non-main thread contexts
-            let dayType = DayTypeManager.shared.getCurrentDayType()
-            self.currentContext = RoutineContext(
-                timeSlot: timeSlot,
-                dayType: dayType,
-                location: location
-            )
-        }
+        self.currentContext = RoutineContext(
+            timeSlot: timeSlot,
+            dayCategory: dayCategory,
+            location: location
+        )
     }
     
     /// Select the best routine template based on current context
-    public func selectBestTemplate(from templates: [RoutineTemplate]) -> (template: RoutineTemplate?, reason: String) {
-        updateContext()
+    @MainActor
+    public func selectBestTemplate(from templates: [RoutineTemplate]) async -> (template: RoutineTemplate?, reason: String) {
+        await updateContext()
         
         // Filter templates with context rules and calculate scores
+        print("🔍 SmartRoutineSelector: Current context - Time: \(currentContext.timeSlot.displayName), Day: \(currentContext.dayCategory.displayName), Location: \(currentContext.location.displayName)")
+        
         let scoredTemplates = templates.compactMap { template -> (template: RoutineTemplate, score: Int)? in
             guard let rule = template.contextRule else {
                 // Templates without rules get a base score of 1
+                print("🔍 Template '\(template.name)': No context rule, score = 1")
                 return (template, 1)
             }
             
-            let score = rule.matchScore(for: currentContext)
+            let score = rule.matchScore(for: currentContext, locationManager: locationManager)
+            let matches = rule.matches(currentContext, locationManager: locationManager)
+            print("🔍 Template '\(template.name)': matches=\(matches), score=\(score)")
+            print("   - TimeSlots: \(rule.timeSlots), DayCategories: \(rule.dayCategoryIds), Priority: \(rule.priority)")
+            
             return score > 0 ? (template, score) : nil
         }
         
         // Sort by score (highest first)
         let sorted = scoredTemplates.sorted { $0.score > $1.score }
+        
+        print("🔍 SmartRoutineSelector: Sorted templates by score:")
+        for (index, scoredTemplate) in sorted.enumerated() {
+            print("   \(index + 1). '\(scoredTemplate.template.name)' - Score: \(scoredTemplate.score)")
+        }
         
         // Get the best match
         guard let best = sorted.first else {
@@ -131,10 +134,12 @@ public final class SmartRoutineSelector {
         reasons.append("It's \(context.timeSlot.displayName.lowercased())")
         
         // Day-based reason
-        if context.dayType == .weekend {
+        if context.dayCategory.id == "weekend" {
             reasons.append("it's the weekend")
-        } else if context.dayType == .weekday {
+        } else if context.dayCategory.id == "weekday" {
             reasons.append("it's a weekday")
+        } else {
+            reasons.append("it's a \(context.dayCategory.displayName.lowercased()) day")
         }
         
         // Location-based reason
