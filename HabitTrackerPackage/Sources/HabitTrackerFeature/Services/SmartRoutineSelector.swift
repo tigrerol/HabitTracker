@@ -59,7 +59,14 @@ public final class SmartRoutineSelector {
     /// Update the current context
     public func updateContext() {
         let location = locationManager.currentLocationType
-        self.currentContext = RoutineContext.current(location: location)
+        let timeSlot = TimeSlotManager.shared.getCurrentTimeSlot()
+        let dayType = DayTypeManager.shared.getCurrentDayType()
+        
+        self.currentContext = RoutineContext(
+            timeSlot: timeSlot,
+            dayType: dayType,
+            location: location
+        )
     }
     
     /// Select the best routine template based on current context

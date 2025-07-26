@@ -21,7 +21,8 @@
       "mcp__XcodeBuildMCP__start_sim_log_cap",
       "mcp__XcodeBuildMCP__stop_sim_log_cap",
       "mcp__XcodeBuildMCP__clean_ws",
-      "mcp__XcodeBuildMCP__button"
+      "mcp__XcodeBuildMCP__button",
+      "Bash(git add:*)"
     ],
     "deny": []
   }

@@ -23,6 +23,7 @@ public struct RoutineContext: Codable, Hashable, Sendable {
     /// Create context from current conditions
     public static func current(location: LocationType = .unknown) -> RoutineContext {
         let now = Date()
+        // Use fallback methods for non-async context
         return RoutineContext(
             timeSlot: TimeSlot.from(date: now),
             dayType: DayType.from(date: now),
@@ -79,6 +80,13 @@ public enum TimeSlot: String, Codable, CaseIterable, Sendable {
     
     /// Determine time slot from a date
     public static func from(date: Date) -> TimeSlot {
+        // Try to use custom settings if available on main actor
+        if Thread.isMainThread,
+           let timeSlotManager = try? MainActor.assumeIsolated({ TimeSlotManager.shared }) {
+            return timeSlotManager.getCurrentTimeSlot()
+        }
+        
+        // Fallback to standard logic
         let hour = Calendar.current.component(.hour, from: date)
         
         switch hour {
@@ -115,6 +123,13 @@ public enum DayType: String, Codable, CaseIterable, Sendable {
     
     /// Determine day type from a date
     public static func from(date: Date) -> DayType {
+        // Try to use custom settings if available on main actor
+        if Thread.isMainThread,
+           let dayTypeManager = try? MainActor.assumeIsolated({ DayTypeManager.shared }) {
+            return dayTypeManager.dayType(for: date)
+        }
+        
+        // Fallback to standard logic
         let calendar = Calendar.current
         let weekday = calendar.component(.weekday, from: date)
         

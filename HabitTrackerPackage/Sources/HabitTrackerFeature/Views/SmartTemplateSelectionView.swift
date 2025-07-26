@@ -11,6 +11,7 @@ struct SmartTemplateSelectionView: View {
     @State private var templateToDelete: RoutineTemplate?
     @State private var showingDeleteAlert = false
     @State private var showingLocationSetup = false
+    @State private var showingContextSettings = false
     
     var body: some View {
         NavigationStack {
@@ -39,6 +40,14 @@ struct SmartTemplateSelectionView: View {
                     .padding(.bottom, 8)
             }
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button {
+                        showingContextSettings = true
+                    } label: {
+                        Image(systemName: "gearshape")
+                    }
+                }
+                
                 ToolbarItem(placement: .primaryAction) {
                     Button {
                         showingRoutineBuilder = true
@@ -59,6 +68,9 @@ struct SmartTemplateSelectionView: View {
         }
         .sheet(isPresented: $showingLocationSetup) {
             LocationSetupView()
+        }
+        .sheet(isPresented: $showingContextSettings) {
+            ContextSettingsView()
         }
         .alert("Delete Routine", isPresented: $showingDeleteAlert) {
             Button("Cancel", role: .cancel) { }
