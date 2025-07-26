@@ -63,13 +63,18 @@ public struct HabitEditorView: View {
             self._measurementUnit = State(initialValue: unit)
             self._measurementTarget = State(initialValue: target)
         case .checkboxWithSubtasks(let tasks):
+            print("🔍 HabitEditorView: init - checkboxWithSubtasks with \(tasks.count) tasks")
+            for (index, task) in tasks.enumerated() {
+                print("🔍 HabitEditorView: init - subtask \(index): '\(task.name)' (id: \(task.id))")
+            }
             self._subtasks = State(initialValue: tasks)
+        case .checkbox:
+            print("🔍 HabitEditorView: init - checkbox type, initializing empty subtasks")
+            self._subtasks = State(initialValue: [])
         case .guidedSequence(let steps):
             self._sequenceSteps = State(initialValue: steps)
         case .conditional:
             // Conditional habits will redirect to ConditionalHabitEditorView
-            break
-        default:
             break
         }
     }
@@ -171,7 +176,7 @@ public struct HabitEditorView: View {
             switch habit.type {
             case .checkbox:
                 let _ = print("typeSpecificSection: showing checkbox")
-                EmptyView()
+                subtasksEditor
                 
             case .checkboxWithSubtasks:
                 let _ = print("typeSpecificSection: showing checkboxWithSubtasks")
@@ -530,7 +535,8 @@ public struct HabitEditorView: View {
     
     // Subtasks editor
     private var subtasksEditor: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        let _ = print("🔍 subtasksEditor: Rendering with \(subtasks.count) subtasks")
+        return VStack(alignment: .leading, spacing: 8) {
             if subtasks.isEmpty {
                 Text("No subtasks yet")
                     .font(.caption)
@@ -543,6 +549,7 @@ public struct HabitEditorView: View {
                             get: { subtask.name },
                             set: { newName in
                                 if let index = subtasks.firstIndex(where: { $0.id == subtask.id }) {
+                                    print("🔍 subtasksEditor: Updating subtask at index \(index) to '\(newName)'")
                                     subtasks[index].name = newName
                                 }
                             }
@@ -551,6 +558,7 @@ public struct HabitEditorView: View {
                         
                         Button {
                             withAnimation {
+                                print("🔍 subtasksEditor: Removing subtask '\(subtask.name)'")
                                 subtasks.removeAll { $0.id == subtask.id }
                             }
                         } label: {
@@ -563,7 +571,10 @@ public struct HabitEditorView: View {
             
             Button {
                 withAnimation {
-                    subtasks.append(Subtask(name: "New subtask"))
+                    let newSubtask = Subtask(name: "New subtask")
+                    print("🔍 subtasksEditor: Adding new subtask with id \(newSubtask.id)")
+                    subtasks.append(newSubtask)
+                    print("🔍 subtasksEditor: subtasks.count is now \(subtasks.count)")
                 }
             } label: {
                 Label("Add Subtask", systemImage: "plus.circle.fill")
@@ -668,6 +679,11 @@ public struct HabitEditorView: View {
     // MARK: - Save
     
     private func saveHabit() {
+        print("🔍 saveHabit: Starting save process")
+        print("🔍 saveHabit: habitName = '\(habitName)'")
+        print("🔍 saveHabit: habit.type = \(habit.type)")
+        print("🔍 saveHabit: subtasks.count = \(subtasks.count)")
+        
         var updatedHabit = habit
         updatedHabit.name = habitName
         updatedHabit.color = habitColor
@@ -676,6 +692,19 @@ public struct HabitEditorView: View {
         
         // Update type with new values
         switch habit.type {
+        case .checkbox:
+            print("🔍 saveHabit: Processing checkbox type")
+            // Convert to checkboxWithSubtasks if subtasks were added
+            if !subtasks.isEmpty {
+                print("🔍 saveHabit: Converting to checkboxWithSubtasks with \(subtasks.count) subtasks")
+                for (index, subtask) in subtasks.enumerated() {
+                    print("🔍 saveHabit: Subtask \(index): '\(subtask.name)' (id: \(subtask.id))")
+                }
+                updatedHabit.type = .checkboxWithSubtasks(subtasks: subtasks)
+            } else {
+                print("🔍 saveHabit: Keeping as checkbox (no subtasks)")
+                updatedHabit.type = .checkbox
+            }
         case .timer:
             updatedHabit.type = .timer(defaultDuration: timerDuration)
         case .restTimer:
@@ -691,16 +720,20 @@ public struct HabitEditorView: View {
         case .measurement:
             updatedHabit.type = .measurement(unit: measurementUnit, targetValue: measurementTarget)
         case .checkboxWithSubtasks:
+            print("🔍 saveHabit: Processing checkboxWithSubtasks type")
+            print("🔍 saveHabit: Saving with \(subtasks.count) subtasks")
+            for (index, subtask) in subtasks.enumerated() {
+                print("🔍 saveHabit: Subtask \(index): '\(subtask.name)' (id: \(subtask.id))")
+            }
             updatedHabit.type = .checkboxWithSubtasks(subtasks: subtasks)
         case .guidedSequence:
             updatedHabit.type = .guidedSequence(steps: sequenceSteps)
         case .conditional:
             // Don't modify conditional habits in this editor
             break
-        default:
-            break
         }
         
+        print("🔍 saveHabit: Final updatedHabit.type = \(updatedHabit.type)")
         onSave(updatedHabit)
         dismiss()
     }

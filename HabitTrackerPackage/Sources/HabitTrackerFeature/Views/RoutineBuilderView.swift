@@ -11,9 +11,13 @@ public struct RoutineBuilderView: View {
     @State private var habits: [Habit] = []
     @State private var currentStep: BuilderStep = .naming
     @State private var editingHabit: Habit?
+    @State private var editingHabitIndex: Int?
+    @State private var editingSubHabit: (habitIndex: Int, optionId: UUID, subHabitId: UUID)?
+    @State private var editingOptionData: (habitId: UUID, option: ConditionalOption)?
     @State private var isDefault = false
     @State private var expandedHabits: Set<UUID> = []
     @State private var selectedQuestionHabit: Habit?
+    @State private var selectedOption: (habitId: UUID, optionId: UUID)?
     
     enum BuilderStep {
         case naming
@@ -271,15 +275,30 @@ public struct RoutineBuilderView: View {
                                         SelectableQuestionHabitRow(
                                             habit: habit,
                                             isSelected: selectedQuestionHabit?.id == habit.id,
+                                            selectedOption: selectedOption,
                                             onSelect: {
                                                 withAnimation(.easeInOut(duration: 0.2)) {
                                                     selectedQuestionHabit = selectedQuestionHabit?.id == habit.id ? nil : habit
+                                                    selectedOption = nil // Clear option selection when question selection changes
+                                                }
+                                            },
+                                            onOptionSelect: { optionId in
+                                                withAnimation(.easeInOut(duration: 0.2)) {
+                                                    if selectedOption?.optionId == optionId && selectedOption?.habitId == habit.id {
+                                                        selectedOption = nil // Deselect if already selected
+                                                    } else {
+                                                        selectedOption = (habitId: habit.id, optionId: optionId)
+                                                        selectedQuestionHabit = nil // Clear question selection when option is selected
+                                                    }
                                                 }
                                             },
                                             onEdit: {
                                                 print("🔍 RoutineBuilderView: Edit closure called for habit: \(habit.name)")
-                                                editingHabit = habit
-                                                print("🔍 RoutineBuilderView: Set editingHabit to \(habit.name)")
+                                                if let index = habits.firstIndex(where: { $0.id == habit.id }) {
+                                                    print("🔍 RoutineBuilderView: Found habit at index \(index)")
+                                                    editingHabitIndex = index
+                                                    editingHabit = habit
+                                                }
                                             },
                                             onDelete: {
                                                 withAnimation(.easeInOut) {
@@ -287,14 +306,72 @@ public struct RoutineBuilderView: View {
                                                     if selectedQuestionHabit?.id == habit.id {
                                                         selectedQuestionHabit = nil
                                                     }
+                                                    if selectedOption?.habitId == habit.id {
+                                                        selectedOption = nil
+                                                    }
+                                                }
+                                            },
+                                            onEditOption: { optionId in
+                                                // Edit option functionality
+                                                if case .conditional(let info) = habit.type,
+                                                   let optionIndex = info.options.firstIndex(where: { $0.id == optionId }) {
+                                                    let option = info.options[optionIndex]
+                                                    editingOptionData = (habitId: habit.id, option: option)
+                                                }
+                                            },
+                                            onDeleteOption: { optionId in
+                                                // Delete option functionality
+                                                withAnimation(.easeInOut) {
+                                                    if case .conditional(let info) = habit.type {
+                                                        var updatedOptions = info.options
+                                                        updatedOptions.removeAll { $0.id == optionId }
+                                                        let updatedInfo = ConditionalHabitInfo(question: info.question, options: updatedOptions)
+                                                        
+                                                        if let habitIndex = habits.firstIndex(where: { $0.id == habit.id }) {
+                                                            var updatedHabit = habits[habitIndex]
+                                                            updatedHabit.type = .conditional(updatedInfo)
+                                                            habits[habitIndex] = updatedHabit
+                                                        }
+                                                        
+                                                        // Clear selection if deleted option was selected
+                                                        if selectedOption?.optionId == optionId {
+                                                            selectedOption = nil
+                                                        }
+                                                    }
+                                                }
+                                            },
+                                            onEditSubHabit: { optionId, subHabitId in
+                                                // Edit sub-habit functionality
+                                                if let habitIndex = habits.firstIndex(where: { $0.id == habit.id }) {
+                                                    editingSubHabit = (habitIndex: habitIndex, optionId: optionId, subHabitId: subHabitId)
+                                                }
+                                            },
+                                            onDeleteSubHabit: { optionId, subHabitId in
+                                                // Delete sub-habit functionality
+                                                withAnimation(.easeInOut) {
+                                                    if case .conditional(let info) = habit.type,
+                                                       let optionIndex = info.options.firstIndex(where: { $0.id == optionId }) {
+                                                        var updatedOptions = info.options
+                                                        updatedOptions[optionIndex].habits.removeAll { $0.id == subHabitId }
+                                                        let updatedInfo = ConditionalHabitInfo(question: info.question, options: updatedOptions)
+                                                        
+                                                        if let habitIndex = habits.firstIndex(where: { $0.id == habit.id }) {
+                                                            var updatedHabit = habits[habitIndex]
+                                                            updatedHabit.type = .conditional(updatedInfo)
+                                                            habits[habitIndex] = updatedHabit
+                                                        }
+                                                    }
                                                 }
                                             }
                                         )
                                     } else {
                                         HabitRowView(habit: habit) {
                                             print("🔍 RoutineBuilderView: Edit closure called for habit: \(habit.name)")
-                                            editingHabit = habit
-                                            print("🔍 RoutineBuilderView: Set editingHabit to \(habit.name)")
+                                            if let index = habits.firstIndex(where: { $0.id == habit.id }) {
+                                                print("🔍 RoutineBuilderView: Found habit at index \(index)")
+                                                editingHabitIndex = index
+                                                editingHabit = habit
+                                            }
                                         } onDelete: {
                                             withAnimation(.easeInOut) {
                                                 habits.removeAll { $0.id == habit.id }
@@ -312,10 +389,16 @@ public struct RoutineBuilderView: View {
                         addOptionSection(for: selectedQuestion)
                     }
                     
-                    // Habit types section
-                    suggestedHabitsSection
-                        .padding(.top, habits.isEmpty ? 20 : 0)
-                        .padding(.bottom, 100) // Space for bottom buttons
+                    // Habit types section (contextual based on selection)
+                    if let selectedOption = selectedOption {
+                        addHabitToOptionSection(for: selectedOption)
+                    } else {
+                        suggestedHabitsSection
+                            .padding(.top, habits.isEmpty ? 20 : 0)
+                    }
+                    
+                    Spacer()
+                        .frame(height: 100) // Space for bottom buttons
                 }
             }
             
@@ -361,9 +444,74 @@ public struct RoutineBuilderView: View {
             .padding()
             .background(.regularMaterial)
         }
-        .sheet(item: $editingHabit) { habit in
-            let _ = print("🔍 RoutineBuilderView: Sheet presenting with habit: \(habit.name), type: \(habit.type)")
-            habitEditorView(for: habit)
+        .sheet(isPresented: Binding(
+            get: { editingHabitIndex != nil },
+            set: { if !$0 { editingHabitIndex = nil; editingHabit = nil } }
+        )) {
+            if let index = editingHabitIndex, index < habits.count {
+                let _ = print("🔍 RoutineBuilderView: Sheet presenting using index \(index)")
+                habitEditorView(for: $habits[index])
+            } else {
+                VStack {
+                    Text("Error: Invalid habit index")
+                        .foregroundStyle(.red)
+                    Button("Close") {
+                        editingHabitIndex = nil
+                        editingHabit = nil
+                    }
+                }
+                .padding()
+            }
+        }
+        .sheet(isPresented: Binding(
+            get: { editingSubHabit != nil },
+            set: { if !$0 { editingSubHabit = nil } }
+        )) {
+            if let editData = editingSubHabit,
+               editData.habitIndex < habits.count,
+               case .conditional(let info) = habits[editData.habitIndex].type,
+               let optionIndex = info.options.firstIndex(where: { $0.id == editData.optionId }),
+               let subHabitIndex = info.options[optionIndex].habits.firstIndex(where: { $0.id == editData.subHabitId }) {
+                
+                let _ = print("🔍 RoutineBuilderView: Sheet presenting sub-habit editor")
+                subHabitEditorView(
+                    habitIndex: editData.habitIndex,
+                    optionIndex: optionIndex,
+                    subHabitIndex: subHabitIndex
+                )
+            } else {
+                VStack {
+                    Text("Error: Invalid sub-habit reference")
+                        .foregroundStyle(.red)
+                    Button("Close") {
+                        editingSubHabit = nil
+                    }
+                }
+                .padding()
+            }
+        }
+        .sheet(item: Binding<EditingOptionData?>(
+            get: { editingOptionData.map { EditingOptionData(habitId: $0.habitId, option: $0.option) } },
+            set: { editingOptionData = $0.map { ($0.habitId, $0.option) } }
+        )) { data in
+            OptionEditorView(
+                option: data.option,
+                onSave: { updatedOption in
+                    // Update the option in the habit
+                    if case .conditional(let info) = habits.first(where: { $0.id == data.habitId })?.type,
+                       let habitIndex = habits.firstIndex(where: { $0.id == data.habitId }),
+                       let optionIndex = info.options.firstIndex(where: { $0.id == data.option.id }) {
+                        var updatedOptions = info.options
+                        updatedOptions[optionIndex] = updatedOption
+                        let updatedInfo = ConditionalHabitInfo(question: info.question, options: updatedOptions)
+                        
+                        var updatedHabit = habits[habitIndex]
+                        updatedHabit.type = .conditional(updatedInfo)
+                        habits[habitIndex] = updatedHabit
+                    }
+                    editingOptionData = nil
+                }
+            )
         }
     }
     
@@ -697,7 +845,10 @@ public struct RoutineBuilderView: View {
     }
     
     @ViewBuilder
-    private func habitEditorView(for habit: Habit) -> some View {
+    private func habitEditorView(for habitBinding: Binding<Habit>) -> some View {
+        let habit = habitBinding.wrappedValue
+        let _ = print("🔍 RoutineBuilderView: habitEditorView - Creating editor for habit '\(habit.name)' using direct binding")
+        
         switch habit.type {
         case .conditional:
             ConditionalHabitEditorView(
@@ -705,15 +856,60 @@ public struct RoutineBuilderView: View {
                 habitLibrary: getAllAvailableHabits(),
                 existingConditionalDepth: 0
             ) { updatedHabit in
-                if let index = habits.firstIndex(where: { $0.id == habit.id }) {
-                    habits[index] = updatedHabit
-                }
+                print("🔍 RoutineBuilderView: ConditionalHabitEditorView onSave - updating via binding")
+                habitBinding.wrappedValue = updatedHabit
             }
         default:
             HabitEditorView(habit: habit) { updatedHabit in
-                if let index = habits.firstIndex(where: { $0.id == habit.id }) {
-                    habits[index] = updatedHabit
+                print("🔍 RoutineBuilderView: HabitEditorView onSave - updating via binding")
+                print("🔍 RoutineBuilderView: Updated habit type: \(updatedHabit.type)")
+                habitBinding.wrappedValue = updatedHabit
+            }
+        }
+    }
+    
+    @ViewBuilder
+    private func subHabitEditorView(habitIndex: Int, optionIndex: Int, subHabitIndex: Int) -> some View {
+        let _ = print("🔍 RoutineBuilderView: subHabitEditorView - Creating editor for sub-habit")
+        
+        // Create a binding to the specific sub-habit
+        let subHabitBinding = Binding<Habit>(
+            get: {
+                if case .conditional(let info) = habits[habitIndex].type,
+                   optionIndex < info.options.count,
+                   subHabitIndex < info.options[optionIndex].habits.count {
+                    return info.options[optionIndex].habits[subHabitIndex]
                 }
+                return Habit(name: "Error", type: .checkbox) // Fallback
+            },
+            set: { newHabit in
+                print("🔍 RoutineBuilderView: subHabitEditorView - Updating sub-habit via binding")
+                if case .conditional(let info) = habits[habitIndex].type,
+                   optionIndex < info.options.count,
+                   subHabitIndex < info.options[optionIndex].habits.count {
+                    
+                    var updatedOptions = info.options
+                    updatedOptions[optionIndex].habits[subHabitIndex] = newHabit
+                    let updatedInfo = ConditionalHabitInfo(question: info.question, options: updatedOptions)
+                    habits[habitIndex].type = .conditional(updatedInfo)
+                }
+            }
+        )
+        
+        let subHabit = subHabitBinding.wrappedValue
+        
+        switch subHabit.type {
+        case .conditional:
+            ConditionalHabitEditorView(
+                existingHabit: subHabit,
+                habitLibrary: getAllAvailableHabits(),
+                existingConditionalDepth: 1
+            ) { updatedHabit in
+                subHabitBinding.wrappedValue = updatedHabit
+            }
+        default:
+            HabitEditorView(habit: subHabit) { updatedHabit in
+                subHabitBinding.wrappedValue = updatedHabit
             }
         }
     }
@@ -827,6 +1023,96 @@ public struct RoutineBuilderView: View {
         withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
             // Trigger UI update
         }
+    }
+    
+    @ViewBuilder
+    private func addHabitToOptionSection(for selection: (habitId: UUID, optionId: UUID)) -> some View {
+        if let selectedHabit = habits.first(where: { $0.id == selection.habitId }),
+           case .conditional(let info) = selectedHabit.type,
+           let selectedOptionData = info.options.first(where: { $0.id == selection.optionId }) {
+            
+            VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("Add habit to '\(selectedOptionData.text)'")
+                    .font(.headline)
+                    .fontWeight(.semibold)
+                
+                Spacer()
+                
+                Text("Selected")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.horizontal)
+            
+            LazyVGrid(columns: [
+                GridItem(.flexible()),
+                GridItem(.flexible())
+            ], spacing: 12) {
+                ForEach(habitTypeOptions, id: \.type) { habitType in
+                    Button {
+                        withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                            let newHabit = createHabitFromType(habitType.type)
+                            addHabitToSelectedOption(newHabit)
+                        }
+                    } label: {
+                        HStack(spacing: 12) {
+                            Image(systemName: habitType.type.iconName)
+                                .font(.title2)
+                                .foregroundStyle(habitType.color)
+                                .frame(width: 32, height: 32)
+                            
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(habitType.name)
+                                    .font(.subheadline)
+                                    .fontWeight(.medium)
+                                    .multilineTextAlignment(.leading)
+                                
+                                Text(habitType.description)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                    .multilineTextAlignment(.leading)
+                            }
+                            
+                            Spacer()
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
+                        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal)
+            }
+        } else {
+            EmptyView()
+        }
+    }
+    
+    private func addHabitToSelectedOption(_ newHabit: Habit) {
+        guard let selection = selectedOption,
+              let habitIndex = habits.firstIndex(where: { $0.id == selection.habitId }),
+              case .conditional(let info) = habits[habitIndex].type,
+              let optionIndex = info.options.firstIndex(where: { $0.id == selection.optionId }) else {
+            return
+        }
+        
+        // Add habit to the selected option
+        var updatedOptions = info.options
+        var updatedOption = updatedOptions[optionIndex]
+        var habitWithOrder = newHabit
+        habitWithOrder.order = updatedOption.habits.count
+        updatedOption.habits.append(habitWithOrder)
+        updatedOptions[optionIndex] = updatedOption
+        
+        // Update the conditional info
+        let updatedInfo = ConditionalHabitInfo(question: info.question, options: updatedOptions)
+        
+        // Update the habit
+        var updatedHabit = habits[habitIndex]
+        updatedHabit.type = .conditional(updatedInfo)
+        habits[habitIndex] = updatedHabit
     }
 }
 
@@ -1082,9 +1368,15 @@ struct ExpandableHabitRow: View {
 struct SelectableQuestionHabitRow: View {
     let habit: Habit
     let isSelected: Bool
+    let selectedOption: (habitId: UUID, optionId: UUID)?
     let onSelect: () -> Void
+    let onOptionSelect: (UUID) -> Void
     let onEdit: () -> Void
     let onDelete: () -> Void
+    let onEditOption: (UUID) -> Void
+    let onDeleteOption: (UUID) -> Void
+    let onEditSubHabit: (UUID, UUID) -> Void
+    let onDeleteSubHabit: (UUID, UUID) -> Void
     
     var body: some View {
         VStack(spacing: 8) {
@@ -1173,38 +1465,90 @@ struct SelectableQuestionHabitRow: View {
                     let optionColor = optionColors[index % optionColors.count]
                     
                     VStack(spacing: 8) {
-                        // Option in identical format to main habit row
-                        HStack {
-                            Image(systemName: "questionmark.circle")
-                                .font(.body)
-                                .foregroundStyle(optionColor)
-                                .frame(width: 32)
-                            
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(option.text)
-                                    .font(.subheadline)
-                                    .fontWeight(.medium)
+                        // Option in identical format to main habit row (selectable)
+                        Button(action: { onOptionSelect(option.id) }) {
+                            HStack {
+                                Image(systemName: "questionmark.circle")
+                                    .font(.body)
+                                    .foregroundStyle(optionColor)
+                                    .frame(width: 32)
                                 
-                                Text("\(option.habits.count) habit\(option.habits.count == 1 ? "" : "s")")
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(option.text)
+                                        .font(.subheadline)
+                                        .fontWeight(.medium)
+                                        .foregroundStyle(.primary)
+                                    
+                                    Text("\(option.habits.count) habit\(option.habits.count == 1 ? "" : "s")")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+                                
+                                Spacer()
+                                
+                                // Show selection indicator for this option
+                                if let selection = selectedOption, 
+                                   selection.habitId == habit.id && selection.optionId == option.id {
+                                    Image(systemName: "checkmark.circle.fill")
+                                        .font(.body)
+                                        .foregroundStyle(.blue)
+                                }
+                                
+                                Text("0:30")
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
+                                    .monospacedDigit()
+                                
+                                HStack(spacing: 8) {
+                                    Button {
+                                        onEditOption(option.id)
+                                    } label: {
+                                        Image(systemName: "pencil")
+                                            .font(.caption)
+                                            .foregroundStyle(.blue)
+                                            .frame(width: 28, height: 28)
+                                            .background(.blue.opacity(0.1), in: Circle())
+                                    }
+                                    .accessibilityLabel("Edit option")
+                                    
+                                    Button {
+                                        onDeleteOption(option.id)
+                                    } label: {
+                                        Image(systemName: "trash")
+                                            .font(.caption)
+                                            .foregroundStyle(.red)
+                                            .frame(width: 28, height: 28)
+                                            .background(.red.opacity(0.1), in: Circle())
+                                    }
+                                    .accessibilityLabel("Delete option")
+                                }
                             }
-                            
-                            Spacer()
-                            
-                            Text("0:30")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                                .monospacedDigit()
+                            .padding(.vertical, 8)
+                            .padding(.horizontal, 12)
+                            .background(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(.regularMaterial)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 8)
+                                            .stroke(
+                                                (selectedOption?.habitId == habit.id && selectedOption?.optionId == option.id) ? .blue : .clear, 
+                                                lineWidth: 2
+                                            )
+                                    )
+                            )
                         }
-                        .padding(.vertical, 8)
-                        .padding(.horizontal, 12)
-                        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8))
+                        .buttonStyle(.plain)
                         
-                        // Habits for this option
+                        // Habits for this option (indented to show hierarchy)
                         if !option.habits.isEmpty {
                             ForEach(option.habits) { habit in
                                 HStack {
+                                    // Visual indentation - 10% of the container width
+                                    Rectangle()
+                                        .fill(optionColor.opacity(0.3))
+                                        .frame(width: 3, height: 24)
+                                        .cornerRadius(1.5)
+                                    
                                     Image(systemName: habit.type.iconName)
                                         .font(.body)
                                         .foregroundStyle(optionColor)
@@ -1226,9 +1570,34 @@ struct SelectableQuestionHabitRow: View {
                                         .font(.caption)
                                         .foregroundStyle(.secondary)
                                         .monospacedDigit()
+                                    
+                                    HStack(spacing: 8) {
+                                        Button {
+                                            onEditSubHabit(option.id, habit.id)
+                                        } label: {
+                                            Image(systemName: "pencil")
+                                                .font(.caption)
+                                                .foregroundStyle(.blue)
+                                                .frame(width: 28, height: 28)
+                                                .background(.blue.opacity(0.1), in: Circle())
+                                        }
+                                        .accessibilityLabel("Edit sub-habit")
+                                        
+                                        Button {
+                                            onDeleteSubHabit(option.id, habit.id)
+                                        } label: {
+                                            Image(systemName: "trash")
+                                                .font(.caption)
+                                                .foregroundStyle(.red)
+                                                .frame(width: 28, height: 28)
+                                                .background(.red.opacity(0.1), in: Circle())
+                                        }
+                                        .accessibilityLabel("Delete sub-habit")
+                                    }
                                 }
                                 .padding(.vertical, 8)
                                 .padding(.horizontal, 12)
+                                .padding(.leading, 32) // Additional left padding for indentation
                                 .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8))
                             }
                         }
@@ -1246,4 +1615,59 @@ struct SelectableQuestionHabitRow: View {
 #Preview {
     RoutineBuilderView()
         .environment(RoutineService())
+}
+
+// MARK: - Supporting Types
+
+struct EditingOptionData: Identifiable {
+    let id = UUID()
+    let habitId: UUID
+    let option: ConditionalOption
+}
+
+// MARK: - Option Editor View
+
+struct OptionEditorView: View {
+    @Environment(\.dismiss) private var dismiss
+    @State private var optionText: String
+    let onSave: (ConditionalOption) -> Void
+    
+    private let option: ConditionalOption
+    
+    init(option: ConditionalOption, onSave: @escaping (ConditionalOption) -> Void) {
+        self.option = option
+        self.onSave = onSave
+        self._optionText = State(initialValue: option.text)
+    }
+    
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("Option Details") {
+                    TextField("Option Text", text: $optionText)
+                }
+            }
+            .navigationTitle("Edit Option")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") {
+                        dismiss()
+                    }
+                }
+                
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save") {
+                        let updatedOption = ConditionalOption(
+                            id: option.id,
+                            text: optionText,
+                            habits: option.habits
+                        )
+                        onSave(updatedOption)
+                    }
+                    .disabled(optionText.isEmpty)
+                }
+            }
+        }
+    }
 }

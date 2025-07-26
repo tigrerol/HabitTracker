@@ -155,10 +155,16 @@ public struct HabitRowView: View {
                         .padding(.horizontal, 12)
                         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8))
                         
-                        // Habits for this option
+                        // Habits for this option (indented to show hierarchy)
                         if !option.habits.isEmpty {
                             ForEach(option.habits) { habit in
                                 HStack {
+                                    // Visual indentation - color-coded line to show hierarchy
+                                    Rectangle()
+                                        .fill(optionColor.opacity(0.3))
+                                        .frame(width: 3, height: 24)
+                                        .cornerRadius(1.5)
+                                    
                                     Image(systemName: habit.type.iconName)
                                         .font(.body)
                                         .foregroundStyle(optionColor)
@@ -183,6 +189,7 @@ public struct HabitRowView: View {
                                 }
                                 .padding(.vertical, 8)
                                 .padding(.horizontal, 12)
+                                .padding(.leading, 32) // Additional left padding for indentation
                                 .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8))
                             }
                         }
