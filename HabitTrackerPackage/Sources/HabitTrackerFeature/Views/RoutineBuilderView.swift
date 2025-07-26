@@ -18,6 +18,8 @@ public struct RoutineBuilderView: View {
     @State private var expandedHabits: Set<UUID> = []
     @State private var selectedQuestionHabit: Habit?
     @State private var selectedOption: (habitId: UUID, optionId: UUID)?
+    @State private var contextRule: RoutineContextRule?
+    @State private var showingContextRuleEditor = false
     
     enum BuilderStep {
         case naming
@@ -80,6 +82,7 @@ public struct RoutineBuilderView: View {
                 templateColor = template.color
                 habits = template.habits
                 isDefault = template.isDefault
+                contextRule = template.contextRule
                 currentStep = .review // Skip to review for editing
             }
         }
@@ -742,6 +745,40 @@ public struct RoutineBuilderView: View {
                 
                 Toggle("Set as default routine", isOn: $isDefault)
                     .font(.subheadline)
+                
+                // Smart Selection Configuration
+                Button {
+                    showingContextRuleEditor = true
+                } label: {
+                    HStack {
+                        Label {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Smart Selection Rules")
+                                    .foregroundStyle(.primary)
+                                
+                                if let rule = contextRule {
+                                    Text(contextRuleSummary(rule))
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                } else {
+                                    Text("Not configured")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+                            }
+                        } icon: {
+                            Image(systemName: "sparkles")
+                                .foregroundStyle(.blue)
+                        }
+                        
+                        Spacer()
+                        
+                        Image(systemName: "chevron.right")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .buttonStyle(.plain)
             }
             .padding()
             .background(.regularMaterial)
@@ -830,12 +867,41 @@ public struct RoutineBuilderView: View {
             .padding()
             .background(.regularMaterial)
         }
+        .sheet(isPresented: $showingContextRuleEditor) {
+            ContextRuleEditorView(contextRule: $contextRule)
+        }
     }
     
     // MARK: - Helpers
     
     private var totalDuration: TimeInterval {
         habits.reduce(0) { $0 + $1.estimatedDuration }
+    }
+    
+    /// Generate a human-readable summary of the context rule
+    private func contextRuleSummary(_ rule: RoutineContextRule) -> String {
+        var parts: [String] = []
+        
+        if !rule.timeSlots.isEmpty {
+            let timeSlotNames = rule.timeSlots.map { $0.displayName }.sorted()
+            parts.append("Time: \(timeSlotNames.joined(separator: ", "))")
+        }
+        
+        if !rule.dayTypes.isEmpty {
+            let dayTypeNames = rule.dayTypes.map { $0.displayName }.sorted()
+            parts.append("Days: \(dayTypeNames.joined(separator: ", "))")
+        }
+        
+        if !rule.locations.isEmpty {
+            let locationNames = rule.locations.map { $0.displayName }.sorted()
+            parts.append("Location: \(locationNames.joined(separator: ", "))")
+        }
+        
+        if rule.priority > 0 {
+            parts.append("Priority: \(rule.priority)")
+        }
+        
+        return parts.isEmpty ? "Any time, any day, any location" : parts.joined(separator: " • ")
     }
     
     private func updateHabitOrder() {
@@ -929,6 +995,7 @@ public struct RoutineBuilderView: View {
             updatedTemplate.habits = habits
             updatedTemplate.color = templateColor
             updatedTemplate.isDefault = isDefault
+            updatedTemplate.contextRule = contextRule
             
             routineService.updateTemplate(updatedTemplate)
         } else {
@@ -937,7 +1004,8 @@ public struct RoutineBuilderView: View {
                 name: templateName,
                 habits: habits,
                 color: templateColor,
-                isDefault: isDefault
+                isDefault: isDefault,
+                contextRule: contextRule
             )
             
             routineService.addTemplate(template)

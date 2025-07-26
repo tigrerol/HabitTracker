@@ -27,6 +27,10 @@ GENERATE_INFOPLIST_FILE = YES
 INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationLandscapeRight UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationPortrait
 INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = UIInterfaceOrientationLandscapeRight UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown
 
+// Location permissions
+INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = HabitTracker uses your location to automatically select the best routine for your current context (home, office, etc.)
+INFOPLIST_KEY_NSLocationAlwaysUsageDescription = HabitTracker uses your location to automatically select the best routine for your current context, even when the app is in the background
+
 // ==========================================
 // Entitlements
 // ==========================================

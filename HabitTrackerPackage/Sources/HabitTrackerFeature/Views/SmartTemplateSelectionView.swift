@@ -4,6 +4,7 @@ import SwiftUI
 struct SmartTemplateSelectionView: View {
     @Environment(RoutineService.self) private var routineService
     @State private var selectedTemplate: RoutineTemplate?
+    @State private var selectionReason: String = ""
     @State private var showAllTemplates = false
     @State private var showingRoutineBuilder = false
     @State private var editingTemplate: RoutineTemplate?
@@ -75,14 +76,63 @@ struct SmartTemplateSelectionView: View {
     
     private var headerView: some View {
         VStack(spacing: 8) {
+            contextIndicatorView
+                .padding(.bottom, 8)
+            
             Text("Ready to start?")
                 .font(.title2)
                 .fontWeight(.medium)
             
-            Text("Tap Quick Start or choose a different routine")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
+            if !selectionReason.isEmpty {
+                Text(selectionReason)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+            } else {
+                Text("Tap Quick Start or choose a different routine")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
         }
+    }
+    
+    private var contextIndicatorView: some View {
+        HStack(spacing: 16) {
+            // Time indicator
+            Label {
+                Text(routineService.smartSelector.currentContext.timeSlot.displayName)
+            } icon: {
+                Image(systemName: routineService.smartSelector.currentContext.timeSlot.icon)
+            }
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            
+            // Day indicator
+            Label {
+                Text(routineService.smartSelector.currentContext.dayType.displayName)
+            } icon: {
+                Image(systemName: routineService.smartSelector.currentContext.dayType.icon)
+            }
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            
+            // Location indicator (if known)
+            if routineService.smartSelector.currentContext.location != .unknown {
+                Label {
+                    Text(routineService.smartSelector.currentContext.location.displayName)
+                } icon: {
+                    Image(systemName: routineService.smartSelector.currentContext.location.icon)
+                }
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 6)
+        .background(
+            Capsule()
+                .fill(.regularMaterial)
+        )
     }
     
     private func quickStartSection(_ template: RoutineTemplate) -> some View {
@@ -199,10 +249,18 @@ struct SmartTemplateSelectionView: View {
     }
     
     private func selectSmartTemplate() {
-        // Smart selection logic: Default > Recently Used > First
-        selectedTemplate = routineService.defaultTemplate 
-                        ?? routineService.lastUsedTemplate 
-                        ?? routineService.templates.first
+        // Use smart selection based on context
+        let smartSelection = routineService.smartTemplate
+        selectedTemplate = smartSelection.template
+        selectionReason = smartSelection.reason
+        
+        // Fallback to default logic if smart selection fails
+        if selectedTemplate == nil {
+            selectedTemplate = routineService.defaultTemplate 
+                            ?? routineService.lastUsedTemplate 
+                            ?? routineService.templates.first
+            selectionReason = ""
+        }
     }
     
     private func startRoutine(with template: RoutineTemplate) {

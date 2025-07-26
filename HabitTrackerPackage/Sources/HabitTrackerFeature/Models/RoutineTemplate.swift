@@ -11,6 +11,7 @@ public struct RoutineTemplate: Identifiable, Codable, Hashable, Sendable {
     public var isDefault: Bool
     public let createdAt: Date
     public var lastUsedAt: Date?
+    public var contextRule: RoutineContextRule?
     
     public init(
         id: UUID = UUID(),
@@ -20,7 +21,8 @@ public struct RoutineTemplate: Identifiable, Codable, Hashable, Sendable {
         color: String = "#34C759",
         isDefault: Bool = false,
         createdAt: Date = Date(),
-        lastUsedAt: Date? = nil
+        lastUsedAt: Date? = nil,
+        contextRule: RoutineContextRule? = nil
     ) {
         self.id = id
         self.name = name
@@ -30,6 +32,7 @@ public struct RoutineTemplate: Identifiable, Codable, Hashable, Sendable {
         self.isDefault = isDefault
         self.createdAt = createdAt
         self.lastUsedAt = lastUsedAt
+        self.contextRule = contextRule
     }
 }
 

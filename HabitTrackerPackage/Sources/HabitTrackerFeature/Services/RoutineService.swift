@@ -14,6 +14,9 @@ public final class RoutineService {
     public private(set) var currentSession: RoutineSession?
     public private(set) var moodRatings: [MoodRating] = []
     
+    /// Smart routine selector for context-aware selection
+    public let smartSelector = SmartRoutineSelector()
+    
     public init() {
         loadSampleTemplates()
     }
@@ -62,6 +65,11 @@ public final class RoutineService {
     /// Get default template if set
     public var defaultTemplate: RoutineTemplate? {
         templates.first { $0.isDefault }
+    }
+    
+    /// Get smart template based on current context
+    public var smartTemplate: (template: RoutineTemplate?, reason: String) {
+        smartSelector.selectBestTemplate(from: templates)
     }
     
     /// Add a new template
@@ -219,11 +227,20 @@ extension RoutineService {
             )
         ]
         
+        // Office routine is for weekday mornings at the office
+        let contextRule = RoutineContextRule(
+            timeSlots: [.earlyMorning, .morning],
+            dayTypes: [.weekday],
+            locations: [.office],
+            priority: 2
+        )
+        
         return RoutineTemplate(
             name: "Office Day",
             description: "Morning routine for office workdays",
             habits: habits,
-            color: "#007AFF"
+            color: "#007AFF",
+            contextRule: contextRule
         )
     }
     
@@ -273,12 +290,21 @@ extension RoutineService {
             )
         ]
         
+        // Home office routine is for weekday mornings at home
+        let contextRule = RoutineContextRule(
+            timeSlots: [.earlyMorning, .morning, .lateMorning],
+            dayTypes: [.weekday],
+            locations: [.home],
+            priority: 2
+        )
+        
         return RoutineTemplate(
             name: "Home Office",
             description: "Morning routine for working from home",
             habits: habits,
             color: "#34C759",
-            isDefault: true
+            isDefault: true,
+            contextRule: contextRule
         )
     }
     
@@ -317,11 +343,20 @@ extension RoutineService {
             )
         ]
         
+        // Weekend routine is for any time on weekends, any location
+        let contextRule = RoutineContextRule(
+            timeSlots: [.earlyMorning, .morning, .lateMorning],
+            dayTypes: [.weekend],
+            locations: [], // Any location
+            priority: 1
+        )
+        
         return RoutineTemplate(
             name: "Weekend",
             description: "Relaxed weekend morning routine",
             habits: habits,
-            color: "#FDCB6E"
+            color: "#FDCB6E",
+            contextRule: contextRule
         )
     }
 }
