@@ -17,20 +17,24 @@ public final class RoutineService {
     /// Smart routine selector for context-aware selection
     public let smartSelector = SmartRoutineSelector()
     
-    public init() {
+    private let persistenceService: any PersistenceServiceProtocol
+    
+    /// Initialize with dependency injection
+    public init(persistenceService: any PersistenceServiceProtocol = UserDefaultsPersistenceService()) {
+        self.persistenceService = persistenceService
         loadTemplates()
     }
     
     /// Load templates from persistence, or create sample templates if none exist
     private func loadTemplates() {
-        if let data = UserDefaults.standard.data(forKey: "RoutineTemplates") {
-            do {
-                templates = try JSONDecoder().decode([RoutineTemplate].self, from: data)
+        do {
+            if let loadedTemplates = try persistenceService.load([RoutineTemplate].self, forKey: PersistenceKeys.routineTemplates) {
+                templates = loadedTemplates
                 print("✅ Loaded \(templates.count) templates from persistence")
                 return
-            } catch {
-                print("❌ Failed to load templates from persistence: \(error)")
             }
+        } catch {
+            print("❌ Failed to load templates from persistence: \(error)")
         }
         
         // First time launch or failed to load - create sample templates
@@ -49,11 +53,10 @@ public final class RoutineService {
         ]
     }
     
-    /// Persist templates to UserDefaults
+    /// Persist templates using PersistenceService
     private func persistTemplates() {
         do {
-            let data = try JSONEncoder().encode(templates)
-            UserDefaults.standard.set(data, forKey: "RoutineTemplates")
+            try persistenceService.save(templates, forKey: PersistenceKeys.routineTemplates)
             print("✅ Persisted \(templates.count) templates")
         } catch {
             print("❌ Failed to persist templates: \(error)")
