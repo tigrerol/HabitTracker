@@ -60,13 +60,24 @@ public final class SmartRoutineSelector {
     public func updateContext() {
         let location = locationManager.currentLocationType
         let timeSlot = TimeSlotManager.shared.getCurrentTimeSlot()
-        let dayType = DayTypeManager.shared.getCurrentDayType()
         
-        self.currentContext = RoutineContext(
-            timeSlot: timeSlot,
-            dayType: dayType,
-            location: location
-        )
+        // Try to use the new category system if available on main actor
+        if Thread.isMainThread {
+            let dayCategory = DayCategoryManager.shared.getCurrentDayCategory()
+            self.currentContext = RoutineContext(
+                timeSlot: timeSlot,
+                dayCategory: dayCategory,
+                location: location
+            )
+        } else {
+            // Fallback to legacy system for non-main thread contexts
+            let dayType = DayTypeManager.shared.getCurrentDayType()
+            self.currentContext = RoutineContext(
+                timeSlot: timeSlot,
+                dayType: dayType,
+                location: location
+            )
+        }
     }
     
     /// Select the best routine template based on current context

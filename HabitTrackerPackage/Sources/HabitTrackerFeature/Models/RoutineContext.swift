@@ -1,13 +1,47 @@
 import Foundation
 import CoreLocation
 
-/// Represents the current context for smart routine selection
+/// Enhanced routine context with flexible day categories
 public struct RoutineContext: Codable, Hashable, Sendable {
     public let timeSlot: TimeSlot
-    public let dayType: DayType
+    public let dayCategory: DayCategory?
+    public let dayType: DayType // Kept for backwards compatibility
     public let location: LocationType
     public let timestamp: Date
     
+    public init(
+        timeSlot: TimeSlot,
+        dayCategory: DayCategory? = nil,
+        dayType: DayType? = nil,
+        location: LocationType,
+        timestamp: Date = Date()
+    ) {
+        self.timeSlot = timeSlot
+        self.dayCategory = dayCategory
+        self.location = location
+        self.timestamp = timestamp
+        
+        // If dayType is provided, use it; otherwise derive from dayCategory
+        if let dayType = dayType {
+            self.dayType = dayType
+        } else if let dayCategory = dayCategory {
+            // Map category to legacy day type
+            switch dayCategory.id {
+            case "weekday":
+                self.dayType = .weekday
+            case "weekend":
+                self.dayType = .weekend
+            default:
+                // For custom categories, use traditional workday pattern as fallback
+                let weekday = Calendar.current.component(.weekday, from: timestamp)
+                self.dayType = (weekday == 1 || weekday == 7) ? .weekend : .weekday
+            }
+        } else {
+            self.dayType = DayType.from(date: timestamp)
+        }
+    }
+    
+    /// Legacy initializer for backwards compatibility
     public init(
         timeSlot: TimeSlot,
         dayType: DayType,
@@ -18,18 +52,58 @@ public struct RoutineContext: Codable, Hashable, Sendable {
         self.dayType = dayType
         self.location = location
         self.timestamp = timestamp
+        
+        // Map dayType to dayCategory for consistency
+        switch dayType {
+        case .weekday:
+            self.dayCategory = .weekday
+        case .weekend:
+            self.dayCategory = .weekend
+        }
     }
     
     /// Create context from current conditions
     public static func current(location: LocationType = .unknown) -> RoutineContext {
         let now = Date()
-        // Use fallback methods for non-async context
+        
+        // For now, use legacy system to avoid main actor issues
+        // TODO: Consider making this async in the future
         return RoutineContext(
             timeSlot: TimeSlot.from(date: now),
             dayType: DayType.from(date: now),
             location: location,
             timestamp: now
         )
+    }
+    
+    /// Create context from current conditions with day category (main actor required)
+    @MainActor
+    public static func currentWithCategory(location: LocationType = .unknown) -> RoutineContext {
+        let now = Date()
+        let categoryManager = DayCategoryManager.shared
+        let dayCategory = categoryManager.category(for: now)
+        
+        return RoutineContext(
+            timeSlot: TimeSlot.from(date: now),
+            dayCategory: dayCategory,
+            location: location,
+            timestamp: now
+        )
+    }
+    
+    /// Get the effective day category (prefers dayCategory, falls back to mapping dayType)
+    public var effectiveDayCategory: DayCategory {
+        if let dayCategory = dayCategory {
+            return dayCategory
+        }
+        
+        // Map legacy dayType to category
+        switch dayType {
+        case .weekday:
+            return .weekday
+        case .weekend:
+            return .weekend
+        }
     }
 }
 
@@ -80,13 +154,7 @@ public enum TimeSlot: String, Codable, CaseIterable, Sendable {
     
     /// Determine time slot from a date
     public static func from(date: Date) -> TimeSlot {
-        // Try to use custom settings if available on main actor
-        if Thread.isMainThread,
-           let timeSlotManager = try? MainActor.assumeIsolated({ TimeSlotManager.shared }) {
-            return timeSlotManager.getCurrentTimeSlot()
-        }
-        
-        // Fallback to standard logic
+        // Fallback to standard logic for now to avoid main actor complexity
         let hour = Calendar.current.component(.hour, from: date)
         
         switch hour {
@@ -123,13 +191,7 @@ public enum DayType: String, Codable, CaseIterable, Sendable {
     
     /// Determine day type from a date
     public static func from(date: Date) -> DayType {
-        // Try to use custom settings if available on main actor
-        if Thread.isMainThread,
-           let dayTypeManager = try? MainActor.assumeIsolated({ DayTypeManager.shared }) {
-            return dayTypeManager.dayType(for: date)
-        }
-        
-        // Fallback to standard logic
+        // Fallback to standard logic for now to avoid main actor complexity
         let calendar = Calendar.current
         let weekday = calendar.component(.weekday, from: date)
         

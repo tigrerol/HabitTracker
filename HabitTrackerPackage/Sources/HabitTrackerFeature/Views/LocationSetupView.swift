@@ -297,7 +297,7 @@ private struct CustomLocationPickerView: View {
                             .font(.subheadline)
                             .foregroundStyle(.red)
                             .multilineTextAlignment(.center)
-                    } else if let location = currentLocation {
+                    } else if currentLocation != nil {
                         VStack(spacing: 12) {
                             Text("✓ Location found!")
                                 .font(.headline)
@@ -416,7 +416,7 @@ private struct LocationPickerView: View {
                             .font(.subheadline)
                             .foregroundStyle(.red)
                             .multilineTextAlignment(.center)
-                    } else if let location = currentLocation {
+                    } else if currentLocation != nil {
                         VStack(spacing: 12) {
                             Text("✓ Location found!")
                                 .font(.headline)

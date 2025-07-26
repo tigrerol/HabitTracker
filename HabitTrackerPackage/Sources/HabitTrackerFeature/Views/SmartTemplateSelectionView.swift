@@ -125,9 +125,10 @@ struct SmartTemplateSelectionView: View {
             
             // Day indicator
             Label {
-                Text(routineService.smartSelector.currentContext.dayType.displayName)
+                Text(routineService.smartSelector.currentContext.effectiveDayCategory.displayName)
             } icon: {
-                Image(systemName: routineService.smartSelector.currentContext.dayType.icon)
+                Image(systemName: routineService.smartSelector.currentContext.effectiveDayCategory.icon)
+                    .foregroundStyle(routineService.smartSelector.currentContext.effectiveDayCategory.color)
             }
             .font(.caption)
             .foregroundStyle(.secondary)

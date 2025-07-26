@@ -16,6 +16,7 @@ public struct MorningRoutineView: View {
             }
         }
         .environment(routineService)
+        .environment(DayCategoryManager.shared)
     }
 }
 

@@ -114,8 +114,8 @@ struct ContextSettingsView: View {
     }
     
     private var dayTypeSummary: String {
-        let currentType = DayTypeManager.shared.getCurrentDayType()
-        return "Today: \(currentType.displayName)"
+        let currentCategory = DayCategoryManager.shared.getCurrentDayCategory()
+        return "Today: \(currentCategory.displayName)"
     }
     
     private var locationSummary: String {
