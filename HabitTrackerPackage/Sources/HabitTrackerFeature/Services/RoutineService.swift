@@ -205,6 +205,7 @@ public final class RoutineService {
             wasSkipped: false
         )
         ResponseLoggingService.shared.logResponse(response)
+        ConditionalHabitService.shared.recordResponse(response)
         
         // Get the habits from the selected path
         let pathHabits = option.habits
@@ -275,6 +276,7 @@ public final class RoutineService {
             routineId: session.id
         )
         ResponseLoggingService.shared.logResponse(response)
+        ConditionalHabitService.shared.recordResponse(response)
     }
 }
 
