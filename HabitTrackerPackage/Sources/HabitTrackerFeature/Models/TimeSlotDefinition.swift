@@ -146,9 +146,22 @@ public final class TimeSlotManager: ObservableObject, @unchecked Sendable {
     
     @Published private var timeSlots: [TimeSlotDefinition] = []
     private let queue = DispatchQueue(label: "TimeSlotManager", qos: .userInitiated)
+    private let persistenceService: any PersistenceServiceProtocol
+    private let timeSlotsKey = "CustomTimeSlots"
+    private var hasLoaded = false
     
-    private init() {
+    /// Initialize with dependency injection
+    public init(persistenceService: (any PersistenceServiceProtocol)? = nil) {
+        if let service = persistenceService {
+            self.persistenceService = service
+        } else {
+            self.persistenceService = UserDefaultsPersistenceService()
+        }
         loadTimeSlots()
+    }
+    
+    private convenience init() {
+        self.init(persistenceService: nil)
     }
     
     /// Get all time slot definitions
@@ -240,33 +253,34 @@ public final class TimeSlotManager: ObservableObject, @unchecked Sendable {
     // MARK: - Persistence
     
     private func loadTimeSlots() {
-        guard let data = UserDefaults.standard.data(forKey: "CustomTimeSlots") else {
-            queue.sync {
-                timeSlots = TimeSlotDefinition.defaults
-            }
-            return
-        }
-        
-        do {
-            let loadedSlots = try JSONDecoder().decode([TimeSlotDefinition].self, from: data)
-            queue.sync {
-                timeSlots = loadedSlots
-            }
-        } catch {
-            print("Failed to load custom time slots: \(error)")
-            queue.sync {
-                timeSlots = TimeSlotDefinition.defaults
+        Task { @MainActor in
+            do {
+                if let loadedSlots = try await persistenceService.load([TimeSlotDefinition].self, forKey: timeSlotsKey) {
+                    queue.sync {
+                        timeSlots = loadedSlots
+                    }
+                } else {
+                    queue.sync {
+                        timeSlots = TimeSlotDefinition.defaults
+                    }
+                }
+            } catch {
+                print("Failed to load custom time slots: \(error)")
+                queue.sync {
+                    timeSlots = TimeSlotDefinition.defaults
+                }
             }
         }
     }
     
     private func persistTimeSlots() {
         let slotsToSave = queue.sync { timeSlots }
-        do {
-            let data = try JSONEncoder().encode(slotsToSave)
-            UserDefaults.standard.set(data, forKey: "CustomTimeSlots")
-        } catch {
-            print("Failed to save custom time slots: \(error)")
+        Task { @MainActor in
+            do {
+                try await persistenceService.save(slotsToSave, forKey: timeSlotsKey)
+            } catch {
+                print("Failed to save custom time slots: \(error)")
+            }
         }
     }
 }

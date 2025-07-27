@@ -79,26 +79,30 @@ public final class DayCategoryManager: Sendable {
     // MARK: - Persistence
     
     private func loadSettings() {
-        do {
-            if let loadedSettings = try persistenceService.load(DayCategorySettings.self, forKey: PersistenceKeys.dayCategorySettings) {
-                settings = loadedSettings
-                print("✅ Loaded day category settings from persistence")
-                return
+        Task { @MainActor in
+            do {
+                if let loadedSettings = try await persistenceService.load(DayCategorySettings.self, forKey: PersistenceKeys.dayCategorySettings) {
+                    settings = loadedSettings
+                    print("✅ Loaded day category settings from persistence")
+                    return
+                }
+            } catch {
+                print("❌ Failed to load day category settings: \(error)")
             }
-        } catch {
-            print("❌ Failed to load day category settings: \(error)")
+            
+            // Fallback to defaults
+            settings = .default
+            print("🆕 Using default day category settings")
         }
-        
-        // Fallback to defaults
-        settings = .default
-        print("🆕 Using default day category settings")
     }
     
     private func persistSettings() {
-        do {
-            try persistenceService.save(settings, forKey: PersistenceKeys.dayCategorySettings)
-        } catch {
-            print("❌ Failed to save day category settings: \(error)")
+        Task { @MainActor in
+            do {
+                try await persistenceService.save(settings, forKey: PersistenceKeys.dayCategorySettings)
+            } catch {
+                print("❌ Failed to save day category settings: \(error)")
+            }
         }
     }
 }

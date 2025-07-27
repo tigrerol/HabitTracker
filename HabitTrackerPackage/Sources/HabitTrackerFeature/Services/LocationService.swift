@@ -95,7 +95,20 @@ public actor LocationService {
     /// Flag to prevent concurrent persistence operations
     private var isPersisting = false
     
-    public init() {
+    /// Persistence service for storing location data
+    private let persistenceService: any PersistenceServiceProtocol
+    
+    /// Storage keys for persistence
+    private let savedLocationsKey = "SavedLocations"
+    private let customLocationsKey = "CustomLocations"
+    
+    /// Initialize with dependency injection
+    public init(persistenceService: (any PersistenceServiceProtocol)? = nil) {
+        if let service = persistenceService {
+            self.persistenceService = service
+        } else {
+            self.persistenceService = UserDefaultsPersistenceService()
+        }
         // Note: Data loading will happen asynchronously when first accessed
     }
     
@@ -412,16 +425,6 @@ public actor LocationService {
     
     // MARK: - Persistence
     
-    /// Set persistence service (optional, defaults to UserDefaults)
-    private var persistenceService: SwiftDataPersistenceService?
-    
-    public func setPersistenceService(_ service: SwiftDataPersistenceService) {
-        self.persistenceService = service
-        Task { [weak self] in
-            await self?.loadFromPersistence()
-        }
-    }
-    
     /// Atomic persistence operation to prevent race conditions
     private func persistLocations() async {
         // Prevent concurrent persistence operations
@@ -433,107 +436,73 @@ public actor LocationService {
         let knownSnapshot = knownLocations
         let customSnapshot = customLocations
         
-        if let persistenceService = persistenceService {
-            do {
-                try await persistenceService.saveLocationData(
-                    savedLocations: knownSnapshot,
-                    customLocations: customSnapshot
-                )
-            } catch {
-                await ErrorHandlingService.shared.handleDataError(
-                    .encodingFailed(type: "LocationData", underlyingError: error),
-                    key: "LocationPersistence",
-                    operation: "save"
-                )
-            }
-        } else {
-            // Fallback to UserDefaults with snapshots
-            await persistToUserDefaults(
-                knownLocations: knownSnapshot,
-                customLocations: customSnapshot
-            )
-        }
+        // Use persistence service with snapshots
+        await persistToStorage(
+            knownLocations: knownSnapshot,
+            customLocations: customSnapshot
+        )
     }
     
     /// Atomic data loading operation
     private func loadFromPersistence() async {
-        if let persistenceService = persistenceService {
-            let locationData = await persistenceService.loadLocationData()
-            // Atomic update of both collections
-            self.knownLocations = locationData.savedLocations
-            self.customLocations = locationData.customLocations
-        } else {
-            // Fallback to UserDefaults with atomic loading
-            let (loadedKnown, loadedCustom) = await loadFromUserDefaults()
-            // Atomic update of both collections
-            self.knownLocations = loadedKnown
-            self.customLocations = loadedCustom
-        }
+        // Use persistence service with atomic loading
+        let (loadedKnown, loadedCustom) = await loadFromStorage()
+        // Atomic update of both collections
+        self.knownLocations = loadedKnown
+        self.customLocations = loadedCustom
     }
     
     // MARK: - Atomic UserDefaults Operations
     
     /// Atomic UserDefaults persistence with snapshots
-    private func persistToUserDefaults(
+    private func persistToStorage(
         knownLocations: [LocationType: SavedLocation],
         customLocations: [UUID: CustomLocation]
     ) async {
         do {
-            let knownData = try JSONEncoder().encode(knownLocations)
-            let customData = try JSONEncoder().encode(customLocations)
-            
-            // Perform UserDefaults operations on main thread to avoid race conditions
-            await MainActor.run {
-                UserDefaults.standard.set(knownData, forKey: "SavedLocations")
-                UserDefaults.standard.set(customData, forKey: "CustomLocations")
-            }
+            try await persistenceService.save(knownLocations, forKey: savedLocationsKey)
+            try await persistenceService.save(customLocations, forKey: customLocationsKey)
         } catch {
             await ErrorHandlingService.shared.handleDataError(
                 .encodingFailed(type: "LocationData", underlyingError: error),
-                key: "UserDefaultsPersistence",
+                key: "PersistenceServiceSave",
                 operation: "save"
             )
         }
     }
     
-    /// Atomic UserDefaults loading
-    private func loadFromUserDefaults() async -> (known: [LocationType: SavedLocation], custom: [UUID: CustomLocation]) {
-        return await MainActor.run {
-            var loadedKnown: [LocationType: SavedLocation] = [:]
-            var loadedCustom: [UUID: CustomLocation] = [:]
-            
-            // Load known locations
-            if let knownData = UserDefaults.standard.data(forKey: "SavedLocations") {
-                do {
-                    loadedKnown = try JSONDecoder().decode([LocationType: SavedLocation].self, from: knownData)
-                } catch {
-                    Task {
-                        ErrorHandlingService.shared.handleDataError(
-                            .decodingFailed(type: "SavedLocation", underlyingError: error),
-                            key: "SavedLocations",
-                            operation: "load"
-                        )
-                    }
-                }
+    /// Atomic persistence service loading
+    private func loadFromStorage() async -> (known: [LocationType: SavedLocation], custom: [UUID: CustomLocation]) {
+        var loadedKnown: [LocationType: SavedLocation] = [:]
+        var loadedCustom: [UUID: CustomLocation] = [:]
+        
+        // Load known locations
+        do {
+            if let known = try await persistenceService.load([LocationType: SavedLocation].self, forKey: savedLocationsKey) {
+                loadedKnown = known
             }
-            
-            // Load custom locations
-            if let customData = UserDefaults.standard.data(forKey: "CustomLocations") {
-                do {
-                    loadedCustom = try JSONDecoder().decode([UUID: CustomLocation].self, from: customData)
-                } catch {
-                    Task {
-                        ErrorHandlingService.shared.handleDataError(
-                            .decodingFailed(type: "CustomLocation", underlyingError: error),
-                            key: "CustomLocations",
-                            operation: "load"
-                        )
-                    }
-                }
-            }
-            
-            return (known: loadedKnown, custom: loadedCustom)
+        } catch {
+            await ErrorHandlingService.shared.handleDataError(
+                .decodingFailed(type: "SavedLocation", underlyingError: error),
+                key: savedLocationsKey,
+                operation: "load"
+            )
         }
+        
+        // Load custom locations
+        do {
+            if let custom = try await persistenceService.load([UUID: CustomLocation].self, forKey: customLocationsKey) {
+                loadedCustom = custom
+            }
+        } catch {
+            await ErrorHandlingService.shared.handleDataError(
+                .decodingFailed(type: "CustomLocation", underlyingError: error),
+                key: customLocationsKey,
+                operation: "load"
+            )
+        }
+        
+        return (known: loadedKnown, custom: loadedCustom)
     }
     
     // MARK: - Debug Support

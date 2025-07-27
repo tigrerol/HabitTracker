@@ -18,16 +18,27 @@ public final class ConditionalHabitService {
     /// Analytics data for conditional habit usage
     public private(set) var analytics: ConditionalHabitAnalytics = ConditionalHabitAnalytics()
     
+    // MARK: - Dependencies
+    
+    private let persistenceService: any PersistenceServiceProtocol
+    
     // MARK: - Migration
     
     /// Migration version for conditional habit data
     private let currentMigrationVersion = 2
     private let migrationVersionKey = "ConditionalHabitMigrationVersion"
+    private let responsesKey = "ConditionalHabitResponses"
     
-    private init() {
+    /// Initialize with dependency injection
+    public init(persistenceService: any PersistenceServiceProtocol = UserDefaultsPersistenceService()) {
+        self.persistenceService = persistenceService
         loadResponses()
         performMigrationIfNeeded()
         updateAnalytics()
+    }
+    
+    private convenience init() {
+        self.init(persistenceService: UserDefaultsPersistenceService())
     }
     
     // MARK: - Public Interface
@@ -202,9 +213,13 @@ public final class ConditionalHabitService {
     
     /// Load responses from persistent storage
     private func loadResponses() {
-        if let data = UserDefaults.standard.data(forKey: "ConditionalHabitResponses") {
+        Task { @MainActor in
             do {
-                responses = try JSONDecoder().decode([ConditionalResponse].self, from: data)
+                if let loadedResponses = try await persistenceService.load([ConditionalResponse].self, forKey: responsesKey) {
+                    responses = loadedResponses
+                } else {
+                    responses = []
+                }
             } catch {
                 LoggingService.shared.error(
                     "Failed to load conditional habit responses",
@@ -218,15 +233,16 @@ public final class ConditionalHabitService {
     
     /// Persist responses to storage
     private func persistResponses() {
-        do {
-            let data = try JSONEncoder().encode(responses)
-            UserDefaults.standard.set(data, forKey: "ConditionalHabitResponses")
-        } catch {
-            LoggingService.shared.error(
-                "Failed to persist conditional habit responses",
-                category: .data,
-                metadata: ["error": error.localizedDescription]
-            )
+        Task { @MainActor in
+            do {
+                try await persistenceService.save(responses, forKey: responsesKey)
+            } catch {
+                LoggingService.shared.error(
+                    "Failed to persist conditional habit responses",
+                    category: .data,
+                    metadata: ["error": error.localizedDescription]
+                )
+            }
         }
     }
     
