@@ -180,11 +180,39 @@ public actor LocationService {
     }
     
     /// Save a location as a known type
-    public func saveLocation(_ location: CLLocation, as type: LocationType, name: String? = nil, radius: CLLocationDistance? = nil) {
+    public func saveLocation(_ location: CLLocation, as type: LocationType, name: String? = nil, radius: CLLocationDistance? = nil) async throws {
+        // Validate location coordinates
+        guard CLLocationCoordinate2DIsValid(location.coordinate) else {
+            let error = LocationError.invalidCoordinate(
+                latitude: location.coordinate.latitude,
+                longitude: location.coordinate.longitude
+            )
+            await ErrorHandlingService.shared.handleLocationError(error)
+            throw error
+        }
+        
+        // Validate radius if provided
+        let finalRadius = radius ?? detectionRadius
+        guard finalRadius >= 10 && finalRadius <= 1000 else {
+            let error = LocationError.radiusValidationFailed(radius: finalRadius)
+            await ErrorHandlingService.shared.handleLocationError(error)
+            throw error
+        }
+        
+        // Validate name if provided
+        if let name = name {
+            let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmedName.isEmpty, trimmedName.count <= 30 else {
+                let error = ValidationError.invalidLocationName(name: name)
+                await ErrorHandlingService.shared.handle(error)
+                throw error
+            }
+        }
+        
         let savedLocation = SavedLocation(
             location: location,
             name: name ?? type.displayName,
-            radius: radius ?? detectionRadius
+            radius: finalRadius
         )
         knownLocations[type] = savedLocation
         
@@ -193,9 +221,7 @@ public actor LocationService {
         
         // Update current location type immediately
         if let currentLocation = currentLocation {
-            Task {
-                await updateLocation(currentLocation)
-            }
+            await updateLocation(currentLocation)
         }
     }
     
@@ -341,7 +367,11 @@ public actor LocationService {
             let data = try JSONEncoder().encode(knownLocations)
             UserDefaults.standard.set(data, forKey: "SavedLocations")
         } catch {
-            print("Failed to save locations: \(error)")
+            await ErrorHandlingService.shared.handleDataError(
+                .encodingFailed(type: "SavedLocation", underlyingError: error),
+                key: "SavedLocations",
+                operation: "save"
+            )
         }
     }
     
@@ -351,7 +381,11 @@ public actor LocationService {
         do {
             knownLocations = try JSONDecoder().decode([LocationType: SavedLocation].self, from: data)
         } catch {
-            print("Failed to load locations: \(error)")
+            await ErrorHandlingService.shared.handleDataError(
+                .decodingFailed(type: "SavedLocation", underlyingError: error),
+                key: "SavedLocations",
+                operation: "load"
+            )
             knownLocations = [:]
         }
     }
@@ -361,7 +395,11 @@ public actor LocationService {
             let data = try JSONEncoder().encode(customLocations)
             UserDefaults.standard.set(data, forKey: "CustomLocations")
         } catch {
-            print("Failed to save custom locations: \(error)")
+            await ErrorHandlingService.shared.handleDataError(
+                .encodingFailed(type: "CustomLocation", underlyingError: error),
+                key: "CustomLocations",
+                operation: "save"
+            )
         }
     }
     
@@ -371,7 +409,11 @@ public actor LocationService {
         do {
             customLocations = try JSONDecoder().decode([UUID: CustomLocation].self, from: data)
         } catch {
-            print("Failed to load custom locations: \(error)")
+            await ErrorHandlingService.shared.handleDataError(
+                .decodingFailed(type: "CustomLocation", underlyingError: error),
+                key: "CustomLocations",
+                operation: "load"
+            )
             customLocations = [:]
         }
     }
@@ -416,7 +458,26 @@ private class LocationManagerDelegate: NSObject, CLLocationManagerDelegate, @unc
     }
     
     nonisolated func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
-        print("Location manager failed with error: \(error)")
+        Task { @MainActor in
+            let locationError: LocationError
+            
+            if let clError = error as? CLError {
+                switch clError.code {
+                case .denied:
+                    locationError = .permissionDenied
+                case .locationUnknown:
+                    locationError = .locationUnavailable
+                case .network:
+                    locationError = .timeout
+                default:
+                    locationError = .locationUnavailable
+                }
+            } else {
+                locationError = .locationUnavailable
+            }
+            
+            await ErrorHandlingService.shared.handleLocationError(locationError)
+        }
     }
     
     nonisolated func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {

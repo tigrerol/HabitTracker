@@ -30,11 +30,14 @@ public final class RoutineService {
         do {
             if let loadedTemplates = try persistenceService.load([RoutineTemplate].self, forKey: PersistenceKeys.routineTemplates) {
                 templates = loadedTemplates
-                print("✅ Loaded \(templates.count) templates from persistence")
                 return
             }
         } catch {
-            print("❌ Failed to load templates from persistence: \(error)")
+            ErrorHandlingService.shared.handleDataError(
+                .decodingFailed(type: "RoutineTemplate", underlyingError: error),
+                key: PersistenceKeys.routineTemplates,
+                operation: "load"
+            )
         }
         
         // First time launch or failed to load - create sample templates
@@ -57,25 +60,63 @@ public final class RoutineService {
     private func persistTemplates() {
         do {
             try persistenceService.save(templates, forKey: PersistenceKeys.routineTemplates)
-            print("✅ Persisted \(templates.count) templates")
         } catch {
-            print("❌ Failed to persist templates: \(error)")
+            ErrorHandlingService.shared.handleDataError(
+                .encodingFailed(type: "RoutineTemplate", underlyingError: error),
+                key: PersistenceKeys.routineTemplates,
+                operation: "save"
+            )
         }
     }
     
     /// Start a new routine session with the given template
-    public func startSession(with template: RoutineTemplate) {
+    public func startSession(with template: RoutineTemplate) throws {
+        // Check if session is already active
+        guard currentSession == nil else {
+            let error = RoutineError.sessionAlreadyActive
+            ErrorHandlingService.shared.handleRoutineError(error, sessionId: currentSession?.id)
+            throw error
+        }
+        
+        // Validate template
+        guard !template.habits.isEmpty else {
+            let error = RoutineError.templateValidationFailed(reason: "Template has no habits")
+            ErrorHandlingService.shared.handleRoutineError(error, templateId: template.id)
+            throw error
+        }
+        
+        // Validate template exists in our collection
+        guard templates.contains(where: { $0.id == template.id }) else {
+            let error = RoutineError.templateNotFound(id: template.id)
+            ErrorHandlingService.shared.handleRoutineError(error, templateId: template.id)
+            throw error
+        }
+        
         currentSession = RoutineSession(template: template)
         
         // Update template's last used date
         if let index = templates.firstIndex(where: { $0.id == template.id }) {
             templates[index].lastUsedAt = Date()
+            persistTemplates()
         }
     }
     
     /// Complete the current session
-    public func completeCurrentSession() {
-        currentSession = nil
+    public func completeCurrentSession() throws {
+        guard let session = currentSession else {
+            let error = RoutineError.noActiveSession
+            ErrorHandlingService.shared.handleRoutineError(error)
+            throw error
+        }
+        
+        do {
+            session.markCompleted()
+            currentSession = nil
+        } catch {
+            let routineError = RoutineError.sessionCompletionFailed
+            ErrorHandlingService.shared.handleRoutineError(routineError, sessionId: session.id)
+            throw routineError
+        }
     }
     
     /// Add a mood rating for the completed session
