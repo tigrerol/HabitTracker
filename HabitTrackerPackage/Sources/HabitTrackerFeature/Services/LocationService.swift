@@ -97,14 +97,17 @@ public actor LocationService {
                 #elseif os(macOS)
                 locationManager.requestAlwaysAuthorization()
                 #endif
-            } else if status == .authorizedAlways {
-                locationManager.startUpdatingLocation()
+            } else {
+                #if os(iOS)
+                if status == .authorizedAlways || status == .authorizedWhenInUse {
+                    locationManager.startUpdatingLocation()
+                }
+                #elseif os(macOS)
+                if status == .authorizedAlways {
+                    locationManager.startUpdatingLocation()
+                }
+                #endif
             }
-            #if os(iOS)
-            else if status == .authorizedWhenInUse {
-                locationManager.startUpdatingLocation()
-            }
-            #endif
         }
     }
     
@@ -399,7 +402,7 @@ public actor LocationService {
             let data = try JSONEncoder().encode(knownLocations)
             UserDefaults.standard.set(data, forKey: "SavedLocations")
         } catch {
-            await MainActor.run {
+            Task { @MainActor in
                 ErrorHandlingService.shared.handleDataError(
                     .encodingFailed(type: "SavedLocation", underlyingError: error),
                     key: "SavedLocations",
@@ -415,7 +418,7 @@ public actor LocationService {
         do {
             knownLocations = try JSONDecoder().decode([LocationType: SavedLocation].self, from: data)
         } catch {
-            await MainActor.run {
+            Task { @MainActor in
                 ErrorHandlingService.shared.handleDataError(
                     .decodingFailed(type: "SavedLocation", underlyingError: error),
                     key: "SavedLocations",
@@ -431,7 +434,7 @@ public actor LocationService {
             let data = try JSONEncoder().encode(customLocations)
             UserDefaults.standard.set(data, forKey: "CustomLocations")
         } catch {
-            await MainActor.run {
+            Task { @MainActor in
                 ErrorHandlingService.shared.handleDataError(
                     .encodingFailed(type: "CustomLocation", underlyingError: error),
                     key: "CustomLocations",
@@ -447,7 +450,7 @@ public actor LocationService {
         do {
             customLocations = try JSONDecoder().decode([UUID: CustomLocation].self, from: data)
         } catch {
-            await MainActor.run {
+            Task { @MainActor in
                 ErrorHandlingService.shared.handleDataError(
                     .decodingFailed(type: "CustomLocation", underlyingError: error),
                     key: "CustomLocations",
@@ -516,17 +519,27 @@ private class LocationManagerDelegate: NSObject, CLLocationManagerDelegate, @unc
                 locationError = .locationUnavailable
             }
             
-            await ErrorHandlingService.shared.handleLocationError(locationError)
+            await MainActor.run {
+                ErrorHandlingService.shared.handleLocationError(locationError)
+            }
         }
     }
     
     nonisolated func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
         let status = manager.authorizationStatus
         
+        #if os(iOS)
         if status == .authorizedWhenInUse || status == .authorizedAlways {
             Task {
                 await service.startUpdatingLocation()
             }
         }
+        #elseif os(macOS)
+        if status == .authorizedAlways {
+            Task {
+                await service.startUpdatingLocation()
+            }
+        }
+        #endif
     }
 }

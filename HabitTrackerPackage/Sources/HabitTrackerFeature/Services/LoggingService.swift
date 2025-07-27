@@ -440,11 +440,11 @@ extension LoggingService {
     }
     
     /// Measure async operation time
-    public func measureTimeAsync<T>(
+    public func measureTimeAsync<T: Sendable>(
         _ operation: String,
         category: LogCategory = .performance,
         metadata: [String: String] = [:],
-        block: () async throws -> T
+        block: @Sendable () async throws -> T
     ) async rethrows -> T {
         let startTime = CFAbsoluteTimeGetCurrent()
         let result = try await block()
@@ -505,15 +505,22 @@ public func log(
     function: String = #function,
     line: Int = #line
 ) {
-    LoggingService.shared.log(
-        level: level,
-        category: category,
-        message: message,
-        metadata: metadata,
-        file: file,
-        function: function,
-        line: line
-    )
+    switch level {
+    case .trace:
+        LoggingService.shared.trace(message, category: category, metadata: metadata, file: file, function: function, line: line)
+    case .debug:
+        LoggingService.shared.debug(message, category: category, metadata: metadata, file: file, function: function, line: line)
+    case .info:
+        LoggingService.shared.info(message, category: category, metadata: metadata, file: file, function: function, line: line)
+    case .notice:
+        LoggingService.shared.notice(message, category: category, metadata: metadata, file: file, function: function, line: line)
+    case .warning:
+        LoggingService.shared.warning(message, category: category, metadata: metadata, file: file, function: function, line: line)
+    case .error:
+        LoggingService.shared.error(message, category: category, metadata: metadata, file: file, function: function, line: line)
+    case .fault:
+        LoggingService.shared.fault(message, category: category, metadata: metadata, file: file, function: function, line: line)
+    }
 }
 
 // MARK: - Testing Support
