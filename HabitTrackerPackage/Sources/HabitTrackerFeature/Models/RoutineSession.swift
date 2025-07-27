@@ -198,4 +198,11 @@ extension RoutineSession {
         )
         modifications.append(modification)
     }
+    
+    /// Force complete the session (used by RoutineService for manual completion)
+    public func forceComplete() {
+        if completedAt == nil {
+            completedAt = Date()
+        }
+    }
 }

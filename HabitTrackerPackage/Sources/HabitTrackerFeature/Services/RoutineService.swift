@@ -113,14 +113,9 @@ public final class RoutineService {
             throw error
         }
         
-        do {
-            session.markCompleted()
-            currentSession = nil
-        } catch {
-            let routineError = RoutineError.sessionCompletionFailed
-            ErrorHandlingService.shared.handleRoutineError(routineError, sessionId: session.id)
-            throw routineError
-        }
+        // Complete the session manually
+        session.forceComplete()
+        currentSession = nil
     }
     
     /// Add a mood rating for the completed session
