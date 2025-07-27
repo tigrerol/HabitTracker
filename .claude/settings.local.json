@@ -40,7 +40,13 @@
       "mcp__XcodeBuildMCP__launch_app_logs_sim",
       "mcp__XcodeBuildMCP__build_run_sim_id_ws",
       "mcp__XcodeBuildMCP__swift_package_clean",
-      "Bash(git tag:*)"
+      "Bash(git tag:*)",
+      "mcp__MCP_DOCKER__edit_block",
+      "mcp__MCP_DOCKER__search_files",
+      "mcp__MCP_DOCKER__read_file",
+      "mcp__MCP_DOCKER__write_file",
+      "mcp__MCP_DOCKER__list_directory",
+      "mcp__MCP_DOCKER__start_process"
     ],
     "deny": []
   }
