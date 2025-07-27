@@ -536,6 +536,12 @@ public actor LocationService {
         }
     }
     
+    // MARK: - Debug Support
+    
+    /// Record timestamp for actor isolation testing
+    public func recordOperationTimestamp() -> Date {
+        return Date()
+    }
 }
 
 /// Internal delegate class for CLLocationManager
