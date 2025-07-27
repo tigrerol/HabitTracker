@@ -13,6 +13,7 @@ struct ContextRuleEditorView: View {
     @State private var selectedLocationIds: Set<String> = [] // Changed to store location IDs
     @State private var priority: Int = 0
     @State private var isEnabled: Bool = false
+    @State private var customLocations: [CustomLocation] = []
     
     var body: some View {
         NavigationStack {
@@ -98,7 +99,6 @@ struct ContextRuleEditorView: View {
                         }
                         
                         // Custom locations
-                        let customLocations = routineService.smartSelector.locationManager.allCustomLocations
                         ForEach(customLocations) { customLocation in
                             MultipleSelectionRow(
                                 title: customLocation.name,
@@ -155,6 +155,9 @@ struct ContextRuleEditorView: View {
         }
         .onAppear {
             loadExistingRule()
+        }
+        .task {
+            customLocations = await routineService.smartSelector.locationManager.allCustomLocations
         }
     }
     

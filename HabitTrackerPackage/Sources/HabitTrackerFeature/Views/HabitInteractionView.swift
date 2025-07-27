@@ -1,72 +1,94 @@
 import SwiftUI
 
-/// View that handles different types of habit interactions
+/// View that handles different types of habit interactions using protocol-based handlers
 public struct HabitInteractionView: View {
     let habit: Habit
-    let onComplete: (TimeInterval?, String?) -> Void
+    let onComplete: (UUID, TimeInterval?, String?) -> Void
+    let isCompleted: Bool
     
-    public init(habit: Habit, onComplete: @escaping (TimeInterval?, String?) -> Void) {
+    @Environment(RoutineService.self) private var routineService
+    
+    public init(habit: Habit, onComplete: @escaping (UUID, TimeInterval?, String?) -> Void, isCompleted: Bool) {
         self.habit = habit
         self.onComplete = onComplete
+        self.isCompleted = isCompleted
     }
     
     public var body: some View {
-        Group {
-            switch habit.type {
+        // Use protocol-based handlers for better maintainability
+        switch habit.type {
             case .checkbox:
-                CheckboxHabitView(habit: habit, onComplete: onComplete)
+                AnyView(CheckboxHabitHandler().createInteractionView(habit: habit, onComplete: self.onComplete, isCompleted: isCompleted))
                 
-            case .checkboxWithSubtasks(let subtasks):
-                SubtasksHabitView(habit: habit, subtasks: subtasks, onComplete: onComplete)
+            case .checkboxWithSubtasks:
+                AnyView(SubtasksHabitHandler().createInteractionView(habit: habit, onComplete: self.onComplete, isCompleted: isCompleted))
                 
-            case .timer(let defaultDuration):
-                TimerHabitView(habit: habit, defaultDuration: defaultDuration, onComplete: onComplete)
+            case .timer:
+                AnyView(TimerHabitHandler().createInteractionView(habit: habit, onComplete: self.onComplete, isCompleted: isCompleted))
                 
-            case .restTimer(let targetDuration):
-                RestTimerHabitView(habit: habit, targetDuration: targetDuration, onComplete: onComplete)
+            case .restTimer:
+                AnyView(RestTimerHabitHandler().createInteractionView(habit: habit, onComplete: self.onComplete, isCompleted: isCompleted))
                 
-            case .appLaunch(let bundleId, let appName):
-                AppLaunchHabitView(habit: habit, bundleId: bundleId, appName: appName, onComplete: onComplete)
+            case .appLaunch:
+                AnyView(AppLaunchHabitHandler().createInteractionView(habit: habit, onComplete: self.onComplete, isCompleted: isCompleted))
                 
-            case .website(let url, let title):
-                WebsiteHabitView(habit: habit, url: url, title: title, onComplete: onComplete)
+            case .website:
+                AnyView(WebsiteHabitHandler().createInteractionView(habit: habit, onComplete: self.onComplete, isCompleted: isCompleted))
                 
-            case .counter(let items):
-                CounterHabitView(habit: habit, items: items, onComplete: onComplete)
+            case .counter:
+                AnyView(CounterHabitHandler().createInteractionView(habit: habit, onComplete: self.onComplete, isCompleted: isCompleted))
                 
-            case .measurement(let unit, let targetValue):
-                MeasurementHabitView(habit: habit, unit: unit, targetValue: targetValue, onComplete: onComplete)
+            case .measurement:
+                AnyView(MeasurementHabitHandler().createInteractionView(habit: habit, onComplete: self.onComplete, isCompleted: isCompleted))
                 
-            case .guidedSequence(let steps):
-                GuidedSequenceHabitView(habit: habit, steps: steps, onComplete: onComplete)
+            case .guidedSequence:
+                AnyView(GuidedSequenceHabitHandler().createInteractionView(habit: habit, onComplete: self.onComplete, isCompleted: isCompleted))
                 
             case .conditional(let info):
-                ConditionalHabitInteractionView(
+                AnyView(ConditionalHabitInteractionView(
                     habit: habit,
                     conditionalInfo: info,
                     onOptionSelected: { option in
-                        // Note: The actual path injection is handled by RoutineService
-                        // This just marks the conditional habit as complete
-                        onComplete(nil, String(localized: "HabitInteractionView.Question.Selected", bundle: .module).replacingOccurrences(of: "%@", with: option.text))
+                        routineService.handleConditionalOptionSelection(
+                            option: option,
+                            for: habit.id,
+                            question: info.question
+                        )
                     },
                     onSkip: {
-                        onComplete(nil, String(localized: "HabitInteractionView.Question.Skipped", bundle: .module))
+                        routineService.skipConditionalHabit(habitId: habit.id, question: info.question)
+                        routineService.currentSession?.completeCurrentHabit(
+                            duration: nil,
+                            notes: String(localized: "HabitInteractionView.Question.Skipped", bundle: .module)
+                        )
                     }
-                )
+                ))
             }
-        }
     }
 }
 
 /// Simple checkbox habit interaction with quick actions
 struct CheckboxHabitView: View {
     let habit: Habit
-    let onComplete: (TimeInterval?, String?) -> Void
+    let onComplete: (UUID, TimeInterval?, String?) -> Void
+    let isCompleted: Bool
     
     @State private var isCompleting = false
     
+    init(habit: Habit, onComplete: @escaping (UUID, TimeInterval?, String?) -> Void, isCompleted: Bool) {
+        self.habit = habit
+        self.onComplete = onComplete
+        self.isCompleted = isCompleted
+        print("🔥🔥🔥 WARNING: CheckboxHabitView CREATED for habit: \(habit.name) (ID: \(habit.id))")
+        print("🔥🔥🔥   - This should NOT happen! AccessibleCheckboxHabitView should be used instead!")
+    }
+    
     var body: some View {
-        VStack(spacing: 24) {
+        print("🔥🔥🔥 VISUAL: CheckboxHabitView.body rendering - habit: \(habit.name) (ID: \(habit.id))")
+        print("🔥🔥🔥   - isCompleting: \(isCompleting) (determines if shows green checkmark or circle)")
+        print("🔥🔥🔥   - Will show: \(isCompleting ? "GREEN CHECKMARK" : "EMPTY CIRCLE")")
+        
+        return VStack(spacing: 24) {
             // Large tap target for quick completion
             Button {
                 completeHabit()
@@ -99,9 +121,27 @@ struct CheckboxHabitView: View {
                     .multilineTextAlignment(.center)
             }
         }
+        .onAppear {
+            // Reset completion state when view appears for a new habit
+            isCompleting = false
+            print("🔥🔥🔥 CRITICAL: CheckboxHabitView.onAppear - habit: \(habit.name) (ID: \(habit.id))")
+            print("🔥🔥🔥   - RESET isCompleting to false")
+            print("🔥🔥🔥   - THIS VIEW SHOULD NOT BE USED! Use AccessibleCheckboxHabitView!")
+        }
+        .onChange(of: habit.id) { _, newHabitId in
+            // Reset completion state when habit changes (critical for injection scenarios)
+            isCompleting = false
+            print("🔥🔥🔥 CRITICAL: CheckboxHabitView.onChange - habit changed to ID: \(newHabitId)")
+            print("🔥🔥🔥   - RESET isCompleting to false")
+            print("🔥🔥🔥   - THIS VIEW SHOULD NOT BE USED! Use AccessibleCheckboxHabitView!")
+        }
     }
     
     private func completeHabit() {
+        print("🔥🔥🔥 DANGEROUS: CheckboxHabitView.completeHabit() called for habit: \(habit.name) (ID: \(habit.id))")
+        print("🔥🔥🔥   - This view should NOT be used! Use AccessibleCheckboxHabitView instead!")
+        print("🔥🔥🔥   - CALLER STACK: \(Thread.callStackSymbols.prefix(5).joined(separator: " -> "))")
+        
         withAnimation(.bouncy) {
             isCompleting = true
         }
@@ -112,7 +152,8 @@ struct CheckboxHabitView: View {
         
         // Complete after brief delay for animation
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            onComplete(nil, nil)
+            print("🔥🔥🔥 DANGEROUS: CheckboxHabitView auto-completing habit: \(habit.name) (ID: \(habit.id))")
+            onComplete(habit.id, nil, nil)
         }
     }
 }
@@ -121,17 +162,19 @@ struct CheckboxHabitView: View {
 struct TimerHabitView: View {
     let habit: Habit
     let defaultDuration: TimeInterval
-    let onComplete: (TimeInterval?, String?) -> Void
+    let onComplete: (UUID, TimeInterval?, String?) -> Void
+    let isCompleted: Bool
     
     @State private var timeRemaining: TimeInterval
     @State private var isRunning = false
     @State private var isPaused = false
     @State private var timer: Timer?
     
-    init(habit: Habit, defaultDuration: TimeInterval, onComplete: @escaping (TimeInterval?, String?) -> Void) {
+    init(habit: Habit, defaultDuration: TimeInterval, onComplete: @escaping (UUID, TimeInterval?, String?) -> Void, isCompleted: Bool) {
         self.habit = habit
         self.defaultDuration = defaultDuration
         self.onComplete = onComplete
+        self.isCompleted = isCompleted
         self._timeRemaining = State(initialValue: defaultDuration)
     }
     
@@ -211,7 +254,7 @@ struct TimerHabitView: View {
             if timeRemaining > 0 {
                 Button {
                     let elapsed = defaultDuration - timeRemaining
-                    onComplete(elapsed, nil)
+                    onComplete(habit.id, elapsed, nil)
                 } label: {
                     Text(String(localized: "HabitInteractionView.Timer.MarkCompleteEarly", bundle: .module))
                         .font(.subheadline)
@@ -227,7 +270,7 @@ struct TimerHabitView: View {
     @ViewBuilder
     private func quickTimerButton(seconds: TimeInterval, label: String) -> some View {
         Button {
-            onComplete(seconds, String(localized: "HabitInteractionView.Timer.QuickCompletion", bundle: .module).replacingOccurrences(of: "%@", with: label))
+            onComplete(habit.id, seconds, String(localized: "HabitInteractionView.Timer.QuickCompletion", bundle: .module).replacingOccurrences(of: "%@", with: label))
         } label: {
             Text(label)
                 .font(.caption)
@@ -259,7 +302,7 @@ struct TimerHabitView: View {
     private func stopTimer() {
         timer?.invalidate()
         let elapsed = defaultDuration - timeRemaining
-        onComplete(elapsed, String(localized: "HabitInteractionView.Timer.StoppedEarly", bundle: .module))
+        onComplete(habit.id, elapsed, String(localized: "HabitInteractionView.Timer.StoppedEarly", bundle: .module))
     }
     
     private func createTimer() {
@@ -269,7 +312,7 @@ struct TimerHabitView: View {
                     timeRemaining -= 1
                 } else {
                     timer?.invalidate()
-                    onComplete(defaultDuration, nil)
+                    onComplete(habit.id, defaultDuration, nil)
                 }
             }
         }
@@ -281,7 +324,7 @@ struct AppLaunchHabitView: View {
     let habit: Habit
     let bundleId: String  // This will now be either a shortcut name or URL scheme
     let appName: String
-    let onComplete: (TimeInterval?, String?) -> Void
+    let onComplete: (UUID, TimeInterval?, String?) -> Void
     
     @State private var hasLaunchedApp = false
     @State private var startTime: Date?
@@ -324,7 +367,7 @@ struct AppLaunchHabitView: View {
             } else {
                 Button {
                     let duration = startTime.map { Date().timeIntervalSince($0) }
-                    onComplete(duration, nil)
+                    onComplete(habit.id, duration, nil)
                 } label: {
                     Text(String(localized: "HabitInteractionView.AppLaunch.ImDone", bundle: .module))
                         .font(.headline)
@@ -369,10 +412,19 @@ struct WebsiteHabitView: View {
     let habit: Habit
     let url: URL
     let title: String
-    let onComplete: (TimeInterval?, String?) -> Void
+    let onComplete: (UUID, TimeInterval?, String?) -> Void
+    let isCompleted: Bool
     
     @State private var hasOpenedWebsite = false
     @State private var startTime: Date?
+    
+    init(habit: Habit, url: URL, title: String, onComplete: @escaping (UUID, TimeInterval?, String?) -> Void, isCompleted: Bool) {
+        self.habit = habit
+        self.url = url
+        self.title = title
+        self.onComplete = onComplete
+        self.isCompleted = isCompleted
+    }
     
     var body: some View {
         VStack(spacing: 24) {
@@ -407,7 +459,7 @@ struct WebsiteHabitView: View {
             } else {
                 Button {
                     let duration = startTime.map { Date().timeIntervalSince($0) }
-                    onComplete(duration, nil)
+                    onComplete(habit.id, duration, nil)
                 } label: {
                     Text(String(localized: "HabitInteractionView.AppLaunch.ImDone", bundle: .module))
                         .font(.headline)
@@ -431,7 +483,7 @@ struct WebsiteHabitView: View {
 struct CounterHabitView: View {
     let habit: Habit
     let items: [String]
-    let onComplete: (TimeInterval?, String?) -> Void
+    let onComplete: (UUID, TimeInterval?, String?) -> Void
     
     @State private var completedItems: Set<String> = []
     
@@ -478,7 +530,7 @@ struct CounterHabitView: View {
             
             Button {
                 let notes = completedItems.isEmpty ? String(localized: "HabitInteractionView.Counter.NoItemsCompleted", bundle: .module) : String(localized: "HabitInteractionView.Counter.CompletedList", bundle: .module).replacingOccurrences(of: "%@", with: Array(completedItems).joined(separator: ", "))
-                onComplete(nil, notes)
+                onComplete(habit.id, nil, notes)
             } label: {
                 Text(String(localized: "HabitInteractionView.Complete.Button", bundle: .module))
                     .font(.headline)
@@ -507,9 +559,17 @@ extension TimeInterval {
 struct SubtasksHabitView: View {
     let habit: Habit
     let subtasks: [Subtask]
-    let onComplete: (TimeInterval?, String?) -> Void
+    let onComplete: (UUID, TimeInterval?, String?) -> Void
+    let isCompleted: Bool
     
     @State private var completedSubtasks: Set<UUID> = []
+    
+    init(habit: Habit, subtasks: [Subtask], onComplete: @escaping (UUID, TimeInterval?, String?) -> Void, isCompleted: Bool) {
+        self.habit = habit
+        self.subtasks = subtasks
+        self.onComplete = onComplete
+        self.isCompleted = isCompleted
+    }
     
     var body: some View {
         VStack(spacing: 16) {
@@ -561,21 +621,49 @@ struct SubtasksHabitView: View {
                 }
             }
             
-            Button {
-                let notes = "Completed \(completedSubtasks.count) of \(subtasks.count) subtasks"
-                onComplete(nil, notes)
-            } label: {
-                Text(String(localized: "HabitInteractionView.Complete.Button", bundle: .module))
-                    .font(.headline)
-                    .foregroundStyle(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(
-                        (completedSubtasks.count == subtasks.filter { !$0.isOptional }.count ? habit.swiftUIColor : .gray),
-                        in: RoundedRectangle(cornerRadius: 12)
-                    )
+            VStack(spacing: 12) {
+                // Progress indicator
+                if !subtasks.isEmpty {
+                    let requiredCount = subtasks.filter { !$0.isOptional }.count
+                    let completedRequiredCount = completedSubtasks.filter { id in 
+                        subtasks.first { $0.id == id && !$0.isOptional } != nil 
+                    }.count
+                    
+                    Text("Progress: \(completedRequiredCount)/\(requiredCount) required completed")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                
+                // Complete button - enabled when all required subtasks are done
+                Button {
+                    let notes = "Completed \(completedSubtasks.count) of \(subtasks.count) subtasks"
+                    onComplete(habit.id, nil, notes)
+                } label: {
+                    Text(String(localized: "HabitInteractionView.Complete.Button", bundle: .module))
+                        .font(.headline)
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(
+                            (completedSubtasks.count >= subtasks.filter { !$0.isOptional }.count ? habit.swiftUIColor : .gray),
+                            in: RoundedRectangle(cornerRadius: 12)
+                        )
+                }
+                .disabled(completedSubtasks.count < subtasks.filter { !$0.isOptional }.count)
+                
+                // Skip option if user wants to complete without finishing all optional subtasks
+                if (completedSubtasks.count >= subtasks.filter { !$0.isOptional }.count) && 
+                   (completedSubtasks.count < subtasks.count) {
+                    Button {
+                        let notes = "Completed \(completedSubtasks.count) of \(subtasks.count) subtasks (skipped optional)"
+                        onComplete(habit.id, nil, notes)
+                    } label: {
+                        Text("Complete with \(completedSubtasks.count) tasks")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                }
             }
-            .disabled(completedSubtasks.count < subtasks.filter { !$0.isOptional }.count)
         }
     }
 }
@@ -584,11 +672,19 @@ struct SubtasksHabitView: View {
 struct RestTimerHabitView: View {
     let habit: Habit
     let targetDuration: TimeInterval?
-    let onComplete: (TimeInterval?, String?) -> Void
+    let onComplete: (UUID, TimeInterval?, String?) -> Void
+    let isCompleted: Bool
     
     @State private var elapsedTime: TimeInterval = 0
     @State private var isRunning = false
     @State private var timer: Timer?
+    
+    init(habit: Habit, targetDuration: TimeInterval?, onComplete: @escaping (UUID, TimeInterval?, String?) -> Void, isCompleted: Bool) {
+        self.habit = habit
+        self.targetDuration = targetDuration
+        self.onComplete = onComplete
+        self.isCompleted = isCompleted
+    }
     
     var body: some View {
         VStack(spacing: 24) {
@@ -664,7 +760,7 @@ struct RestTimerHabitView: View {
     private func stopTimer() {
         timer?.invalidate()
         isRunning = false
-        onComplete(elapsedTime, targetDuration != nil ? "Target \(elapsedTime >= targetDuration! ? "reached" : "not reached")" : nil)
+        onComplete(habit.id, elapsedTime, targetDuration != nil ? "Target \(elapsedTime >= targetDuration! ? "reached" : "not reached")" : nil)
     }
 }
 
@@ -673,7 +769,8 @@ struct MeasurementHabitView: View {
     let habit: Habit
     let unit: String
     let targetValue: Double?
-    let onComplete: (TimeInterval?, String?) -> Void
+    let onComplete: (UUID, TimeInterval?, String?) -> Void
+    let isCompleted: Bool
     
     @State private var inputValue: String = ""
     @FocusState private var isInputFocused: Bool
@@ -707,7 +804,7 @@ struct MeasurementHabitView: View {
             Button {
                 if let value = Double(inputValue) {
                     let notes = targetValue != nil ? "Measured: \(value) \(unit) (target: \(targetValue!))" : "Measured: \(value) \(unit)"
-                    onComplete(nil, notes)
+                    onComplete(habit.id, nil, notes)
                 }
             } label: {
                 Text(String(localized: "HabitInteractionView.Measurement.Record", bundle: .module))
@@ -720,7 +817,7 @@ struct MeasurementHabitView: View {
                         in: RoundedRectangle(cornerRadius: 12)
                     )
             }
-            .disabled(inputValue.isEmpty)
+            .disabled(inputValue.isEmpty || isCompleted)
         }
         .onAppear {
             isInputFocused = true
@@ -733,7 +830,8 @@ struct MeasurementHabitView: View {
 struct GuidedSequenceHabitView: View {
     let habit: Habit
     let steps: [SequenceStep]
-    let onComplete: (TimeInterval?, String?) -> Void
+    let onComplete: (UUID, TimeInterval?, String?) -> Void
+    let isCompleted: Bool
     
     @State private var currentStepIndex = 0
     @State private var timeRemaining: TimeInterval = 0
@@ -842,7 +940,7 @@ struct GuidedSequenceHabitView: View {
                         .foregroundStyle(.secondary)
                     
                     Button {
-                        onComplete(totalElapsed, "Completed all \(steps.count) steps")
+                        onComplete(habit.id, totalElapsed, "Completed all \(steps.count) steps")
                     } label: {
                         Text(String(localized: "HabitInteractionView.Sequence.Done", bundle: .module))
                             .font(.headline)
@@ -914,11 +1012,15 @@ struct GuidedSequenceHabitView: View {
 #Preview {
     VStack(spacing: 40) {
         HabitInteractionView(
-            habit: Habit(name: "Test Timer", type: .timer(defaultDuration: 300))
-        ) { _, _ in }
+            habit: Habit(name: "Test Timer", type: .timer(defaultDuration: 300)),
+            onComplete: { habitId, duration, notes in },
+            isCompleted: false
+        )
         
         HabitInteractionView(
-            habit: Habit(name: "Test Counter", type: .counter(items: ["Item 1", "Item 2", "Item 3"]))
-        ) { _, _ in }
+            habit: Habit(name: "Test Counter", type: .counter(items: ["Item 1", "Item 2", "Item 3"])),
+            onComplete: { habitId, duration, notes in },
+            isCompleted: false
+        )
     }
 }

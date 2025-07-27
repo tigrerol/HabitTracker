@@ -16,8 +16,10 @@ struct LocationSetupView: View {
     @State private var customLocationToDelete: CustomLocation?
     @State private var showingCustomLocationPicker = false
     @State private var selectedCustomLocationId: UUID?
+    @State private var customLocations: [CustomLocation] = []
+    @State private var savedLocations: [LocationType: SavedLocation] = [:]
     
-    private var locationManager: LocationManager {
+    private var locationManager: LocationManagerAdapter {
         routineService.smartSelector.locationManager
     }
     
@@ -34,7 +36,7 @@ struct LocationSetupView: View {
                     ForEach(LocationType.allCases.filter { $0 != .unknown }, id: \.self) { locationType in
                         LocationRow(
                             locationType: locationType,
-                            savedLocation: locationManager.savedLocations[locationType],
+                            savedLocation: savedLocations[locationType],
                             onAdd: {
                                 selectedLocationType = locationType
                                 showingLocationPicker = true
@@ -48,7 +50,7 @@ struct LocationSetupView: View {
                 }
                 
                 Section(String(localized: "LocationSetupView.CustomLocations.Title", bundle: .module)) {
-                    ForEach(locationManager.allCustomLocations) { customLocation in
+                    ForEach(customLocations) { customLocation in
                         CustomLocationRow(
                             customLocation: customLocation,
                             onSetLocation: {
@@ -125,7 +127,9 @@ struct LocationSetupView: View {
                 if editingCustomLocation != nil {
                     locationManager.updateCustomLocation(customLocation)
                 } else {
-                    _ = locationManager.createCustomLocation(name: customLocation.name, icon: customLocation.icon)
+                    Task {
+                        _ = await locationManager.createCustomLocation(name: customLocation.name, icon: customLocation.icon)
+                    }
                 }
                 editingCustomLocation = nil
             }
@@ -141,6 +145,10 @@ struct LocationSetupView: View {
             if let customLocation = customLocationToDelete {
                 Text(String(localized: "LocationSetupView.DeleteAlert.Message", bundle: .module).replacingOccurrences(of: "%@", with: customLocation.name))
             }
+        }
+        .task {
+            customLocations = await locationManager.allCustomLocations
+            savedLocations = await locationManager.savedLocations
         }
     }
 }
@@ -258,13 +266,10 @@ private struct CustomLocationPickerView: View {
     @State private var isLoading = true
     @State private var currentLocation: CLLocation?
     @State private var errorMessage: String?
+    @State private var customLocation: CustomLocation?
     
-    private var locationManager: LocationManager {
+    private var locationManager: LocationManagerAdapter {
         routineService.smartSelector.locationManager
-    }
-    
-    private var customLocation: CustomLocation? {
-        locationManager.getCustomLocation(id: customLocationId)
     }
     
     var body: some View {
@@ -359,11 +364,13 @@ private struct CustomLocationPickerView: View {
             
             try? await Task.sleep(for: .seconds(2))
             
-            await MainActor.run {
-                if let location = locationManager.currentLocation {
+            if let location = await locationManager.getCurrentLocation() {
+                await MainActor.run {
                     self.currentLocation = location
                     self.isLoading = false
-                } else {
+                }
+            } else {
+                await MainActor.run {
                     self.errorMessage = "Unable to get your current location. Please make sure location services are enabled."
                     self.isLoading = false
                 }
@@ -384,7 +391,7 @@ private struct LocationPickerView: View {
     @State private var currentLocation: CLLocation?
     @State private var errorMessage: String?
     
-    private var locationManager: LocationManager {
+    private var locationManager: LocationManagerAdapter {
         routineService.smartSelector.locationManager
     }
     
@@ -478,11 +485,13 @@ private struct LocationPickerView: View {
             // Wait a moment for location to be acquired
             try? await Task.sleep(for: .seconds(2))
             
-            await MainActor.run {
-                if let location = locationManager.currentLocation {
+            if let location = await locationManager.getCurrentLocation() {
+                await MainActor.run {
                     self.currentLocation = location
                     self.isLoading = false
-                } else {
+                }
+            } else {
+                await MainActor.run {
                     self.errorMessage = "Unable to get your current location. Please make sure location services are enabled."
                     self.isLoading = false
                 }

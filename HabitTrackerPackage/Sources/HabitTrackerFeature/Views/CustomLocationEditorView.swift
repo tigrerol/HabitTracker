@@ -16,7 +16,7 @@ struct CustomLocationEditorView: View {
         customLocation != nil
     }
     
-    private var locationManager: LocationManager {
+    private var locationManager: LocationManagerAdapter {
         routineService.smartSelector.locationManager
     }
     

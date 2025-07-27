@@ -1,0 +1,280 @@
+{
+  "" : {
+    "const-values" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/HabitTrackerFeature-master.swiftconstvalues",
+    "dependencies" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/HabitTrackerFeature-master.d",
+    "diagnostics" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/HabitTrackerFeature-master.dia",
+    "emit-module-dependencies" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/HabitTrackerFeature-master-emit-module.d",
+    "emit-module-diagnostics" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/HabitTrackerFeature-master-emit-module.dia",
+    "swift-dependencies" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/HabitTrackerFeature-master.swiftdeps"
+  },
+  "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/HabitTrackerFeature.swift" : {
+    "index-unit-output-path" : "/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/HabitTrackerFeature.o",
+    "llvm-bc" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/HabitTrackerFeature.bc",
+    "object" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/HabitTrackerFeature.o"
+  },
+  "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Managers/DayCategoryManager.swift" : {
+    "index-unit-output-path" : "/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/DayCategoryManager.o",
+    "llvm-bc" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/DayCategoryManager.bc",
+    "object" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/DayCategoryManager.o"
+  },
+  "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Managers/LocationCategoryManager.swift" : {
+    "index-unit-output-path" : "/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/LocationCategoryManager.o",
+    "llvm-bc" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/LocationCategoryManager.bc",
+    "object" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/LocationCategoryManager.o"
+  },
+  "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Models/Categories/DayCategory.swift" : {
+    "index-unit-output-path" : "/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/DayCategory.o",
+    "llvm-bc" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/DayCategory.bc",
+    "object" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/DayCategory.o"
+  },
+  "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Models/Categories/LocationCategory.swift" : {
+    "index-unit-output-path" : "/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/LocationCategory.o",
+    "llvm-bc" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/LocationCategory.bc",
+    "object" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/LocationCategory.o"
+  },
+  "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Models/ConditionalHabitInfo.swift" : {
+    "index-unit-output-path" : "/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/ConditionalHabitInfo.o",
+    "llvm-bc" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/ConditionalHabitInfo.bc",
+    "object" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/ConditionalHabitInfo.o"
+  },
+  "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Models/ConditionalOption.swift" : {
+    "index-unit-output-path" : "/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/ConditionalOption.o",
+    "llvm-bc" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/ConditionalOption.bc",
+    "object" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/ConditionalOption.o"
+  },
+  "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Models/ConditionalResponse.swift" : {
+    "index-unit-output-path" : "/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/ConditionalResponse.o",
+    "llvm-bc" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/ConditionalResponse.bc",
+    "object" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/ConditionalResponse.o"
+  },
+  "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Models/Core/Weekday.swift" : {
+    "index-unit-output-path" : "/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/Weekday.o",
+    "llvm-bc" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/Weekday.bc",
+    "object" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/Weekday.o"
+  },
+  "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Models/CustomLocation.swift" : {
+    "index-unit-output-path" : "/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/CustomLocation.o",
+    "llvm-bc" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/CustomLocation.bc",
+    "object" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/CustomLocation.o"
+  },
+  "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Models/Habit.swift" : {
+    "index-unit-output-path" : "/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/Habit.o",
+    "llvm-bc" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/Habit.bc",
+    "object" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/Habit.o"
+  },
+  "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Models/HabitCompletion.swift" : {
+    "index-unit-output-path" : "/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/HabitCompletion.o",
+    "llvm-bc" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/HabitCompletion.bc",
+    "object" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/HabitCompletion.o"
+  },
+  "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Models/HabitType.swift" : {
+    "index-unit-output-path" : "/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/HabitType.o",
+    "llvm-bc" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/HabitType.bc",
+    "object" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/HabitType.o"
+  },
+  "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Models/MoodRating.swift" : {
+    "index-unit-output-path" : "/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/MoodRating.o",
+    "llvm-bc" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/MoodRating.bc",
+    "object" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/MoodRating.o"
+  },
+  "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Models/RoutineContext.swift" : {
+    "index-unit-output-path" : "/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/RoutineContext.o",
+    "llvm-bc" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/RoutineContext.bc",
+    "object" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/RoutineContext.o"
+  },
+  "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Models/RoutineSession.swift" : {
+    "index-unit-output-path" : "/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/RoutineSession.o",
+    "llvm-bc" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/RoutineSession.bc",
+    "object" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/RoutineSession.o"
+  },
+  "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Models/RoutineTemplate.swift" : {
+    "index-unit-output-path" : "/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/RoutineTemplate.o",
+    "llvm-bc" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/RoutineTemplate.bc",
+    "object" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/RoutineTemplate.o"
+  },
+  "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Models/Settings/DayCategorySettings.swift" : {
+    "index-unit-output-path" : "/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/DayCategorySettings.o",
+    "llvm-bc" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/DayCategorySettings.bc",
+    "object" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/DayCategorySettings.o"
+  },
+  "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Models/Settings/LocationCategorySettings.swift" : {
+    "index-unit-output-path" : "/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/LocationCategorySettings.o",
+    "llvm-bc" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/LocationCategorySettings.bc",
+    "object" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/LocationCategorySettings.o"
+  },
+  "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Models/SwiftDataModels.swift" : {
+    "index-unit-output-path" : "/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/SwiftDataModels.o",
+    "llvm-bc" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/SwiftDataModels.bc",
+    "object" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/SwiftDataModels.o"
+  },
+  "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Models/TimeSlotDefinition.swift" : {
+    "index-unit-output-path" : "/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/TimeSlotDefinition.o",
+    "llvm-bc" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/TimeSlotDefinition.bc",
+    "object" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/TimeSlotDefinition.o"
+  },
+  "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Protocols/Categorizable.swift" : {
+    "index-unit-output-path" : "/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/Categorizable.o",
+    "llvm-bc" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/Categorizable.bc",
+    "object" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/Categorizable.o"
+  },
+  "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Protocols/HabitInteractionHandler.swift" : {
+    "index-unit-output-path" : "/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/HabitInteractionHandler.o",
+    "llvm-bc" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/HabitInteractionHandler.bc",
+    "object" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/HabitInteractionHandler.o"
+  },
+  "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Services/DataModelConfiguration.swift" : {
+    "index-unit-output-path" : "/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/DataModelConfiguration.o",
+    "llvm-bc" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/DataModelConfiguration.bc",
+    "object" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/DataModelConfiguration.o"
+  },
+  "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Services/HabitFactory.swift" : {
+    "index-unit-output-path" : "/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/HabitFactory.o",
+    "llvm-bc" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/HabitFactory.bc",
+    "object" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/HabitFactory.o"
+  },
+  "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Services/LocationService.swift" : {
+    "index-unit-output-path" : "/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/LocationService.o",
+    "llvm-bc" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/LocationService.bc",
+    "object" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/LocationService.o"
+  },
+  "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Services/PersistenceService.swift" : {
+    "index-unit-output-path" : "/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/PersistenceService.o",
+    "llvm-bc" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/PersistenceService.bc",
+    "object" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/PersistenceService.o"
+  },
+  "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Services/ResponseLoggingService.swift" : {
+    "index-unit-output-path" : "/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/ResponseLoggingService.o",
+    "llvm-bc" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/ResponseLoggingService.bc",
+    "object" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/ResponseLoggingService.o"
+  },
+  "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Services/RoutineSelector.swift" : {
+    "index-unit-output-path" : "/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/RoutineSelector.o",
+    "llvm-bc" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/RoutineSelector.bc",
+    "object" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/RoutineSelector.o"
+  },
+  "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Services/RoutineService.swift" : {
+    "index-unit-output-path" : "/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/RoutineService.o",
+    "llvm-bc" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/RoutineService.bc",
+    "object" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/RoutineService.o"
+  },
+  "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Services/SmartRoutineSelector.swift" : {
+    "index-unit-output-path" : "/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/SmartRoutineSelector.o",
+    "llvm-bc" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/SmartRoutineSelector.bc",
+    "object" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/SmartRoutineSelector.o"
+  },
+  "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Services/SwiftDataPersistenceService.swift" : {
+    "index-unit-output-path" : "/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/SwiftDataPersistenceService.o",
+    "llvm-bc" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/SwiftDataPersistenceService.bc",
+    "object" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/SwiftDataPersistenceService.o"
+  },
+  "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Utils/AccessibilityConfiguration.swift" : {
+    "index-unit-output-path" : "/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/AccessibilityConfiguration.o",
+    "llvm-bc" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/AccessibilityConfiguration.bc",
+    "object" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/AccessibilityConfiguration.o"
+  },
+  "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Utils/ColorExtensions.swift" : {
+    "index-unit-output-path" : "/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/ColorExtensions.o",
+    "llvm-bc" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/ColorExtensions.bc",
+    "object" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/ColorExtensions.o"
+  },
+  "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Views/AccessibleHabitViews.swift" : {
+    "index-unit-output-path" : "/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/AccessibleHabitViews.o",
+    "llvm-bc" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/AccessibleHabitViews.bc",
+    "object" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/AccessibleHabitViews.o"
+  },
+  "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Views/ConditionalHabitEditorView.swift" : {
+    "index-unit-output-path" : "/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/ConditionalHabitEditorView.o",
+    "llvm-bc" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/ConditionalHabitEditorView.bc",
+    "object" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/ConditionalHabitEditorView.o"
+  },
+  "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Views/ConditionalHabitInteractionView.swift" : {
+    "index-unit-output-path" : "/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/ConditionalHabitInteractionView.o",
+    "llvm-bc" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/ConditionalHabitInteractionView.bc",
+    "object" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/ConditionalHabitInteractionView.o"
+  },
+  "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Views/ContextRuleEditorView.swift" : {
+    "index-unit-output-path" : "/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/ContextRuleEditorView.o",
+    "llvm-bc" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/ContextRuleEditorView.bc",
+    "object" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/ContextRuleEditorView.o"
+  },
+  "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Views/ContextSettingsView.swift" : {
+    "index-unit-output-path" : "/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/ContextSettingsView.o",
+    "llvm-bc" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/ContextSettingsView.bc",
+    "object" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/ContextSettingsView.o"
+  },
+  "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Views/CustomLocationEditorView.swift" : {
+    "index-unit-output-path" : "/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/CustomLocationEditorView.o",
+    "llvm-bc" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/CustomLocationEditorView.bc",
+    "object" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/CustomLocationEditorView.o"
+  },
+  "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Views/DayTypeEditorView.swift" : {
+    "index-unit-output-path" : "/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/DayTypeEditorView.o",
+    "llvm-bc" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/DayTypeEditorView.bc",
+    "object" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/DayTypeEditorView.o"
+  },
+  "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Views/HabitEditorView.swift" : {
+    "index-unit-output-path" : "/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/HabitEditorView.o",
+    "llvm-bc" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/HabitEditorView.bc",
+    "object" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/HabitEditorView.o"
+  },
+  "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Views/HabitInteractionView.swift" : {
+    "index-unit-output-path" : "/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/HabitInteractionView.o",
+    "llvm-bc" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/HabitInteractionView.bc",
+    "object" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/HabitInteractionView.o"
+  },
+  "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Views/HabitQuickAddView.swift" : {
+    "index-unit-output-path" : "/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/HabitQuickAddView.o",
+    "llvm-bc" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/HabitQuickAddView.bc",
+    "object" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/HabitQuickAddView.o"
+  },
+  "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Views/HabitRowView.swift" : {
+    "index-unit-output-path" : "/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/HabitRowView.o",
+    "llvm-bc" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/HabitRowView.bc",
+    "object" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/HabitRowView.o"
+  },
+  "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Views/InlineMoodRatingView.swift" : {
+    "index-unit-output-path" : "/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/InlineMoodRatingView.o",
+    "llvm-bc" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/InlineMoodRatingView.bc",
+    "object" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/InlineMoodRatingView.o"
+  },
+  "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Views/LocationSetupView.swift" : {
+    "index-unit-output-path" : "/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/LocationSetupView.o",
+    "llvm-bc" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/LocationSetupView.bc",
+    "object" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/LocationSetupView.o"
+  },
+  "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Views/MoodRatingView.swift" : {
+    "index-unit-output-path" : "/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/MoodRatingView.o",
+    "llvm-bc" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/MoodRatingView.bc",
+    "object" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/MoodRatingView.o"
+  },
+  "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Views/MorningRoutineView.swift" : {
+    "index-unit-output-path" : "/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/MorningRoutineView.o",
+    "llvm-bc" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/MorningRoutineView.bc",
+    "object" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/MorningRoutineView.o"
+  },
+  "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Views/RoutineBuilderView.swift" : {
+    "index-unit-output-path" : "/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/RoutineBuilderView.o",
+    "llvm-bc" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/RoutineBuilderView.bc",
+    "object" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/RoutineBuilderView.o"
+  },
+  "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Views/RoutineExecutionView.swift" : {
+    "index-unit-output-path" : "/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/RoutineExecutionView.o",
+    "llvm-bc" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/RoutineExecutionView.bc",
+    "object" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/RoutineExecutionView.o"
+  },
+  "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Views/SmartTemplateSelectionView.swift" : {
+    "index-unit-output-path" : "/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/SmartTemplateSelectionView.o",
+    "llvm-bc" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/SmartTemplateSelectionView.bc",
+    "object" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/SmartTemplateSelectionView.o"
+  },
+  "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Views/TimeSlotEditorView.swift" : {
+    "index-unit-output-path" : "/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/TimeSlotEditorView.o",
+    "llvm-bc" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/TimeSlotEditorView.bc",
+    "object" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/TimeSlotEditorView.o"
+  },
+  "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/DerivedSources/resource_bundle_accessor.swift" : {
+    "index-unit-output-path" : "/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/resource_bundle_accessor.o",
+    "llvm-bc" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/resource_bundle_accessor.bc",
+    "object" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/Objects-normal/arm64/resource_bundle_accessor.o"
+  }
+}

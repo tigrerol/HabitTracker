@@ -9,6 +9,7 @@ public struct CustomLocation: Codable, Identifiable, Sendable {
     public var coordinate: LocationCoordinate?
     public var radius: CLLocationDistance
     public let dateCreated: Date
+    public var modifiedAt: Date
     
     public init(
         id: UUID = UUID(),
@@ -16,7 +17,8 @@ public struct CustomLocation: Codable, Identifiable, Sendable {
         icon: String = "location.fill",
         coordinate: LocationCoordinate? = nil,
         radius: CLLocationDistance = 150,
-        dateCreated: Date = Date()
+        dateCreated: Date = Date(),
+        modifiedAt: Date = Date()
     ) {
         self.id = id
         self.name = name
@@ -24,6 +26,7 @@ public struct CustomLocation: Codable, Identifiable, Sendable {
         self.coordinate = coordinate
         self.radius = radius
         self.dateCreated = dateCreated
+        self.modifiedAt = modifiedAt
     }
     
     /// Get CLLocation if coordinate is set

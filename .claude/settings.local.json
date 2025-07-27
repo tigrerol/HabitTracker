@@ -32,7 +32,14 @@
       "mcp__XcodeBuildMCP__list_sims",
       "mcp__XcodeBuildMCP__stop_app_sim",
       "Bash(chmod:*)",
-      "Bash(./Scripts/increment-build.sh:*)"
+      "Bash(./Scripts/increment-build.sh:*)",
+      "Bash(rm:*)",
+      "mcp__XcodeBuildMCP__swift_package_test",
+      "Bash(swift package:*)",
+      "mcp__XcodeBuildMCP__boot_sim",
+      "mcp__XcodeBuildMCP__launch_app_logs_sim",
+      "mcp__XcodeBuildMCP__build_run_sim_id_ws",
+      "mcp__XcodeBuildMCP__swift_package_clean"
     ],
     "deny": []
   }

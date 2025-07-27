@@ -1,0 +1,79 @@
+version: "Apple Swift version 6.1.2 (swiftlang-6.1.2.1.2 clang-1700.0.13.5)"
+options: "ad4dfcf6cd238cdb71975108ba510c34ca4139e04734f9109f9bb114f729e064"
+build_start_time: [1753551505, 354098000]
+build_end_time: [1753551509, 684934000]
+inputs:
+  "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/HabitTrackerFeature.swift": !dirty [1753305014, 272627082]
+  ? "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Managers/DayCategoryManager.swift"
+  : !dirty [1753539576, 209033390]
+  ? "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Managers/LocationCategoryManager.swift"
+  : !dirty [1753539601, 413338059]
+  ? "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Models/Categories/DayCategory.swift"
+  : !dirty [1753539444, 366404800]
+  ? "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Models/Categories/LocationCategory.swift"
+  : !dirty [1753539463, 41757904]
+  ? "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Models/ConditionalHabitInfo.swift"
+  : !dirty [1753430385, 367210964]
+  "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Models/ConditionalOption.swift": !dirty [1753435329, 302011055]
+  "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Models/ConditionalResponse.swift": !dirty [1753430443, 33194404]
+  "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Models/Core/Weekday.swift": !dirty [1753539376, 204830333]
+  "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Models/CustomLocation.swift": !dirty [1753545333, 554710349]
+  "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Models/Habit.swift": !dirty [1753539624, 184037535]
+  "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Models/HabitCompletion.swift": !dirty [1753429318, 294162944]
+  "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Models/HabitType.swift": !dirty [1753435093, 610951575]
+  "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Models/MoodRating.swift": !dirty [1753304621, 50955245]
+  "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Models/RoutineContext.swift": !dirty [1753544381, 74148338]
+  "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Models/RoutineSession.swift": !dirty [1753545817, 153566760]
+  "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Models/RoutineTemplate.swift": !dirty [1753519015, 261396353]
+  ? "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Models/Settings/DayCategorySettings.swift"
+  : !dirty [1753539492, 879314077]
+  ? "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Models/Settings/LocationCategorySettings.swift"
+  : !dirty [1753539514, 223735792]
+  "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Models/SwiftDataModels.swift": !dirty [1753545292, 205982343]
+  "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Models/TimeSlotDefinition.swift": !dirty [1753522527, 580184911]
+  "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Protocols/Categorizable.swift": !dirty [1753539424, 907986484]
+  ? "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Protocols/HabitInteractionHandler.swift"
+  : !dirty [1753551477, 41204909]
+  ? "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Services/DataModelConfiguration.swift"
+  : !dirty [1753542457, 371195971]
+  "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Services/HabitFactory.swift": !dirty [1753542072, 778386679]
+  "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Services/LocationService.swift": !dirty [1753544735, 204927409]
+  ? "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Services/PersistenceService.swift"
+  : !dirty [1753539829, 849449836]
+  ? "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Services/ResponseLoggingService.swift"
+  : !dirty [1753431391, 103623500]
+  "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Services/RoutineSelector.swift": !dirty [1753544253, 759381997]
+  "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Services/RoutineService.swift": !dirty [1753542109, 180746058]
+  ? "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Services/SmartRoutineSelector.swift"
+  : !dirty [1753544749, 188225107]
+  ? "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Services/SwiftDataPersistenceService.swift"
+  : !dirty [1753545710, 733093543]
+  ? "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Utils/AccessibilityConfiguration.swift"
+  : !dirty [1753543745, 39880670]
+  "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Utils/ColorExtensions.swift": !dirty [1753539403, 56199264]
+  "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Views/AccessibleHabitViews.swift": !dirty [1753548249, 352141813]
+  ? "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Views/ConditionalHabitEditorView.swift"
+  : !dirty [1753529105, 44525434]
+  ? "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Views/ConditionalHabitInteractionView.swift"
+  : !dirty [1753537329, 555305088]
+  ? "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Views/ContextRuleEditorView.swift"
+  : !dirty [1753544445, 278155267]
+  "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Views/ContextSettingsView.swift": !dirty [1753544497, 50404515]
+  ? "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Views/CustomLocationEditorView.swift"
+  : !dirty [1753544520, 300316176]
+  "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Views/DayTypeEditorView.swift": !dirty [1753529847, 479603591]
+  "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Views/HabitEditorView.swift": !dirty [1753526895, 924463698]
+  "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Views/HabitInteractionView.swift": !dirty [1753551290, 886790532]
+  "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Views/HabitQuickAddView.swift": !dirty [1753528757, 218000350]
+  "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Views/HabitRowView.swift": !dirty [1753537456, 712851196]
+  "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Views/InlineMoodRatingView.swift": !dirty [1753537396, 431369504]
+  "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Views/LocationSetupView.swift": !dirty [1753545053, 418183211]
+  "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Views/MoodRatingView.swift": !dirty [1753537372, 733665752]
+  "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Views/MorningRoutineView.swift": !dirty [1753524646, 347181891]
+  "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Views/RoutineBuilderView.swift": !dirty [1753545444, 995150856]
+  "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Views/RoutineExecutionView.swift": !dirty [1753546001, 597157225]
+  ? "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Views/SmartTemplateSelectionView.swift"
+  : !dirty [1753538618, 414481139]
+  "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/Sources/HabitTrackerFeature/Views/TimeSlotEditorView.swift": !dirty [1753528612, 643401546]
+  ? "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage/build/HabitTrackerFeature.build/Release-iphoneos/HabitTrackerFeature.build/DerivedSources/resource_bundle_accessor.swift"
+  : !dirty [1753551505, 209889047]

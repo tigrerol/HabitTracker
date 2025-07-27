@@ -3,7 +3,7 @@ import Foundation
 /// Represents an active morning routine session
 @MainActor
 @Observable
-public final class RoutineSession {
+public final class RoutineSession: Equatable {
     public let id: UUID
     public let template: RoutineTemplate
     public let startedAt: Date
@@ -24,8 +24,9 @@ public final class RoutineSession {
     
     /// Current habit being worked on
     public var currentHabit: Habit? {
-        guard currentHabitIndex < activeHabits.count else { return nil }
-        return activeHabits[currentHabitIndex]
+        let habits = activeHabits
+        guard currentHabitIndex >= 0 && currentHabitIndex < habits.count else { return nil }
+        return habits[currentHabitIndex]
     }
     
     /// All active habits for this session (including modifications)
@@ -70,25 +71,61 @@ public final class RoutineSession {
             return Date().timeIntervalSince(startedAt)
         }
     }
+    
+    // MARK: - Equatable
+    public nonisolated static func == (lhs: RoutineSession, rhs: RoutineSession) -> Bool {
+        lhs.id == rhs.id
+    }
 }
 
 // MARK: - Session Actions
 extension RoutineSession {
     /// Complete the current habit
     public func completeCurrentHabit(duration: TimeInterval? = nil, notes: String? = nil) {
-        guard let currentHabit else { return }
+        guard let habitToComplete = currentHabit else { 
+            print("🔥 DEBUG: completeCurrentHabit - No current habit to complete!")
+            return 
+        }
+        
+        print("🔥 DEBUG: completeCurrentHabit - Completing habit: \(habitToComplete.name)")
+        print("🔥 DEBUG: completeCurrentHabit - Current index: \(currentHabitIndex)")
+        print("🔥 DEBUG: completeCurrentHabit - Active habits count: \(activeHabits.count)")
+        print("🔥 DEBUG: completeCurrentHabit - CALLER STACK: \(Thread.callStackSymbols.prefix(5).joined(separator: "\n"))")
+        
+        // Check if this habit is already completed (can happen with conditional habits)
+        let existingCompletion = completions.first { $0.habitId == habitToComplete.id }
+        if existingCompletion != nil {
+            print("🔥 DEBUG: completeCurrentHabit - Habit already completed, just advancing index")
+            // Already completed, just advance the index if needed
+            let habitCount = activeHabits.count
+            if currentHabitIndex < habitCount - 1 {
+                currentHabitIndex += 1
+                print("🔥 DEBUG: completeCurrentHabit - Advanced to index: \(currentHabitIndex)")
+                print("🔥 DEBUG: completeCurrentHabit - New current habit: \(currentHabit?.name ?? "nil")")
+            } else {
+                // Session completed
+                print("🔥 DEBUG: completeCurrentHabit - Session completed!")
+                completedAt = Date()
+            }
+            return
+        }
         
         let completion = HabitCompletion(
-            habitId: currentHabit.id,
+            habitId: habitToComplete.id,
             completedAt: Date(),
             duration: duration,
             notes: notes
         )
         
+        print("🚨🚨🚨 COMPLETION ADDED: \(completion.habitId) via completeCurrentHabit - Total completions now: \(completions.count + 1)")
+        print("🚨🚨🚨   - Function: completeCurrentHabit")
+        print("🚨🚨🚨   - Habit: \(habitToComplete.name) (ID: \(habitToComplete.id))")
+        print("🚨🚨🚨   - CALLER STACK: \(Thread.callStackSymbols.prefix(3).joined(separator: " -> "))")
         completions.append(completion)
         
         // Move to next habit
-        if currentHabitIndex < activeHabits.count - 1 {
+        let habitCount = activeHabits.count
+        if currentHabitIndex < habitCount - 1 {
             currentHabitIndex += 1
         } else {
             // Session completed
@@ -96,22 +133,43 @@ extension RoutineSession {
         }
     }
     
+    /// Complete a conditional habit without auto-advancing the index
+    /// This is used when path habits have been injected and should be executed next
+    public func completeConditionalHabit(habitId: UUID, duration: TimeInterval? = nil, notes: String? = nil) {
+        let completion = HabitCompletion(
+            habitId: habitId,
+            completedAt: Date(),
+            duration: duration,
+            notes: notes
+        )
+        
+        print("🚨🚨🚨 COMPLETION ADDED: \(completion.habitId) via completeConditionalHabit - Total completions now: \(completions.count + 1)")
+        print("🚨🚨🚨   - Function: completeConditionalHabit")
+        print("🚨🚨🚨   - CALLER STACK: \(Thread.callStackSymbols.prefix(3).joined(separator: " -> "))")
+        completions.append(completion)
+    }
+    
     /// Skip the current habit
     public func skipCurrentHabit(reason: String? = nil) {
-        guard let currentHabit else { return }
+        guard let habitToSkip = currentHabit else { return }
         
         let completion = HabitCompletion(
-            habitId: currentHabit.id,
+            habitId: habitToSkip.id,
             completedAt: Date(),
             duration: 0,
             isSkipped: true,
             notes: reason
         )
         
+        print("🚨🚨🚨 COMPLETION ADDED: \(completion.habitId) via skipCurrentHabit - Total completions now: \(completions.count + 1)")
+        print("🚨🚨🚨   - Function: skipCurrentHabit")
+        print("🚨🚨🚨   - Habit: \(habitToSkip.name) (ID: \(habitToSkip.id))")
+        print("🚨🚨🚨   - CALLER STACK: \(Thread.callStackSymbols.prefix(3).joined(separator: " -> "))")
         completions.append(completion)
         
         // Move to next habit
-        if currentHabitIndex < activeHabits.count - 1 {
+        let habitCount = activeHabits.count
+        if currentHabitIndex < habitCount - 1 {
             currentHabitIndex += 1
         } else {
             // Session completed
@@ -124,15 +182,16 @@ extension RoutineSession {
         if currentHabitIndex > 0 {
             currentHabitIndex -= 1
             // Remove completion for this habit if it exists
-            if let currentHabit {
-                completions.removeAll { $0.habitId == currentHabit.id }
+            if let habitToModify = currentHabit {
+                completions.removeAll { $0.habitId == habitToModify.id }
             }
         }
     }
     
     /// Jump to specific habit
     public func goToHabit(at index: Int) {
-        guard index >= 0 && index < activeHabits.count else { return }
+        let habitCount = activeHabits.count
+        guard index >= 0 && index < habitCount else { return }
         currentHabitIndex = index
     }
     

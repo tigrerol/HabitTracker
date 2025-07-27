@@ -1,0 +1,9 @@
+Target dependency graph (4 targets)
+Target 'HabitTracker' in project 'HabitTracker'
+➜ Explicit dependency on target 'HabitTrackerFeature' in project 'HabitTrackerFeature'
+Target 'HabitTrackerFeature' in project 'HabitTrackerFeature'
+➜ Explicit dependency on target 'HabitTrackerFeature' in project 'HabitTrackerFeature'
+➜ Explicit dependency on target 'HabitTrackerFeature_HabitTrackerFeature' in project 'HabitTrackerFeature'
+Target 'HabitTrackerFeature' in project 'HabitTrackerFeature'
+➜ Explicit dependency on target 'HabitTrackerFeature_HabitTrackerFeature' in project 'HabitTrackerFeature'
+Target 'HabitTrackerFeature_HabitTrackerFeature' in project 'HabitTrackerFeature' (no dependencies)

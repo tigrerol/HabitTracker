@@ -1,0 +1,20 @@
+{
+  "" : {
+    "const-values" : "/Users/rolandlechner/SWDevelopment/HabitTracker/build/Build/Intermediates.noindex/HabitTracker.build/Release-iphoneos/HabitTracker.build/Objects-normal/arm64/HabitTracker-master.swiftconstvalues",
+    "dependencies" : "/Users/rolandlechner/SWDevelopment/HabitTracker/build/Build/Intermediates.noindex/HabitTracker.build/Release-iphoneos/HabitTracker.build/Objects-normal/arm64/HabitTracker-master.d",
+    "diagnostics" : "/Users/rolandlechner/SWDevelopment/HabitTracker/build/Build/Intermediates.noindex/HabitTracker.build/Release-iphoneos/HabitTracker.build/Objects-normal/arm64/HabitTracker-master.dia",
+    "emit-module-dependencies" : "/Users/rolandlechner/SWDevelopment/HabitTracker/build/Build/Intermediates.noindex/HabitTracker.build/Release-iphoneos/HabitTracker.build/Objects-normal/arm64/HabitTracker-master-emit-module.d",
+    "emit-module-diagnostics" : "/Users/rolandlechner/SWDevelopment/HabitTracker/build/Build/Intermediates.noindex/HabitTracker.build/Release-iphoneos/HabitTracker.build/Objects-normal/arm64/HabitTracker-master-emit-module.dia",
+    "swift-dependencies" : "/Users/rolandlechner/SWDevelopment/HabitTracker/build/Build/Intermediates.noindex/HabitTracker.build/Release-iphoneos/HabitTracker.build/Objects-normal/arm64/HabitTracker-master.swiftdeps"
+  },
+  "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTracker/HabitTrackerApp.swift" : {
+    "index-unit-output-path" : "/HabitTracker.build/Release-iphoneos/HabitTracker.build/Objects-normal/arm64/HabitTrackerApp.o",
+    "llvm-bc" : "/Users/rolandlechner/SWDevelopment/HabitTracker/build/Build/Intermediates.noindex/HabitTracker.build/Release-iphoneos/HabitTracker.build/Objects-normal/arm64/HabitTrackerApp.bc",
+    "object" : "/Users/rolandlechner/SWDevelopment/HabitTracker/build/Build/Intermediates.noindex/HabitTracker.build/Release-iphoneos/HabitTracker.build/Objects-normal/arm64/HabitTrackerApp.o"
+  },
+  "/Users/rolandlechner/SWDevelopment/HabitTracker/build/Build/Intermediates.noindex/HabitTracker.build/Release-iphoneos/HabitTracker.build/DerivedSources/GeneratedAssetSymbols.swift" : {
+    "index-unit-output-path" : "/HabitTracker.build/Release-iphoneos/HabitTracker.build/Objects-normal/arm64/GeneratedAssetSymbols.o",
+    "llvm-bc" : "/Users/rolandlechner/SWDevelopment/HabitTracker/build/Build/Intermediates.noindex/HabitTracker.build/Release-iphoneos/HabitTracker.build/Objects-normal/arm64/GeneratedAssetSymbols.bc",
+    "object" : "/Users/rolandlechner/SWDevelopment/HabitTracker/build/Build/Intermediates.noindex/HabitTracker.build/Release-iphoneos/HabitTracker.build/Objects-normal/arm64/GeneratedAssetSymbols.o"
+  }
+}

@@ -8,6 +8,8 @@ struct ContextSettingsView: View {
     @State private var showingTimeSlotEditor = false
     @State private var showingDayTypeEditor = false
     @State private var showingLocationSetup = false
+    @State private var savedLocationsCount = 0
+    @State private var customLocationsCount = 0
     
     var body: some View {
         NavigationStack {
@@ -106,6 +108,10 @@ struct ContextSettingsView: View {
         .sheet(isPresented: $showingLocationSetup) {
             LocationSetupView()
         }
+        .task {
+            savedLocationsCount = await routineService.smartSelector.locationManager.savedLocations.count
+            customLocationsCount = await routineService.smartSelector.locationManager.allCustomLocations.count
+        }
     }
     
     private var timeSlotSummary: String {
@@ -119,9 +125,7 @@ struct ContextSettingsView: View {
     }
     
     private var locationSummary: String {
-        let builtInCount = routineService.smartSelector.locationManager.savedLocations.count
-        let customCount = routineService.smartSelector.locationManager.allCustomLocations.count
-        let total = builtInCount + customCount
+        let total = savedLocationsCount + customLocationsCount
         
         if total == 0 {
             return String(localized: "ContextSettingsView.NoLocationsSet", bundle: .module)

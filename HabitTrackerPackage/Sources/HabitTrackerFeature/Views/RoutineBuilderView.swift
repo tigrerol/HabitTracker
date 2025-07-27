@@ -20,6 +20,7 @@ public struct RoutineBuilderView: View {
     @State private var selectedOption: (habitId: UUID, optionId: UUID)?
     @State private var contextRule: RoutineContextRule?
     @State private var showingContextRuleEditor = false
+    @State private var customLocations: [CustomLocation] = []
     
     enum BuilderStep {
         case naming
@@ -78,6 +79,9 @@ public struct RoutineBuilderView: View {
                 contextRule = template.contextRule
                 currentStep = .review // Skip to review for editing
             }
+        }
+        .task {
+            customLocations = await routineService.smartSelector.locationManager.allCustomLocations
         }
     }
     
@@ -895,7 +899,7 @@ public struct RoutineBuilderView: View {
                 }
                 // Check if it's a custom location
                 if let uuid = UUID(uuidString: locationId),
-                   let customLocation = routineService.smartSelector.locationManager.getCustomLocation(id: uuid) {
+                   let customLocation = customLocations.first(where: { $0.id == uuid }) {
                     return customLocation.name
                 }
                 return nil

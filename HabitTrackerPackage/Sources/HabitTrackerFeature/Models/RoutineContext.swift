@@ -144,7 +144,7 @@ public struct RoutineContextRule: Codable, Hashable, Sendable {
     
     /// Check if this rule matches the given context
     @MainActor
-    public func matches(_ context: RoutineContext, locationManager: LocationManager) -> Bool {
+    public func matches(_ context: RoutineContext, locationManager: LocationManagerAdapter) -> Bool {
         let timeMatch = timeSlots.isEmpty || timeSlots.contains(context.timeSlot)
         let dayMatch = dayCategoryIds.isEmpty || dayCategoryIds.contains(context.dayCategory.id)
         
@@ -167,7 +167,7 @@ public struct RoutineContextRule: Codable, Hashable, Sendable {
     
     /// Calculate match score (higher is better)
     @MainActor
-    public func matchScore(for context: RoutineContext, locationManager: LocationManager) -> Int {
+    public func matchScore(for context: RoutineContext, locationManager: LocationManagerAdapter) -> Int {
         guard matches(context, locationManager: locationManager) else { 
             print("   ❌ No match for timeSlots:\(timeSlots), dayCategories:\(dayCategoryIds), locations:\(locationIds)")
             return 0 

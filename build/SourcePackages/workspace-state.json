@@ -1,0 +1,27 @@
+{
+  "object" : {
+    "artifacts" : [
+
+    ],
+    "dependencies" : [
+      {
+        "basedOn" : null,
+        "packageRef" : {
+          "identity" : "habittrackerpackage",
+          "kind" : "fileSystem",
+          "location" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage",
+          "name" : "HabitTrackerFeature"
+        },
+        "state" : {
+          "name" : "fileSystem",
+          "path" : "/Users/rolandlechner/SWDevelopment/HabitTracker/HabitTrackerPackage"
+        },
+        "subpath" : "habittrackerpackage"
+      }
+    ],
+    "prebuilts" : [
+
+    ]
+  },
+  "version" : 7
+}

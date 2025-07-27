@@ -153,7 +153,18 @@ public final class RoutineService {
         for habitId: UUID,
         question: String
     ) {
-        guard let session = currentSession else { return }
+        print("🔥 DEBUG: handleConditionalOptionSelection called")
+        print("🔥 DEBUG: Option text: \(option.text)")
+        print("🔥 DEBUG: Option has \(option.habits.count) habits")
+        print("🔥 DEBUG: HabitId: \(habitId)")
+        
+        guard let session = currentSession else { 
+            print("🔥 DEBUG: ERROR - No current session!")
+            return 
+        }
+        
+        print("🔥 DEBUG: Current session index: \(session.currentHabitIndex)")
+        print("🔥 DEBUG: Active habits count: \(session.activeHabits.count)")
         
         // Log the response
         let response = ConditionalResponse(
@@ -169,44 +180,91 @@ public final class RoutineService {
         // Get the habits from the selected path
         let pathHabits = option.habits
         
+        // Find the current position in the active habits
+        let currentHabitIndex = session.currentHabitIndex
+        
         // If there are habits in the path, inject them into the session
         if !pathHabits.isEmpty {
-            // Find the current position in the active habits
-            let currentIndex = session.currentHabitIndex
+            print("🔥 DEBUG: Injecting \(pathHabits.count) path habits")
             let activeHabits = session.activeHabits
             
             // Create a reordered habit list that inserts the path habits after the current conditional
             var newOrder: [Habit] = []
             
             // Add habits up to and including current position
-            for i in 0...currentIndex {
+            for i in 0...currentHabitIndex {
                 if i < activeHabits.count {
-                    newOrder.append(activeHabits[i])
+                    var habit = activeHabits[i]
+                    habit.order = i  // Ensure correct sequential order
+                    newOrder.append(habit)
                 }
             }
             
-            // Insert the path habits with adjusted order values
-            let baseOrder = currentIndex + 1
+            // Insert the path habits with sequential order values
             for (index, habit) in pathHabits.enumerated() {
                 var pathHabit = habit
-                pathHabit.order = baseOrder + index
+                pathHabit.order = currentHabitIndex + 1 + index  // Sequential after current
                 newOrder.append(pathHabit)
+                print("🔥 DEBUG: Injected habit '\(pathHabit.name)' with order \(pathHabit.order)")
             }
             
-            // Add remaining habits with adjusted order values
-            if currentIndex + 1 < activeHabits.count {
-                for i in (currentIndex + 1)..<activeHabits.count {
+            // Add remaining habits with adjusted sequential order values
+            if currentHabitIndex + 1 < activeHabits.count {
+                for i in (currentHabitIndex + 1)..<activeHabits.count {
                     var remainingHabit = activeHabits[i]
-                    remainingHabit.order = baseOrder + pathHabits.count + (i - currentIndex - 1)
+                    remainingHabit.order = currentHabitIndex + 1 + pathHabits.count + (i - currentHabitIndex - 1)
                     newOrder.append(remainingHabit)
+                    print("🔥 DEBUG: Reordered habit '\(remainingHabit.name)' with order \(remainingHabit.order)")
                 }
+            }
+            
+            print("🔥 DEBUG: Final newOrder before reorderHabits:")
+            for (i, h) in newOrder.enumerated() {
+                print("🔥 DEBUG:   [\(i)] \(h.name) order=\(h.order) id=\(h.id)")
             }
             
             // Apply the reordering modification
             session.reorderHabits(newOrder)
         }
         
+        // Complete the conditional habit and advance to the next habit (which should be the first injected habit)
+        print("🔥 DEBUG: About to complete conditional habit")
+        print("🔥 DEBUG: BEFORE completion - Active habits:")
+        for (i, h) in session.activeHabits.enumerated() {
+            let isCompleted = session.completions.contains { $0.habitId == h.id }
+            print("🔥 DEBUG:   [\(i)] \(h.name) (ID: \(h.id)) - Completed: \(isCompleted)")
+        }
+        print("🔥 DEBUG: BEFORE completion - Completions:")
+        for comp in session.completions {
+            print("🔥 DEBUG:   - \(comp.habitId) at \(comp.completedAt)")
+        }
+        
+        session.completeConditionalHabit(
+            habitId: habitId,
+            duration: nil,
+            notes: "Selected: \(option.text)"
+        )
+        
+        print("🔥 DEBUG: AFTER completion - Active habits:")
+        for (i, h) in session.activeHabits.enumerated() {
+            let isCompleted = session.completions.contains { $0.habitId == h.id }
+            print("🔥 DEBUG:   [\(i)] \(h.name) (ID: \(h.id)) - Completed: \(isCompleted)")
+        }
+        print("🔥 DEBUG: AFTER completion - Completions:")
+        for comp in session.completions {
+            print("🔥 DEBUG:   - \(comp.habitId) at \(comp.completedAt)")
+        }
+        
+        // Move to the next habit (first injected habit if pathHabits is not empty,
+        // or the next habit in the original sequence if pathHabits is empty)
+        session.goToHabit(at: session.currentHabitIndex + 1)
+        
+        
+        print("🔥 DEBUG: AFTER goToHabit - currentHabitIndex: \(session.currentHabitIndex)")
+        print("🔥 DEBUG: AFTER goToHabit - currentHabit: \(session.currentHabit?.name ?? "nil") (ID: \(session.currentHabit?.id.uuidString ?? "nil"))")
+        
         // Post notification that routine queue changed
+        print("🔥 DEBUG: Posting .routineQueueDidChange notification")
         NotificationCenter.default.post(name: .routineQueueDidChange, object: nil)
     }
     
@@ -227,44 +285,7 @@ public final class RoutineService {
 // MARK: - Sample Templates
 extension RoutineService {
     private func createOfficeTemplate() -> RoutineTemplate {
-        let habits = [
-            Habit(
-                name: "Measure HRV",
-                type: .appLaunch(bundleId: "com.morpheus.app", appName: "Morpheus"),
-                color: "#FF6B6B",
-                order: 0
-            ),
-            Habit(
-                name: "Strength Training",
-                type: .website(url: URL(string: "https://your-workout-site.com")!, title: "Workout Site"),
-                color: "#4ECDC4",
-                order: 1
-            ),
-            Habit(
-                name: "Coffee",
-                type: .checkbox,
-                color: "#8B4513",
-                order: 2
-            ),
-            Habit(
-                name: "Supplements",
-                type: .counter(items: ["Vitamin D", "Magnesium", "Omega-3"]),
-                color: "#FFD93D",
-                order: 3
-            ),
-            Habit(
-                name: "Stretching",
-                type: .timer(defaultDuration: 600), // 10 minutes
-                color: "#6BCF7F",
-                order: 4
-            ),
-            Habit(
-                name: "Shower",
-                type: .checkbox,
-                color: "#74B9FF",
-                order: 5
-            )
-        ]
+        let habits = HabitFactory.createOfficeMorningHabits()
         
         // Office routine is for weekday mornings at the office
         let contextRule = RoutineContextRule(
@@ -284,50 +305,7 @@ extension RoutineService {
     }
     
     private func createHomeOfficeTemplate() -> RoutineTemplate {
-        let habits = [
-            Habit(
-                name: "Measure HRV",
-                type: .appLaunch(bundleId: "com.morpheus.app", appName: "Morpheus"),
-                color: "#FF6B6B",
-                order: 0
-            ),
-            Habit(
-                name: "Strength Training",
-                type: .website(url: URL(string: "https://your-workout-site.com")!, title: "Workout Site"),
-                color: "#4ECDC4",
-                order: 1
-            ),
-            Habit(
-                name: "Coffee",
-                type: .checkbox,
-                color: "#8B4513",
-                order: 2
-            ),
-            Habit(
-                name: "Supplements",
-                type: .counter(items: ["Vitamin D", "Magnesium", "Omega-3"]),
-                color: "#FFD93D",
-                order: 3
-            ),
-            Habit(
-                name: "Stretching",
-                type: .timer(defaultDuration: 900), // 15 minutes (longer for home)
-                color: "#6BCF7F",
-                order: 4
-            ),
-            Habit(
-                name: "Shower",
-                type: .checkbox,
-                color: "#74B9FF",
-                order: 5
-            ),
-            Habit(
-                name: "Prep Workspace",
-                type: .checkbox,
-                color: "#A29BFE",
-                order: 6
-            )
-        ]
+        let habits = HabitFactory.createHomeOfficeHabits()
         
         // Home office routine is for weekday mornings at home
         let contextRule = RoutineContextRule(
@@ -348,39 +326,7 @@ extension RoutineService {
     }
     
     private func createWeekendTemplate() -> RoutineTemplate {
-        let habits = [
-            Habit(
-                name: "Measure HRV",
-                type: .appLaunch(bundleId: "com.morpheus.app", appName: "Morpheus"),
-                color: "#FF6B6B",
-                order: 0
-            ),
-            Habit(
-                name: "Coffee",
-                type: .checkbox,
-                color: "#8B4513",
-                order: 1
-            ),
-            Habit(
-                name: "Supplements",
-                type: .counter(items: ["Vitamin D", "Magnesium"]), // Fewer supplements on weekend
-                color: "#FFD93D",
-                order: 2
-            ),
-            Habit(
-                name: "Long Stretching",
-                type: .timer(defaultDuration: 1200), // 20 minutes
-                color: "#6BCF7F",
-                order: 3
-            ),
-            Habit(
-                name: "Read News",
-                type: .website(url: URL(string: "https://news.ycombinator.com")!, title: "Hacker News"),
-                isOptional: true,
-                color: "#FF7675",
-                order: 4
-            )
-        ]
+        let habits = HabitFactory.createWeekendHabits()
         
         // Weekend routine is for any time on weekends, any location
         let contextRule = RoutineContextRule(
@@ -401,42 +347,7 @@ extension RoutineService {
     
     /// Create afternoon routine template
     private func createAfternoonTemplate() -> RoutineTemplate {
-        let habits = [
-            Habit(
-                name: "Review Daily Goals",
-                type: .checkbox,
-                color: "#007AFF",
-                order: 1
-            ),
-            Habit(
-                name: "Afternoon Stretch",
-                type: .timer(defaultDuration: 300),
-                color: "#34C759",
-                order: 2
-            ),
-            Habit(
-                name: "Healthy Snack",
-                type: .checkbox,
-                color: "#FF9500",
-                order: 3
-            ),
-            Habit(
-                name: "Focus Time",
-                type: .timer(defaultDuration: 1500),
-                color: "#5856D6",
-                order: 4
-            ),
-            Habit(
-                name: "Evening Planning",
-                type: .checkboxWithSubtasks(subtasks: [
-                    Subtask(name: "Review tomorrow's calendar"),
-                    Subtask(name: "Set top 3 priorities"),
-                    Subtask(name: "Prepare for meetings")
-                ]),
-                color: "#FF3B30",
-                order: 5
-            )
-        ]
+        let habits = HabitFactory.createAfternoonHabits()
         
         // Afternoon routine is for weekday and weekend afternoons/evenings at any location
         let contextRule = RoutineContextRule(
