@@ -54,7 +54,8 @@ public final class LocationManagerAdapter {
         self.locationService = locationService
         
         // Set up location updates
-        Task {
+        Task { [weak self] in
+            guard let self = self else { return }
             await locationService.setLocationUpdateCallback { [weak self] locationType, extendedLocationType in
                 guard let self = self else { return }
                 self.currentLocationType = locationType
@@ -75,14 +76,15 @@ public final class LocationManagerAdapter {
     
     /// Stop updating location
     func stopUpdatingLocation() {
-        Task {
-            await locationService.stopUpdatingLocation()
+        Task { [weak self] in
+            await self?.locationService.stopUpdatingLocation()
         }
     }
     
     /// Save a location as a known type
     public func saveLocation(_ location: CLLocation, as type: LocationType, name: String? = nil, radius: CLLocationDistance? = nil) {
-        Task {
+        Task { [weak self] in
+            guard let self = self else { return }
             do {
                 try await locationService.saveLocation(location, as: type, name: name, radius: radius)
             } catch {
@@ -95,8 +97,8 @@ public final class LocationManagerAdapter {
     
     /// Remove a saved location
     public func removeLocation(for type: LocationType) {
-        Task {
-            await locationService.removeLocation(for: type)
+        Task { [weak self] in
+            await self?.locationService.removeLocation(for: type)
         }
     }
     
@@ -128,8 +130,8 @@ public final class LocationManagerAdapter {
     
     /// Update an existing custom location
     public func updateCustomLocation(_ customLocation: CustomLocation) {
-        Task {
-            await locationService.updateCustomLocation(customLocation)
+        Task { [weak self] in
+            await self?.locationService.updateCustomLocation(customLocation)
         }
     }
     
@@ -139,15 +141,15 @@ public final class LocationManagerAdapter {
         location: CLLocation,
         radius: CLLocationDistance? = nil
     ) {
-        Task {
-            await locationService.setCustomLocationCoordinates(for: id, location: location, radius: radius)
+        Task { [weak self] in
+            await self?.locationService.setCustomLocationCoordinates(for: id, location: location, radius: radius)
         }
     }
     
     /// Delete a custom location
     public func deleteCustomLocation(id: UUID) {
-        Task {
-            await locationService.deleteCustomLocation(id: id)
+        Task { [weak self] in
+            await self?.locationService.deleteCustomLocation(id: id)
         }
     }
     

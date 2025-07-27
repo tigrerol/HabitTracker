@@ -30,7 +30,9 @@ struct CustomLocationEditorView: View {
             Form {
                 Section {
                     TextField(String(localized: "CustomLocationEditorView.LocationName.Placeholder", bundle: .module), text: $name)
+                        #if canImport(UIKit)
                         .textInputAutocapitalization(.words)
+                        #endif
                     
                     HStack {
                         Text(String(localized: "CustomLocationEditorView.Icon.Label", bundle: .module))
@@ -53,7 +55,7 @@ struct CustomLocationEditorView: View {
                 }
             }
             .navigationTitle(isEditing ? String(localized: "CustomLocationEditorView.EditLocation.NavigationTitle", bundle: .module) : String(localized: "CustomLocationEditorView.NewLocation.NavigationTitle", bundle: .module))
-            .navigationBarTitleDisplayMode(.inline)
+            
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(String(localized: "CustomLocationEditorView.Cancel", bundle: .module)) {
@@ -145,7 +147,7 @@ private struct IconPickerView: View {
             }
             .padding()
             .navigationTitle(String(localized: "CustomLocationEditorView.ChooseIcon.NavigationTitle", bundle: .module))
-            .navigationBarTitleDisplayMode(.inline)
+            
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(String(localized: "CustomLocationEditorView.Cancel", bundle: .module)) {

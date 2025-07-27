@@ -32,7 +32,7 @@ struct SmartTemplateSelectionView: View {
             }
             .padding()
             .navigationTitle(String(localized: "SmartTemplateSelectionView.NavigationTitle", bundle: .module))
-            .navigationBarTitleDisplayMode(.large)
+            
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button {

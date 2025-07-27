@@ -29,7 +29,7 @@ public struct MoodRatingView: View {
             }
             .padding()
             .navigationTitle(String(localized: "MoodRatingView.NavigationTitle", bundle: .module))
-            .navigationBarTitleDisplayMode(.inline)
+            
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(String(localized: "MoodRatingView.Skip", bundle: .module)) {

@@ -90,7 +90,7 @@ struct ContextSettingsView: View {
                 }
             }
             .navigationTitle(String(localized: "ContextSettingsView.NavigationTitle", bundle: .module))
-            .navigationBarTitleDisplayMode(.inline)
+            
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button(String(localized: "ContextSettingsView.Done", bundle: .module)) {

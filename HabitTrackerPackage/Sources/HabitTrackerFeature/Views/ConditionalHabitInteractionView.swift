@@ -67,7 +67,7 @@ public struct ConditionalHabitInteractionView: View {
             .padding(.bottom, AppConstants.Padding.extraLarge)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(.systemBackground))
+        .background(Color.white)
     }
     
     private func selectOption(_ option: ConditionalOption) {
@@ -107,7 +107,7 @@ private struct OptionButton: View {
                         .padding(.vertical, 4)
                         .background(
                             Capsule()
-                                .fill(isSelected ? .white.opacity(0.2) : Color(.systemGray5))
+                                .fill(isSelected ? .white.opacity(0.2) : Color.gray.opacity(0.3))
                         )
                 }
             }
@@ -115,12 +115,12 @@ private struct OptionButton: View {
             .padding(.vertical, AppConstants.Padding.large)
             .background(
                 RoundedRectangle(cornerRadius: AppConstants.CornerRadius.medium)
-                    .fill(isSelected ? color : Color(.systemGray6))
+                    .fill(isSelected ? color : Color.gray.opacity(0.1))
             )
             .overlay(
                 RoundedRectangle(cornerRadius: AppConstants.CornerRadius.medium)
                     .strokeBorder(
-                        isSelected ? color : Color(.systemGray4),
+                        isSelected ? color : Color.gray.opacity(0.4),
                         lineWidth: isSelected ? 2 : 1
                     )
             )

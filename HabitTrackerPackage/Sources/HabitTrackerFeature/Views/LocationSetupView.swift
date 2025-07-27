@@ -97,7 +97,7 @@ struct LocationSetupView: View {
                 }
             }
             .navigationTitle(String(localized: "LocationSetupView.NavigationTitle", bundle: .module))
-            .navigationBarTitleDisplayMode(.inline)
+            
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button(String(localized: "LocationSetupView.Done.Button", bundle: .module)) {
@@ -351,7 +351,7 @@ private struct CustomLocationPickerView: View {
             }
             .padding()
             .navigationTitle("Set Location")
-            .navigationBarTitleDisplayMode(.inline)
+            
         }
         .onAppear {
             getCurrentLocation()
@@ -470,7 +470,7 @@ private struct LocationPickerView: View {
             }
             .padding()
             .navigationTitle("Set Location")
-            .navigationBarTitleDisplayMode(.inline)
+            
         }
         .onAppear {
             getCurrentLocation()

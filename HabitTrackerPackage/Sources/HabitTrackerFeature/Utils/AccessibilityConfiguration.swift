@@ -1,4 +1,7 @@
 import SwiftUI
+#if canImport(UIKit)
+import UIKit
+#endif
 
 /// Accessibility configuration constants and helpers for the HabitTracker app
 public enum AccessibilityConfiguration {
@@ -262,11 +265,15 @@ extension View {
     
     /// Announce accessibility changes
     public func announceAccessibilityChange(_ announcement: String) -> some View {
+        #if canImport(UIKit)
         self.onReceive(NotificationCenter.default.publisher(for: UIAccessibility.announcementDidFinishNotification)) { _ in
             DispatchQueue.main.asyncAfter(deadline: .now() + AppConstants.AnimationDurations.accessibilityDelay) {
                 UIAccessibility.post(notification: .announcement, argument: announcement)
             }
         }
+        #else
+        self
+        #endif
     }
 }
 

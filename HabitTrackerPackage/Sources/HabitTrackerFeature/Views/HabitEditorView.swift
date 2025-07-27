@@ -123,7 +123,7 @@ public struct HabitEditorView: View {
                     }
                 }
                 .padding()
-                .background(Color(.systemGray6), in: RoundedRectangle(cornerRadius: 10))
+                .background(Color.gray.opacity(0.1), in: RoundedRectangle(cornerRadius: 10))
                 
                 // Type-specific settings
                 typeSpecificSection
@@ -138,12 +138,12 @@ public struct HabitEditorView: View {
                         .textFieldStyle(.roundedBorder)
                 }
                 .padding()
-                .background(Color(.systemGray6), in: RoundedRectangle(cornerRadius: 10))
+                .background(Color.gray.opacity(0.1), in: RoundedRectangle(cornerRadius: 10))
                 }
                 .padding()
             }
             .navigationTitle(String(localized: "HabitEditorView.NavigationTitle", bundle: .module))
-            .navigationBarTitleDisplayMode(.inline)
+            
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(String(localized: "HabitEditorView.Cancel.Button", bundle: .module)) {
@@ -225,7 +225,7 @@ public struct HabitEditorView: View {
             }
         }
         .padding()
-        .background(Color(.systemGray6), in: RoundedRectangle(cornerRadius: 10))
+        .background(Color.gray.opacity(0.1), in: RoundedRectangle(cornerRadius: 10))
     }
     
     private var habitTypeTitle: String {
@@ -261,93 +261,100 @@ public struct HabitEditorView: View {
     // Timer settings
     private var timerSettings: some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Text(String(localized: "HabitEditorView.Timer.Duration.Label", bundle: .module))
-                Spacer()
-                Text(timerDuration.formattedDuration)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            }
-            
-            HStack(spacing: 12) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(String(localized: "HabitEditorView.Timer.Minutes.Label", bundle: .module))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    
-                    TextField("0", value: Binding(
-                        get: { Int(timerDuration) / 60 },
-                        set: { newMinutes in
-                            let seconds = Int(timerDuration) % 60
-                            timerDuration = TimeInterval(max(0, newMinutes) * 60 + seconds)
-                        }
-                    ), format: .number)
-                    .keyboardType(.numberPad)
-                    .textFieldStyle(.roundedBorder)
-                    .frame(width: 80)
-                }
-                
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(String(localized: "HabitEditorView.Timer.Seconds.Label", bundle: .module))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    
-                    TextField("0", value: Binding(
-                        get: { Int(timerDuration) % 60 },
-                        set: { newSeconds in
-                            let minutes = Int(timerDuration) / 60
-                            timerDuration = TimeInterval(minutes * 60 + max(0, min(59, newSeconds)))
-                        }
-                    ), format: .number)
-                    .keyboardType(.numberPad)
-                    .textFieldStyle(.roundedBorder)
-                    .frame(width: 80)
-                }
-                
-                Spacer()
-            }
-            
-            // Quick preset buttons
-            VStack(alignment: .leading, spacing: 8) {
-                Text(String(localized: "HabitEditorView.Timer.QuickPresets.Title", bundle: .module))
+            timerDurationDisplay
+            timerInputFields
+            timerPresetButtons
+        }
+    }
+    
+    private var timerDurationDisplay: some View {
+        HStack {
+            Text(String(localized: "HabitEditorView.Timer.Duration.Label", bundle: .module))
+            Spacer()
+            Text(timerDuration.formattedDuration)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+        }
+    }
+    
+    private var timerInputFields: some View {
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(String(localized: "HabitEditorView.Timer.Minutes.Label", bundle: .module))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 8) {
-                        ForEach([
-                            (30, "30s"),
-                            (60, "1m"),
-                            (120, "2m"),
-                            (300, "5m"),
-                            (600, "10m"),
-                            (900, "15m"),
-                            (1200, "20m"),
-                            (1800, "30m")
-                        ], id: \.0) { duration, label in
-                            Button {
-                                withAnimation(.easeInOut(duration: 0.2)) {
-                                    timerDuration = TimeInterval(duration)
-                                }
-                            } label: {
-                                Text(label)
-                                    .font(.caption)
-                                    .padding(.horizontal, 12)
-                                    .padding(.vertical, 6)
-                                    .background(
-                                        timerDuration == TimeInterval(duration) ? 
-                                        Color.blue.opacity(0.2) : Color(.systemGray5),
-                                        in: Capsule()
-                                    )
-                                    .foregroundStyle(
-                                        timerDuration == TimeInterval(duration) ? .blue : .primary
-                                    )
-                            }
-                            .buttonStyle(.plain)
-                        }
+                TextField("0", value: Binding(
+                    get: { Int(timerDuration) / 60 },
+                    set: { newMinutes in
+                        let seconds = Int(timerDuration) % 60
+                        timerDuration = TimeInterval(max(0, newMinutes) * 60 + seconds)
                     }
-                    .padding(.horizontal, 1)
+                ), format: .number)
+                #if canImport(UIKit)
+                .keyboardType(.numberPad)
+                #endif
+                .textFieldStyle(.roundedBorder)
+                .frame(width: 80)
+            }
+            
+            VStack(alignment: .leading, spacing: 4) {
+                Text(String(localized: "HabitEditorView.Timer.Seconds.Label", bundle: .module))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                
+                TextField("0", value: Binding(
+                    get: { Int(timerDuration) % 60 },
+                    set: { newSeconds in
+                        let minutes = Int(timerDuration) / 60
+                        timerDuration = TimeInterval(minutes * 60 + max(0, min(59, newSeconds)))
+                    }
+                ), format: .number)
+                #if canImport(UIKit)
+                .keyboardType(.numberPad)
+                #endif
+                .textFieldStyle(.roundedBorder)
+                .frame(width: 80)
+            }
+            
+            Spacer()
+        }
+    }
+    
+    private var timerPresetButtons: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(String(localized: "HabitEditorView.Timer.QuickPresets.Title", bundle: .module))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach([
+                        (30, "30s"), (60, "1m"), (120, "2m"), (300, "5m"),
+                        (600, "10m"), (900, "15m"), (1200, "20m"), (1800, "30m")
+                    ], id: \.0) { duration, label in
+                        Button {
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                timerDuration = TimeInterval(duration)
+                            }
+                        } label: {
+                            Text(label)
+                                .font(.caption)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 6)
+                                .background(
+                                    timerDuration == TimeInterval(duration) ? 
+                                    Color.blue.opacity(0.2) : Color.gray.opacity(0.3),
+                                    in: Capsule()
+                                )
+                                .foregroundStyle(
+                                    timerDuration == TimeInterval(duration) ? .blue : .primary
+                                )
+                        }
+                        .buttonStyle(.plain)
+                    }
                 }
+                .padding(.horizontal, 1)
             }
         }
     }
@@ -355,102 +362,120 @@ public struct HabitEditorView: View {
     // Rest timer settings
     private var restTimerSettings: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Toggle(String(localized: "HabitEditorView.RestTimer.SetTarget.Toggle", bundle: .module), isOn: Binding(
-                get: { restTimerTarget != nil },
-                set: { enabled in
-                    restTimerTarget = enabled ? 120 : nil
-                }
-            ))
-            
+            restTimerToggle
+            if restTimerTarget != nil {
+                restTimerConfiguration
+            }
+        }
+    }
+    
+    private var restTimerToggle: some View {
+        Toggle(String(localized: "HabitEditorView.RestTimer.SetTarget.Toggle", bundle: .module), isOn: Binding(
+            get: { restTimerTarget != nil },
+            set: { enabled in
+                restTimerTarget = enabled ? 120 : nil
+            }
+        ))
+    }
+    
+    private var restTimerConfiguration: some View {
+        VStack(alignment: .leading, spacing: 12) {
             if let target = restTimerTarget {
-                VStack(alignment: .leading, spacing: 12) {
-                    HStack {
-                        Text(String(localized: "HabitEditorView.RestTimer.Target.Label", bundle: .module))
-                        Spacer()
-                        Text(target.formattedDuration)
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
+                restTimerDurationDisplay(target: target)
+                restTimerInputFields(target: target)
+                restTimerPresetButtons
+            }
+        }
+    }
+    
+    private func restTimerDurationDisplay(target: TimeInterval) -> some View {
+        HStack {
+            Text(String(localized: "HabitEditorView.RestTimer.Target.Label", bundle: .module))
+            Spacer()
+            Text(target.formattedDuration)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+        }
+    }
+    
+    private func restTimerInputFields(target: TimeInterval) -> some View {
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(String(localized: "HabitEditorView.Timer.Minutes.Label", bundle: .module))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                
+                TextField("0", value: Binding(
+                    get: { Int(target) / 60 },
+                    set: { newMinutes in
+                        let seconds = Int(target) % 60
+                        restTimerTarget = TimeInterval(max(0, newMinutes) * 60 + seconds)
                     }
-                    
-                    HStack(spacing: 12) {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(String(localized: "HabitEditorView.Timer.Minutes.Label", bundle: .module))
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                            
-                            TextField("0", value: Binding(
-                                get: { Int(target) / 60 },
-                                set: { newMinutes in
-                                    let seconds = Int(target) % 60
-                                    restTimerTarget = TimeInterval(max(0, newMinutes) * 60 + seconds)
-                                }
-                            ), format: .number)
-                            .keyboardType(.numberPad)
-                            .textFieldStyle(.roundedBorder)
-                            .frame(width: 80)
-                        }
-                        
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(String(localized: "HabitEditorView.Timer.Seconds.Label", bundle: .module))
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                            
-                            TextField("0", value: Binding(
-                                get: { Int(target) % 60 },
-                                set: { newSeconds in
-                                    let minutes = Int(target) / 60
-                                    restTimerTarget = TimeInterval(minutes * 60 + max(0, min(59, newSeconds)))
-                                }
-                            ), format: .number)
-                            .keyboardType(.numberPad)
-                            .textFieldStyle(.roundedBorder)
-                            .frame(width: 80)
-                        }
-                        
-                        Spacer()
+                ), format: .number)
+                #if canImport(UIKit)
+                .keyboardType(.numberPad)
+                #endif
+                .textFieldStyle(.roundedBorder)
+                .frame(width: 80)
+            }
+            
+            VStack(alignment: .leading, spacing: 4) {
+                Text(String(localized: "HabitEditorView.Timer.Seconds.Label", bundle: .module))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                
+                TextField("0", value: Binding(
+                    get: { Int(target) % 60 },
+                    set: { newSeconds in
+                        let minutes = Int(target) / 60
+                        restTimerTarget = TimeInterval(minutes * 60 + max(0, min(59, newSeconds)))
                     }
-                    
-                    // Quick preset buttons for rest timer
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text(String(localized: "HabitEditorView.Timer.QuickPresets.Title", bundle: .module))
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                        
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            HStack(spacing: 8) {
-                                ForEach([
-                                    (30, "30s"),
-                                    (60, "1m"),
-                                    (90, "90s"),
-                                    (120, "2m"),
-                                    (180, "3m"),
-                                    (300, "5m")
-                                ], id: \.0) { duration, label in
-                                    Button {
-                                        withAnimation(.easeInOut(duration: 0.2)) {
-                                            restTimerTarget = TimeInterval(duration)
-                                        }
-                                    } label: {
-                                        Text(label)
-                                            .font(.caption)
-                                            .padding(.horizontal, 12)
-                                            .padding(.vertical, 6)
-                                            .background(
-                                                restTimerTarget == TimeInterval(duration) ? 
-                                                Color.blue.opacity(0.2) : Color(.systemGray5),
-                                                in: Capsule()
-                                            )
-                                            .foregroundStyle(
-                                                restTimerTarget == TimeInterval(duration) ? .blue : .primary
-                                            )
-                                    }
-                                    .buttonStyle(.plain)
-                                }
+                ), format: .number)
+                #if canImport(UIKit)
+                .keyboardType(.numberPad)
+                #endif
+                .textFieldStyle(.roundedBorder)
+                .frame(width: 80)
+            }
+            
+            Spacer()
+        }
+    }
+    
+    private var restTimerPresetButtons: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(String(localized: "HabitEditorView.Timer.QuickPresets.Title", bundle: .module))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach([
+                        (30, "30s"), (60, "1m"), (90, "90s"),
+                        (120, "2m"), (180, "3m"), (300, "5m")
+                    ], id: \.0) { duration, label in
+                        Button {
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                restTimerTarget = TimeInterval(duration)
                             }
-                            .padding(.horizontal, 1)
+                        } label: {
+                            Text(label)
+                                .font(.caption)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 6)
+                                .background(
+                                    restTimerTarget == TimeInterval(duration) ? 
+                                    Color.blue.opacity(0.2) : Color.gray.opacity(0.3),
+                                    in: Capsule()
+                                )
+                                .foregroundStyle(
+                                    restTimerTarget == TimeInterval(duration) ? .blue : .primary
+                                )
                         }
+                        .buttonStyle(.plain)
                     }
                 }
+                .padding(.horizontal, 1)
             }
         }
     }
@@ -484,7 +509,9 @@ public struct HabitEditorView: View {
                 } else {
                     VStack(alignment: .leading, spacing: 4) {
                         TextField(String(localized: "HabitEditorView.AppLaunch.URLScheme.Placeholder", bundle: .module), text: $appBundleId)
+                            #if canImport(UIKit)
                             .textInputAutocapitalization(.never)
+                            #endif
                             .autocorrectionDisabled()
                             .textFieldStyle(.roundedBorder)
                         
@@ -499,18 +526,20 @@ public struct HabitEditorView: View {
     
     // Website settings
     private var websiteSettings: some View {
-        Group {
+        VStack {
             TextField(String(localized: "HabitEditorView.Website.Title.Placeholder", bundle: .module), text: $websiteTitle)
             TextField(String(localized: "HabitEditorView.Website.URL.Placeholder", bundle: .module), text: $websiteURL)
+                #if canImport(UIKit)
                 .textInputAutocapitalization(.never)
-                .autocorrectionDisabled()
                 .keyboardType(.URL)
+                #endif
+                .autocorrectionDisabled()
         }
     }
     
     // Measurement settings
     private var measurementSettings: some View {
-        Group {
+        VStack {
             TextField(String(localized: "HabitEditorView.Measurement.Unit.Placeholder", bundle: .module), text: $measurementUnit)
             
             HStack {
@@ -526,7 +555,9 @@ public struct HabitEditorView: View {
                         get: { measurementTarget ?? 0 },
                         set: { measurementTarget = $0 }
                     ), format: .number)
+                    #if canImport(UIKit)
                     .keyboardType(.decimalPad)
+                    #endif
                     .multilineTextAlignment(.trailing)
                 }
             }
@@ -612,67 +643,83 @@ public struct HabitEditorView: View {
     private var sequenceEditor: some View {
         VStack(alignment: .leading, spacing: 8) {
             ForEach(sequenceSteps) { step in
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack {
-                        TextField(String(localized: "HabitEditorView.Sequence.StepName.Placeholder", bundle: .module), text: Binding(
-                            get: { step.name },
-                            set: { newName in
-                                if let index = sequenceSteps.firstIndex(where: { $0.id == step.id }) {
-                                    sequenceSteps[index].name = newName
-                                }
-                            }
-                        ))
-                        
-                        HStack(spacing: 4) {
-                            TextField(String(localized: "HabitEditorView.Sequence.Duration.Placeholder", bundle: .module), value: Binding(
-                                get: { Int(step.duration) },
-                                set: { newValue in
-                                    if let index = sequenceSteps.firstIndex(where: { $0.id == step.id }) {
-                                        sequenceSteps[index].duration = TimeInterval(max(1, newValue))
-                                    }
-                                }
-                            ), format: .number)
-                            .keyboardType(.numberPad)
-                            .textFieldStyle(.roundedBorder)
-                            .frame(width: 60)
-                            
-                            Text(String(localized: "HabitEditorView.Sequence.Seconds.Label", bundle: .module))
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                        
-                        Button {
-                            withAnimation {
-                                sequenceSteps.removeAll { $0.id == step.id }
-                            }
-                        } label: {
-                            Image(systemName: "minus.circle.fill")
-                                .foregroundStyle(.red)
+                sequenceStepEditor(step: step)
+            }
+            addSequenceStepButton
+        }
+    }
+    
+    private func sequenceStepEditor(step: SequenceStep) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                TextField(String(localized: "HabitEditorView.Sequence.StepName.Placeholder", bundle: .module), text: Binding(
+                    get: { step.name },
+                    set: { newName in
+                        if let index = sequenceSteps.firstIndex(where: { $0.id == step.id }) {
+                            sequenceSteps[index].name = newName
                         }
                     }
-                    
-                    TextField(String(localized: "HabitEditorView.Sequence.Instructions.Placeholder", bundle: .module), text: Binding(
-                        get: { step.instructions ?? "" },
-                        set: { newInstructions in
-                            if let index = sequenceSteps.firstIndex(where: { $0.id == step.id }) {
-                                sequenceSteps[index].instructions = newInstructions.isEmpty ? nil : newInstructions
-                            }
-                        }
-                    ), axis: .vertical)
-                    .font(.caption)
-                    .lineLimit(2...3)
-                }
-                .padding(.vertical, 4)
+                ))
+                
+                sequenceStepDurationInput(step: step)
+                sequenceStepDeleteButton(step: step)
             }
             
-            Button {
-                withAnimation {
-                    sequenceSteps.append(SequenceStep(name: String(localized: "HabitEditorView.Sequence.NewStep.Default", bundle: .module), duration: 30))
+            TextField(String(localized: "HabitEditorView.Sequence.Instructions.Placeholder", bundle: .module), text: Binding(
+                get: { step.instructions ?? "" },
+                set: { newInstructions in
+                    if let index = sequenceSteps.firstIndex(where: { $0.id == step.id }) {
+                        sequenceSteps[index].instructions = newInstructions.isEmpty ? nil : newInstructions
+                    }
                 }
-            } label: {
-                Label(String(localized: "HabitEditorView.Sequence.AddStep.Label", bundle: .module), systemImage: "plus.circle.fill")
-                    .font(.subheadline)
+            ), axis: .vertical)
+            .font(.caption)
+            .lineLimit(2...3)
+        }
+        .padding(.vertical, 4)
+    }
+    
+    private func sequenceStepDurationInput(step: SequenceStep) -> some View {
+        HStack(spacing: 4) {
+            TextField(String(localized: "HabitEditorView.Sequence.Duration.Placeholder", bundle: .module), value: Binding(
+                get: { Int(step.duration) },
+                set: { newValue in
+                    if let index = sequenceSteps.firstIndex(where: { $0.id == step.id }) {
+                        sequenceSteps[index].duration = TimeInterval(max(1, newValue))
+                    }
+                }
+            ), format: .number)
+            #if canImport(UIKit)
+            .keyboardType(.numberPad)
+            #endif
+            .textFieldStyle(.roundedBorder)
+            .frame(width: 60)
+            
+            Text(String(localized: "HabitEditorView.Sequence.Seconds.Label", bundle: .module))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+    }
+    
+    private func sequenceStepDeleteButton(step: SequenceStep) -> some View {
+        Button {
+            withAnimation {
+                sequenceSteps.removeAll { $0.id == step.id }
             }
+        } label: {
+            Image(systemName: "minus.circle.fill")
+                .foregroundStyle(.red)
+        }
+    }
+    
+    private var addSequenceStepButton: some View {
+        Button {
+            withAnimation {
+                sequenceSteps.append(SequenceStep(name: String(localized: "HabitEditorView.Sequence.NewStep.Default", bundle: .module), duration: 30))
+            }
+        } label: {
+            Label(String(localized: "HabitEditorView.Sequence.AddStep.Label", bundle: .module), systemImage: "plus.circle.fill")
+                .font(.subheadline)
         }
     }
     

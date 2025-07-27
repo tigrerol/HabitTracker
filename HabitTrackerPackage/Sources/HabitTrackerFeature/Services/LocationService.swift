@@ -65,8 +65,8 @@ public actor LocationService {
     /// Set up location manager (must be called from main actor)
     @MainActor
     public func setupLocationManager() {
-        Task {
-            await self.internalSetupLocationManager()
+        Task { [weak self] in
+            await self?.internalSetupLocationManager()
         }
     }
     
@@ -267,8 +267,8 @@ public actor LocationService {
         
         // Update current location type
         if let currentLocation = currentLocation {
-            Task {
-                await updateLocation(currentLocation)
+            Task { [weak self] in
+                await self?.updateLocation(currentLocation)
             }
         }
     }
@@ -305,8 +305,8 @@ public actor LocationService {
         
         // Update current location type if needed
         if let currentLocation = currentLocation {
-            Task {
-                await updateLocation(currentLocation)
+            Task { [weak self] in
+                await self?.updateLocation(currentLocation)
             }
         }
     }
@@ -332,8 +332,8 @@ public actor LocationService {
         
         // Update current location type immediately
         if let currentLocation = currentLocation {
-            Task {
-                await updateLocation(currentLocation)
+            Task { [weak self] in
+                await self?.updateLocation(currentLocation)
             }
         }
     }
@@ -345,8 +345,8 @@ public actor LocationService {
         
         // Update current location type
         if let currentLocation = currentLocation {
-            Task {
-                await updateLocation(currentLocation)
+            Task { [weak self] in
+                await self?.updateLocation(currentLocation)
             }
         }
     }
@@ -363,14 +363,15 @@ public actor LocationService {
     
     public func setPersistenceService(_ service: SwiftDataPersistenceService) {
         self.persistenceService = service
-        Task {
-            await loadFromPersistence()
+        Task { [weak self] in
+            await self?.loadFromPersistence()
         }
     }
     
     private func persistLocations() {
         if let persistenceService = persistenceService {
-            Task {
+            Task { [weak self] in
+                guard let self = self else { return }
                 try? await persistenceService.saveLocationData(
                     savedLocations: knownLocations,
                     customLocations: customLocations
@@ -467,8 +468,8 @@ public actor LocationService {
     }
     
     private func loadKnownLocations() {
-        Task {
-            await loadFromPersistence()
+        Task { [weak self] in
+            await self?.loadFromPersistence()
         }
     }
     
@@ -477,15 +478,15 @@ public actor LocationService {
     }
     
     private func loadCustomLocations() {
-        Task {
-            await loadFromPersistence()
+        Task { [weak self] in
+            await self?.loadFromPersistence()
         }
     }
 }
 
 /// Internal delegate class for CLLocationManager
 private class LocationManagerDelegate: NSObject, CLLocationManagerDelegate, @unchecked Sendable {
-    private let service: LocationService
+    private weak var service: LocationService?
     
     init(service: LocationService) {
         self.service = service
@@ -495,8 +496,8 @@ private class LocationManagerDelegate: NSObject, CLLocationManagerDelegate, @unc
     nonisolated func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         guard let location = locations.last else { return }
         
-        Task {
-            await service.updateLocation(location)
+        Task { [weak self] in
+            await self?.service?.updateLocation(location)
         }
     }
     
@@ -530,14 +531,14 @@ private class LocationManagerDelegate: NSObject, CLLocationManagerDelegate, @unc
         
         #if os(iOS)
         if status == .authorizedWhenInUse || status == .authorizedAlways {
-            Task {
-                await service.startUpdatingLocation()
+            Task { [weak self] in
+                await self?.service?.startUpdatingLocation()
             }
         }
         #elseif os(macOS)
         if status == .authorizedAlways {
-            Task {
-                await service.startUpdatingLocation()
+            Task { [weak self] in
+                await self?.service?.startUpdatingLocation()
             }
         }
         #endif

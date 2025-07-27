@@ -69,7 +69,7 @@ public struct RoutineExecutionView: View {
                 }
             }
             .navigationTitle(sessionData?.templateName ?? String(localized: "RoutineExecutionView.NavigationTitle", bundle: .module))
-            .navigationBarTitleDisplayMode(.inline)
+            
             .onReceive(NotificationCenter.default.publisher(for: .routineQueueDidChange)) { _ in
                 // Force view refresh when routine queue changes (for conditional habits)
                 if let session = routineService.currentSession {
@@ -192,7 +192,7 @@ public struct RoutineExecutionView: View {
             // Navigation controls
             navigationControlsFromData(data)
         }
-        .background(Color(.systemGroupedBackground))
+        .background(Color(.gray).opacity(0.05))
     }
     
     @ViewBuilder

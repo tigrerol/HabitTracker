@@ -105,7 +105,7 @@ struct DayTypeEditorView: View {
                 }
             }
             .navigationTitle("Day Categories")
-            .navigationBarTitleDisplayMode(.inline)
+            
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {
@@ -402,7 +402,7 @@ private struct CategoryCreatorView: View {
                 }
             }
             .navigationTitle(editingCategory != nil ? "Edit Category" : "New Category")
-            .navigationBarTitleDisplayMode(.inline)
+            
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {
@@ -502,7 +502,7 @@ private struct DayCategoryPresetsView: View {
                 }
             }
             .navigationTitle("Preset Schedules")
-            .navigationBarTitleDisplayMode(.inline)
+            
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Cancel") {
@@ -663,7 +663,7 @@ private struct DayTypePresetsView: View {
                 }
             }
             .navigationTitle("Preset Schedules")
-            .navigationBarTitleDisplayMode(.inline)
+            
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Cancel") {
