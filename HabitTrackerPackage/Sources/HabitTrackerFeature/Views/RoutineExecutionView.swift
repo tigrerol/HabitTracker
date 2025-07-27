@@ -101,264 +101,79 @@ public struct RoutineExecutionView: View {
     
     @ViewBuilder
     private func completionViewFromData(_ data: SessionDisplayData) -> some View {
-        VStack(spacing: AppConstants.Spacing.extraLarge) {
-            Spacer()
-            
-            // Celebration
-            VStack(spacing: AppConstants.Spacing.large) {
-                Text("🎉")
-                    .font(.system(size: AppConstants.FontSizes.largeIcon))
-                
-                Text(String(localized: "RoutineExecutionView.RoutineComplete", bundle: .module))
-                    .font(.title)
-                    .fontWeight(.bold)
-                
-                // Use simple string interpolation to avoid String.format issues
-                Text("You completed \(data.completedCount) of \(data.totalCount) habits in \(data.durationString)")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-            }
-            
-            // Inline Mood Rating
-            InlineMoodRatingView(sessionId: data.id)
-            
-            Spacer()
-            
-            // Quick Finish
-            Button {
-                do {
-                    try routineService.completeCurrentSession()
-                    sessionData = nil // Clear the cached data
-                } catch {
-                    // Handle error - could show an alert or log the error
-                    LoggingService.shared.error("Failed to complete routine session", category: .routine, metadata: ["error": error.localizedDescription])
-                }
-            } label: {
-                HStack {
-                    Image(systemName: "checkmark.circle.fill")
-                    Text(String(localized: "RoutineExecutionView.AllDone", bundle: .module))
-                }
-                .font(.headline)
-                .foregroundStyle(.white)
-                .frame(maxWidth: .infinity)
-                .padding()
-                .background(Color(hex: data.templateColor) ?? .blue, in: RoundedRectangle(cornerRadius: 12))
+        RoutineCompletionView(data: data) {
+            do {
+                try routineService.completeCurrentSession()
+                sessionData = nil // Clear the cached data
+            } catch {
+                // Handle error - could show an alert or log the error
+                LoggingService.shared.error("Failed to complete routine session", category: .routine, metadata: ["error": error.localizedDescription])
             }
         }
-        .padding()
     }
     
     @ViewBuilder
     private func activeRoutineViewFromData(_ data: SessionDisplayData) -> some View {
         VStack(spacing: 0) {
             // Progress header
-            progressHeaderFromData(data)
+            RoutineProgressHeaderView(data: data)
             
             // Habit overview
-            habitOverviewFromData(data)
+            HabitOverviewView(data: data) { index in
+                routineService.currentSession?.goToHabit(at: index)
+                refreshSessionData()
+            }
             
             // Current habit with swipe gestures
             if let currentHabit = data.currentHabit {
-                currentHabitViewFromData(currentHabit, data: data)
-                    .accessibilityHabitInteraction(
-                        habit: currentHabit,
-                        customHint: AccessibilityConfiguration.Hints.swipeToNavigate
-                    )
-                    .gesture(
-                        DragGesture()
-                            .onEnded { value in
-                                let threshold: CGFloat = AppConstants.Spacing.page + AppConstants.Spacing.large
-                                
-                                if value.translation.width > threshold {
-                                    // Swipe right - go to previous habit
-                                    routineService.currentSession?.goToPreviousHabit()
-                                    // Refresh the cached data
-                                    if let session = routineService.currentSession {
-                                        sessionData = SessionDisplayData.from(session)
-                                    }
-                                } else if value.translation.width < -threshold {
-                                    // Swipe left - complete current habit
-                                    routineService.currentSession?.completeCurrentHabit()
-                                    // Refresh the cached data
-                                    if let session = routineService.currentSession {
-                                        sessionData = SessionDisplayData.from(session)
-                                    }
-                                }
+                CurrentHabitView(
+                    habit: currentHabit,
+                    data: data,
+                    onComplete: { habitId, duration, notes in
+                        routineService.currentSession?.completeCurrentHabit(duration: duration, notes: notes)
+                        refreshSessionData()
+                    }
+                )
+                .gesture(
+                    DragGesture()
+                        .onEnded { value in
+                            let threshold: CGFloat = AppConstants.Spacing.page + AppConstants.Spacing.large
+                            
+                            if value.translation.width > threshold {
+                                // Swipe right - go to previous habit
+                                routineService.currentSession?.goToPreviousHabit()
+                                refreshSessionData()
+                            } else if value.translation.width < -threshold {
+                                // Swipe left - complete current habit
+                                routineService.currentSession?.completeCurrentHabit()
+                                refreshSessionData()
                             }
-                    )
+                        }
+                )
             }
             
             // Navigation controls
-            navigationControlsFromData(data)
+            RoutineNavigationControlsView(data: data) {
+                // Previous
+                routineService.currentSession?.goToPreviousHabit()
+                refreshSessionData()
+            } onSkip: {
+                // Skip
+                routineService.currentSession?.skipCurrentHabit()
+                refreshSessionData()
+            }
         }
         .background(Color(.gray).opacity(0.05))
     }
     
-    @ViewBuilder
-    private func progressHeaderFromData(_ data: SessionDisplayData) -> some View {
-        VStack(spacing: 12) {
-            // Progress bar
-            ProgressView(value: data.progress)
-                .tint(Color(hex: data.templateColor) ?? .blue)
-                .scaleEffect(y: 2)
-                .accessibilityProgress(
-                    identifier: AccessibilityConfiguration.Identifiers.progressBar,
-                    label: AccessibilityConfiguration.Labels.progressBar(
-                        completed: data.completedCount,
-                        total: data.totalCount
-                    ),
-                    value: data.progress
-                )
-            
-            // Progress text
-            HStack {
-                Text(String(format: String(localized: "RoutineExecutionView.CompletedOfTotal", bundle: .module), data.completedCount, data.totalCount))
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .accessibilityIdentifier(AccessibilityConfiguration.Identifiers.progressText)
-                    .accessibilityHidden(true) // Hidden since progress bar provides the same info
-                
-                Spacer()
-                
-                Text(data.durationString)
-                    .font(.subheadline)
-                    .fontWeight(.medium)
-                    .foregroundStyle(.primary)
-                    .accessibilityIdentifier(AccessibilityConfiguration.Identifiers.durationText)
-                    .accessibilityLabel("Duration: \(data.durationString)")
-                    .accessibilityAddTraits(.updatesFrequently)
-            }
-        }
-        .padding()
-        .background(.regularMaterial)
-    }
+    // MARK: - Helper Methods
     
-    @ViewBuilder
-    private func currentHabitViewFromData(_ habit: Habit, data: SessionDisplayData) -> some View {
-        VStack(spacing: AppConstants.Spacing.extraLarge) {
-            // Habit info
-            VStack(spacing: 8) {
-                Image(systemName: habit.type.iconName)
-                    .font(.system(size: AppConstants.Spacing.page))
-                    .foregroundStyle(habit.swiftUIColor)
-                
-                Text(habit.name)
-                    .font(.title2)
-                    .fontWeight(.semibold)
-                    .multilineTextAlignment(.center)
-                    .accessibilityAddTraits(.isHeader)
-                
-                Text(habit.type.description)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            }
-            
-            // Habit-specific interaction
-            HabitInteractionView(habit: habit, onComplete: { habitId, duration, notes in
-                routineService.currentSession?.completeCurrentHabit(duration: duration, notes: notes)
-                // Refresh the cached data after completion
-                if let session = routineService.currentSession {
-                    sessionData = SessionDisplayData.from(session)
-                }
-            }, isCompleted: data.completions.contains(where: { $0.habitId == habit.id }))
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding()
-    }
-    
-    @ViewBuilder
-    private func habitOverviewFromData(_ data: SessionDisplayData) -> some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 12) {
-                ForEach(Array(data.activeHabits.enumerated()), id: \.element.id) { index, habit in
-                    VStack(spacing: 4) {
-                        Circle()
-                            .fill(habitStatusColorFromData(for: habit, data: data))
-                            .frame(width: 12, height: 12)
-                        
-                        Text(habit.name)
-                            .font(.caption2)
-                            .lineLimit(1)
-                    }
-                    .id(habit.id) // Force unique view identity for entire VStack
-                    .opacity(index == data.currentHabitIndex ? 1 : 0.6)
-                    .onTapGesture {
-                        routineService.currentSession?.goToHabit(at: index)
-                        // Refresh the cached data
-                        if let session = routineService.currentSession {
-                            sessionData = SessionDisplayData.from(session)
-                        }
-                    }
-                }
-            }
-            .padding(.horizontal)
-        }
-        .padding()
-        .background(.regularMaterial)
-    }
-    
-    @ViewBuilder
-    private func navigationControlsFromData(_ data: SessionDisplayData) -> some View {
-        HStack(spacing: AppConstants.Spacing.large) {
-            // Previous habit
-            Button {
-                routineService.currentSession?.goToPreviousHabit()
-                // Refresh the cached data
-                if let session = routineService.currentSession {
-                    sessionData = SessionDisplayData.from(session)
-                }
-            } label: {
-                HStack {
-                    Image(systemName: "chevron.left")
-                    Text(String(localized: "RoutineExecutionView.Previous", bundle: .module))
-                }
-                .font(.caption)
-                .foregroundStyle(data.currentHabitIndex > 0 ? .blue : .gray)
-                .padding(.vertical, 8)
-                .background(.regularMaterial, in: Capsule())
-            }
-            .disabled(data.currentHabitIndex <= 0)
-            .buttonStyle(.plain)
-            
-            Spacer()
-            
-            // Skip current habit
-            Button {
-                routineService.currentSession?.skipCurrentHabit()
-                // Refresh the cached data
-                if let session = routineService.currentSession {
-                    sessionData = SessionDisplayData.from(session)
-                }
-            } label: {
-                HStack {
-                    Image(systemName: "forward.fill")
-                    Text(String(localized: "RoutineExecutionView.Skip", bundle: .module))
-                }
-                .font(.caption)
-                .foregroundStyle(.orange)
-                .padding(.vertical, 8)
-                .background(.regularMaterial, in: Capsule())
-            }
-            .buttonStyle(.plain)
-        }
-        .padding()
-        .background(.regularMaterial)
-    }
-    
-    private func habitStatusColorFromData(for habit: Habit, data: SessionDisplayData) -> Color {
-        let isCompleted = data.completions.contains(where: { $0.habitId == habit.id })
-        let isCurrent = data.currentHabit?.id == habit.id
-        
-        if isCompleted {
-            return .green
-        } else if isCurrent {
-            return habit.swiftUIColor
-        } else {
-            return .gray.opacity(0.3)
+    /// Refresh session data after any state change
+    private func refreshSessionData() {
+        if let session = routineService.currentSession {
+            sessionData = SessionDisplayData.from(session)
         }
     }
-    
 }
 
 // Helper extension for time formatting
