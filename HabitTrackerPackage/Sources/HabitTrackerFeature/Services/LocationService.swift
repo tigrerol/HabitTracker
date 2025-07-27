@@ -92,10 +92,19 @@ public actor LocationService {
             guard let locationManager = self.locationManager else { return }
             let status = locationManager.authorizationStatus
             if status == .notDetermined {
+                #if os(iOS)
                 locationManager.requestWhenInUseAuthorization()
-            } else if status == .authorizedWhenInUse || status == .authorizedAlways {
+                #elseif os(macOS)
+                locationManager.requestAlwaysAuthorization()
+                #endif
+            } else if status == .authorizedAlways {
                 locationManager.startUpdatingLocation()
             }
+            #if os(iOS)
+            else if status == .authorizedWhenInUse {
+                locationManager.startUpdatingLocation()
+            }
+            #endif
         }
     }
     
@@ -144,6 +153,17 @@ public actor LocationService {
             let radius = savedLocation.radius > 0 ? savedLocation.radius : detectionRadius
             
             if distance <= radius {
+                Task {
+                    await LoggingService.shared.logLocationEvent(
+                        .locationDetected,
+                        metadata: [
+                            "location_type": locationType.rawValue,
+                            "distance": String(format: "%.1f", distance),
+                            "radius": String(radius),
+                            "detection_method": "geofence"
+                        ]
+                    )
+                }
                 return locationType
             }
         }
@@ -215,6 +235,18 @@ public actor LocationService {
             radius: finalRadius
         )
         knownLocations[type] = savedLocation
+        
+        // Log location save event
+        await LoggingService.shared.logLocationEvent(
+            .locationSaved,
+            metadata: [
+                "location_type": type.rawValue,
+                "has_custom_name": String(name != nil),
+                "radius": String(finalRadius),
+                "latitude": String(format: "%.4f", location.coordinate.latitude),
+                "longitude": String(format: "%.4f", location.coordinate.longitude)
+            ]
+        )
         
         // Persist to UserDefaults
         persistKnownLocations()
@@ -367,11 +399,13 @@ public actor LocationService {
             let data = try JSONEncoder().encode(knownLocations)
             UserDefaults.standard.set(data, forKey: "SavedLocations")
         } catch {
-            await ErrorHandlingService.shared.handleDataError(
-                .encodingFailed(type: "SavedLocation", underlyingError: error),
-                key: "SavedLocations",
-                operation: "save"
-            )
+            await MainActor.run {
+                ErrorHandlingService.shared.handleDataError(
+                    .encodingFailed(type: "SavedLocation", underlyingError: error),
+                    key: "SavedLocations",
+                    operation: "save"
+                )
+            }
         }
     }
     
@@ -381,11 +415,13 @@ public actor LocationService {
         do {
             knownLocations = try JSONDecoder().decode([LocationType: SavedLocation].self, from: data)
         } catch {
-            await ErrorHandlingService.shared.handleDataError(
-                .decodingFailed(type: "SavedLocation", underlyingError: error),
-                key: "SavedLocations",
-                operation: "load"
-            )
+            await MainActor.run {
+                ErrorHandlingService.shared.handleDataError(
+                    .decodingFailed(type: "SavedLocation", underlyingError: error),
+                    key: "SavedLocations",
+                    operation: "load"
+                )
+            }
             knownLocations = [:]
         }
     }
@@ -395,11 +431,13 @@ public actor LocationService {
             let data = try JSONEncoder().encode(customLocations)
             UserDefaults.standard.set(data, forKey: "CustomLocations")
         } catch {
-            await ErrorHandlingService.shared.handleDataError(
-                .encodingFailed(type: "CustomLocation", underlyingError: error),
-                key: "CustomLocations",
-                operation: "save"
-            )
+            await MainActor.run {
+                ErrorHandlingService.shared.handleDataError(
+                    .encodingFailed(type: "CustomLocation", underlyingError: error),
+                    key: "CustomLocations",
+                    operation: "save"
+                )
+            }
         }
     }
     
@@ -409,11 +447,13 @@ public actor LocationService {
         do {
             customLocations = try JSONDecoder().decode([UUID: CustomLocation].self, from: data)
         } catch {
-            await ErrorHandlingService.shared.handleDataError(
-                .decodingFailed(type: "CustomLocation", underlyingError: error),
-                key: "CustomLocations",
-                operation: "load"
-            )
+            await MainActor.run {
+                ErrorHandlingService.shared.handleDataError(
+                    .decodingFailed(type: "CustomLocation", underlyingError: error),
+                    key: "CustomLocations",
+                    operation: "load"
+                )
+            }
             customLocations = [:]
         }
     }

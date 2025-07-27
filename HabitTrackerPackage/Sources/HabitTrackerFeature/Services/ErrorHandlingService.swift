@@ -126,19 +126,19 @@ public final class ErrorHandlingService: @unchecked Sendable {
         switch action {
         case .retry:
             // Implementation would depend on the specific context
-            logger.info("Recovery action: Retry requested for \(error.category.rawValue)")
+            LoggingService.shared.info("Recovery action executed: Retry", category: .error)
         case .checkSettings:
-            logger.info("Recovery action: Check settings suggested for \(error.category.rawValue)")
+            LoggingService.shared.info("Recovery action executed: Check settings", category: .error)
         case .enableLocation:
-            logger.info("Recovery action: Enable location suggested")
+            LoggingService.shared.info("Recovery action executed: Enable location", category: .error)
         case .checkInternet:
-            logger.info("Recovery action: Check internet suggested")
+            LoggingService.shared.info("Recovery action executed: Check internet", category: .error)
         case .restart:
-            logger.info("Recovery action: Restart suggested for \(error.category.rawValue)")
+            LoggingService.shared.info("Recovery action executed: Restart", category: .error)
         case .contact:
-            logger.info("Recovery action: Contact support suggested for \(error.category.rawValue)")
+            LoggingService.shared.info("Recovery action executed: Contact support", category: .error)
         case .ignore:
-            logger.info("Recovery action: Ignore error for \(error.category.rawValue)")
+            LoggingService.shared.info("Recovery action executed: Ignore error", category: .error)
         }
     }
     
@@ -154,22 +154,35 @@ public final class ErrorHandlingService: @unchecked Sendable {
     }
     
     private func logError(_ error: any HabitTrackerError, context: [String: String]) {
-        let contextString = context.map { "\($0.key)=\($0.value)" }.joined(separator: ", ")
+        var metadata = context
+        metadata["error_category"] = error.category.rawValue
+        metadata["error_severity"] = error.severity.rawValue
+        metadata["user_message"] = error.userMessage
+        
+        let logCategory: LoggingService.LogCategory = .error
         
         switch error.severity {
         case .low:
-            logger.info("[\(error.category.rawValue)] \(error.technicalDetails) | Context: \(contextString)")
+            LoggingService.shared.info(error.technicalDetails, category: logCategory, metadata: metadata)
         case .medium:
-            logger.notice("[\(error.category.rawValue)] \(error.technicalDetails) | Context: \(contextString)")
+            LoggingService.shared.notice(error.technicalDetails, category: logCategory, metadata: metadata)
         case .high:
-            logger.error("[\(error.category.rawValue)] \(error.technicalDetails) | Context: \(contextString)")
+            LoggingService.shared.error(error.technicalDetails, category: logCategory, metadata: metadata)
         case .critical:
-            logger.fault("[\(error.category.rawValue)] \(error.technicalDetails) | Context: \(contextString)")
+            LoggingService.shared.fault(error.technicalDetails, category: logCategory, metadata: metadata)
         }
     }
     
     private func logRecoveryAttempt(_ action: RecoveryAction, for error: any HabitTrackerError) {
-        logger.info("Recovery attempt: \(action.rawValue) for \(error.category.rawValue) error")
+        LoggingService.shared.info(
+            "Recovery attempt: \(action.rawValue)",
+            category: .error,
+            metadata: [
+                "recovery_action": action.rawValue,
+                "error_category": error.category.rawValue,
+                "error_severity": error.severity.rawValue
+            ]
+        )
     }
 }
 
@@ -234,8 +247,8 @@ extension Result where Failure: HabitTrackerError {
 
 extension ErrorHandlingService {
     /// Safely execute an async operation with error handling
-    public func safely<T>(
-        operation: () async throws -> T,
+    public func safely<T: Sendable>(
+        operation: @Sendable () async throws -> T,
         context: [String: String] = [:]
     ) async -> Result<T, DataError> {
         do {
@@ -257,10 +270,10 @@ extension ErrorHandlingService {
     }
     
     /// Execute an operation with automatic retry on failure
-    public func withRetry<T>(
+    public func withRetry<T: Sendable>(
         maxAttempts: Int = 3,
         delay: TimeInterval = 1.0,
-        operation: () async throws -> T,
+        operation: @Sendable () async throws -> T,
         context: [String: String] = [:]
     ) async -> Result<T, DataError> {
         var lastError: DataError = DataError.dataValidationFailed(reason: "Unknown error")
@@ -271,19 +284,35 @@ extension ErrorHandlingService {
             switch result {
             case .success(let value):
                 if attempt > 1 {
-                    logger.info("Operation succeeded on attempt \(attempt)")
+                    LoggingService.shared.info(
+                        "Operation succeeded after retry",
+                        category: .error,
+                        metadata: ["attempt": String(attempt)]
+                    )
                 }
                 return .success(value)
             case .failure(let error):
                 lastError = error
                 if attempt < maxAttempts {
-                    logger.info("Operation failed on attempt \(attempt), retrying after \(delay)s")
+                    LoggingService.shared.info(
+                        "Operation failed, retrying",
+                        category: .error,
+                        metadata: [
+                            "attempt": String(attempt),
+                            "delay": String(delay),
+                            "max_attempts": String(maxAttempts)
+                        ]
+                    )
                     try? await Task.sleep(for: .seconds(delay))
                 }
             }
         }
         
-        logger.error("Operation failed after \(maxAttempts) attempts")
+        LoggingService.shared.error(
+            "Operation failed after all retry attempts",
+            category: .error,
+            metadata: ["max_attempts": String(maxAttempts)]
+        )
         return .failure(lastError)
     }
 }

@@ -41,7 +41,11 @@ public final class RoutineService {
         }
         
         // First time launch or failed to load - create sample templates
-        print("🆕 Creating sample templates (first launch)")
+        LoggingService.shared.info(
+            "Creating sample templates for first launch",
+            category: .routine,
+            metadata: ["reason": "no_existing_templates"]
+        )
         loadSampleTemplates()
         persistTemplates()
     }
