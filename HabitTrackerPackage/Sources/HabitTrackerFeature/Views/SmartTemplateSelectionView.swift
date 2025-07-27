@@ -314,7 +314,12 @@ struct SmartTemplateSelectionView: View {
     }
     
     private func startRoutine(with template: RoutineTemplate) {
-        routineService.startSession(with: template)
+        do {
+            try routineService.startSession(with: template)
+        } catch {
+            // Handle error - could show an alert or log the error
+            LoggingService.shared.error("Failed to start routine session", category: .routine, metadata: ["error": error.localizedDescription, "template": template.name])
+        }
     }
 }
 

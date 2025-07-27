@@ -127,8 +127,13 @@ public struct RoutineExecutionView: View {
             
             // Quick Finish
             Button {
-                routineService.completeCurrentSession()
-                sessionData = nil // Clear the cached data
+                do {
+                    try routineService.completeCurrentSession()
+                    sessionData = nil // Clear the cached data
+                } catch {
+                    // Handle error - could show an alert or log the error
+                    LoggingService.shared.error("Failed to complete routine session", category: .routine, metadata: ["error": error.localizedDescription])
+                }
             } label: {
                 HStack {
                     Image(systemName: "checkmark.circle.fill")

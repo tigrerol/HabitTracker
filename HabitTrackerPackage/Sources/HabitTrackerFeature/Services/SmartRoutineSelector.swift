@@ -83,7 +83,13 @@ public final class LocationManagerAdapter {
     /// Save a location as a known type
     public func saveLocation(_ location: CLLocation, as type: LocationType, name: String? = nil, radius: CLLocationDistance? = nil) {
         Task {
-            await locationService.saveLocation(location, as: type, name: name, radius: radius)
+            do {
+                try await locationService.saveLocation(location, as: type, name: name, radius: radius)
+            } catch {
+                await MainActor.run {
+                    LoggingService.shared.error("Failed to save location", category: .location, metadata: ["error": error.localizedDescription, "type": type.rawValue])
+                }
+            }
         }
     }
     
