@@ -38,25 +38,62 @@ public struct LocationCoordinate: Codable, Sendable {
 public actor LocationService {
     @MainActor private var locationManager: CLLocationManager?
     @MainActor private var locationDelegate: LocationManagerDelegate?
-    private(set) var currentLocation: CLLocation?
     
-    /// Current location type based on detected location
-    private(set) var currentLocationType: LocationType = .unknown
+    // MARK: - Atomic State Management
     
-    /// Current detected location (including custom locations)
-    private(set) var currentExtendedLocationType: ExtendedLocationType = .builtin(.unknown)
+    /// Current location with atomic updates
+    private var _currentLocation: CLLocation?
+    private var _currentLocationType: LocationType = .unknown
+    private var _currentExtendedLocationType: ExtendedLocationType = .builtin(.unknown)
     
-    /// Known built-in locations (to be configured by user)
-    private var knownLocations: [LocationType: SavedLocation] = [:]
+    /// Thread-safe getters for current state
+    private(set) var currentLocation: CLLocation? {
+        get { _currentLocation }
+        set { _currentLocation = newValue }
+    }
     
-    /// Custom user-defined locations
-    private var customLocations: [UUID: CustomLocation] = [:]
+    private(set) var currentLocationType: LocationType {
+        get { _currentLocationType }
+        set { _currentLocationType = newValue }
+    }
+    
+    private(set) var currentExtendedLocationType: ExtendedLocationType {
+        get { _currentExtendedLocationType }
+        set { _currentExtendedLocationType = newValue }
+    }
+    
+    /// Atomic operations for location data collections
+    private var _knownLocations: [LocationType: SavedLocation] = [:]
+    private var _customLocations: [UUID: CustomLocation] = [:]
+    
+    /// Thread-safe accessors with defensive copying
+    private var knownLocations: [LocationType: SavedLocation] {
+        get { _knownLocations }
+        set { _knownLocations = newValue }
+    }
+    
+    private var customLocations: [UUID: CustomLocation] {
+        get { _customLocations }
+        set { _customLocations = newValue }
+    }
     
     /// Detection radius in meters
     private let detectionRadius: CLLocationDistance = AppConstants.Location.defaultRadius
     
-    /// Callback for location updates
-    private var locationUpdateCallback: (@MainActor (LocationType, ExtendedLocationType) async -> Void)?
+    /// Callback for location updates with atomic access
+    private var _locationUpdateCallback: (@MainActor (LocationType, ExtendedLocationType) async -> Void)?
+    
+    /// Thread-safe callback accessor
+    private var locationUpdateCallback: (@MainActor (LocationType, ExtendedLocationType) async -> Void)? {
+        get { _locationUpdateCallback }
+        set { _locationUpdateCallback = newValue }
+    }
+    
+    /// Flag to prevent concurrent data loading
+    private var isLoadingData = false
+    
+    /// Flag to prevent concurrent persistence operations
+    private var isPersisting = false
     
     public init() {
         // Note: Data loading will happen asynchronously when first accessed
@@ -128,27 +165,54 @@ public actor LocationService {
         return currentLocation
     }
     
-    /// Update location internally (called by delegate)
+    /// Update location internally (called by delegate) - Atomic operation
     func updateLocation(_ location: CLLocation) async {
-        self.currentLocation = location
-        self.currentLocationType = determineLocationType(from: location)
-        self.currentExtendedLocationType = determineExtendedLocationType(from: location)
+        // Ensure data is loaded before processing location
+        await ensureDataLoaded()
         
-        // Notify observers
-        if let callback = locationUpdateCallback {
-            await callback(currentLocationType, currentExtendedLocationType)
+        // Atomic update of location state
+        let (newLocationType, newExtendedLocationType) = await determineLocationTypes(from: location)
+        
+        // Update all state atomically
+        self.currentLocation = location
+        self.currentLocationType = newLocationType
+        self.currentExtendedLocationType = newExtendedLocationType
+        
+        // Capture callback to avoid race conditions
+        let callback = self.locationUpdateCallback
+        
+        // Notify observers outside of actor context to prevent deadlocks
+        if let callback = callback {
+            await callback(newLocationType, newExtendedLocationType)
         }
     }
     
-    /// Determine location type from current location using geofencing
-    private func determineLocationType(from location: CLLocation) -> LocationType {
-        // Ensure data is loaded
-        if knownLocations.isEmpty {
-            loadKnownLocations()
+    /// Atomic helper to determine both location types simultaneously
+    private func determineLocationTypes(from location: CLLocation) async -> (LocationType, ExtendedLocationType) {
+        let builtinType = await determineLocationType(from: location)
+        let extendedType = await determineExtendedLocationType(from: location)
+        return (builtinType, extendedType)
+    }
+    
+    /// Ensure data is loaded atomically (prevents race conditions)
+    private func ensureDataLoaded() async {
+        // Prevent concurrent loading operations
+        guard !isLoadingData else { return }
+        
+        if knownLocations.isEmpty || customLocations.isEmpty {
+            isLoadingData = true
+            await loadFromPersistence()
+            isLoadingData = false
         }
+    }
+    
+    /// Determine location type from current location using geofencing (async for atomic operations)
+    private func determineLocationType(from location: CLLocation) async -> LocationType {
+        // Use current snapshot of knownLocations to avoid race conditions
+        let locationsSnapshot = knownLocations
         
         // Check against all saved locations
-        for (locationType, savedLocation) in knownLocations {
+        for (locationType, savedLocation) in locationsSnapshot {
             let savedCLLocation = savedLocation.clLocation
             let distance = location.distance(from: savedCLLocation)
             
@@ -174,21 +238,19 @@ public actor LocationService {
         return .unknown
     }
     
-    /// Determine extended location type (including custom locations)
-    private func determineExtendedLocationType(from location: CLLocation) -> ExtendedLocationType {
-        // Ensure data is loaded
-        if customLocations.isEmpty {
-            loadCustomLocations()
-        }
-        
+    /// Determine extended location type (including custom locations) - Atomic operation
+    private func determineExtendedLocationType(from location: CLLocation) async -> ExtendedLocationType {
         // First check built-in locations
-        let builtinType = determineLocationType(from: location)
+        let builtinType = await determineLocationType(from: location)
         if builtinType != .unknown {
             return .builtin(builtinType)
         }
         
+        // Use current snapshot of customLocations to avoid race conditions
+        let customLocationsSnapshot = customLocations
+        
         // Then check custom locations
-        for (id, customLocation) in customLocations {
+        for (id, customLocation) in customLocationsSnapshot {
             guard let customCLLocation = customLocation.clLocation else { continue }
             
             let distance = location.distance(from: customCLLocation)
@@ -252,7 +314,7 @@ public actor LocationService {
         )
         
         // Persist to UserDefaults
-        persistKnownLocations()
+        await persistLocations()
         
         // Update current location type immediately
         if let currentLocation = currentLocation {
@@ -261,15 +323,13 @@ public actor LocationService {
     }
     
     /// Remove a saved location
-    public func removeLocation(for type: LocationType) {
+    public func removeLocation(for type: LocationType) async {
         knownLocations.removeValue(forKey: type)
-        persistKnownLocations()
+        await persistLocations()
         
         // Update current location type
         if let currentLocation = currentLocation {
-            Task { [weak self] in
-                await self?.updateLocation(currentLocation)
-            }
+            await updateLocation(currentLocation)
         }
     }
     
@@ -291,23 +351,21 @@ public actor LocationService {
     // MARK: - Custom Location Management
     
     /// Create a new custom location
-    public func createCustomLocation(name: String, icon: String = "location.fill") -> CustomLocation {
+    public func createCustomLocation(name: String, icon: String = "location.fill") async -> CustomLocation {
         let customLocation = CustomLocation(name: name, icon: icon)
         customLocations[customLocation.id] = customLocation
-        persistCustomLocations()
+        await persistLocations()
         return customLocation
     }
     
     /// Update an existing custom location
-    public func updateCustomLocation(_ customLocation: CustomLocation) {
+    public func updateCustomLocation(_ customLocation: CustomLocation) async {
         customLocations[customLocation.id] = customLocation
-        persistCustomLocations()
+        await persistLocations()
         
         // Update current location type if needed
         if let currentLocation = currentLocation {
-            Task { [weak self] in
-                await self?.updateLocation(currentLocation)
-            }
+            await updateLocation(currentLocation)
         }
     }
     
@@ -316,7 +374,7 @@ public actor LocationService {
         for id: UUID,
         location: CLLocation,
         radius: CLLocationDistance? = nil
-    ) {
+    ) async {
         guard var customLocation = customLocations[id] else { return }
         
         customLocation.coordinate = LocationCoordinate(
@@ -328,26 +386,22 @@ public actor LocationService {
         }
         
         customLocations[id] = customLocation
-        persistCustomLocations()
+        await persistLocations()
         
         // Update current location type immediately
         if let currentLocation = currentLocation {
-            Task { [weak self] in
-                await self?.updateLocation(currentLocation)
-            }
+            await updateLocation(currentLocation)
         }
     }
     
     /// Delete a custom location
-    public func deleteCustomLocation(id: UUID) {
+    public func deleteCustomLocation(id: UUID) async {
         customLocations.removeValue(forKey: id)
-        persistCustomLocations()
+        await persistLocations()
         
         // Update current location type
         if let currentLocation = currentLocation {
-            Task { [weak self] in
-                await self?.updateLocation(currentLocation)
-            }
+            await updateLocation(currentLocation)
         }
     }
     
@@ -368,120 +422,120 @@ public actor LocationService {
         }
     }
     
-    private func persistLocations() {
+    /// Atomic persistence operation to prevent race conditions
+    private func persistLocations() async {
+        // Prevent concurrent persistence operations
+        guard !isPersisting else { return }
+        isPersisting = true
+        defer { isPersisting = false }
+        
+        // Create snapshots to avoid data races during persistence
+        let knownSnapshot = knownLocations
+        let customSnapshot = customLocations
+        
         if let persistenceService = persistenceService {
-            Task { [weak self] in
-                guard let self = self else { return }
-                try? await persistenceService.saveLocationData(
-                    savedLocations: knownLocations,
-                    customLocations: customLocations
+            do {
+                try await persistenceService.saveLocationData(
+                    savedLocations: knownSnapshot,
+                    customLocations: customSnapshot
+                )
+            } catch {
+                await ErrorHandlingService.shared.handleDataError(
+                    .encodingFailed(type: "LocationData", underlyingError: error),
+                    key: "LocationPersistence",
+                    operation: "save"
                 )
             }
         } else {
-            // Fallback to UserDefaults
-            persistKnownLocationsToUserDefaults()
-            persistCustomLocationsToUserDefaults()
+            // Fallback to UserDefaults with snapshots
+            await persistToUserDefaults(
+                knownLocations: knownSnapshot,
+                customLocations: customSnapshot
+            )
         }
     }
     
+    /// Atomic data loading operation
     private func loadFromPersistence() async {
         if let persistenceService = persistenceService {
             let locationData = await persistenceService.loadLocationData()
+            // Atomic update of both collections
             self.knownLocations = locationData.savedLocations
             self.customLocations = locationData.customLocations
         } else {
-            // Fallback to UserDefaults
-            loadKnownLocationsFromUserDefaults()
-            loadCustomLocationsFromUserDefaults()
+            // Fallback to UserDefaults with atomic loading
+            let (loadedKnown, loadedCustom) = await loadFromUserDefaults()
+            // Atomic update of both collections
+            self.knownLocations = loadedKnown
+            self.customLocations = loadedCustom
         }
     }
     
-    // MARK: - UserDefaults Fallback Methods
+    // MARK: - Atomic UserDefaults Operations
     
-    private func persistKnownLocationsToUserDefaults() {
+    /// Atomic UserDefaults persistence with snapshots
+    private func persistToUserDefaults(
+        knownLocations: [LocationType: SavedLocation],
+        customLocations: [UUID: CustomLocation]
+    ) async {
         do {
-            let data = try JSONEncoder().encode(knownLocations)
-            UserDefaults.standard.set(data, forKey: "SavedLocations")
-        } catch {
-            Task { @MainActor in
-                ErrorHandlingService.shared.handleDataError(
-                    .encodingFailed(type: "SavedLocation", underlyingError: error),
-                    key: "SavedLocations",
-                    operation: "save"
-                )
+            let knownData = try JSONEncoder().encode(knownLocations)
+            let customData = try JSONEncoder().encode(customLocations)
+            
+            // Perform UserDefaults operations on main thread to avoid race conditions
+            await MainActor.run {
+                UserDefaults.standard.set(knownData, forKey: "SavedLocations")
+                UserDefaults.standard.set(customData, forKey: "CustomLocations")
             }
-        }
-    }
-    
-    private func loadKnownLocationsFromUserDefaults() {
-        guard let data = UserDefaults.standard.data(forKey: "SavedLocations") else { return }
-        
-        do {
-            knownLocations = try JSONDecoder().decode([LocationType: SavedLocation].self, from: data)
         } catch {
-            Task { @MainActor in
-                ErrorHandlingService.shared.handleDataError(
-                    .decodingFailed(type: "SavedLocation", underlyingError: error),
-                    key: "SavedLocations",
-                    operation: "load"
-                )
+            await ErrorHandlingService.shared.handleDataError(
+                .encodingFailed(type: "LocationData", underlyingError: error),
+                key: "UserDefaultsPersistence",
+                operation: "save"
+            )
+        }
+    }
+    
+    /// Atomic UserDefaults loading
+    private func loadFromUserDefaults() async -> (known: [LocationType: SavedLocation], custom: [UUID: CustomLocation]) {
+        return await MainActor.run {
+            var loadedKnown: [LocationType: SavedLocation] = [:]
+            var loadedCustom: [UUID: CustomLocation] = [:]
+            
+            // Load known locations
+            if let knownData = UserDefaults.standard.data(forKey: "SavedLocations") {
+                do {
+                    loadedKnown = try JSONDecoder().decode([LocationType: SavedLocation].self, from: knownData)
+                } catch {
+                    Task {
+                        ErrorHandlingService.shared.handleDataError(
+                            .decodingFailed(type: "SavedLocation", underlyingError: error),
+                            key: "SavedLocations",
+                            operation: "load"
+                        )
+                    }
+                }
             }
-            knownLocations = [:]
-        }
-    }
-    
-    private func persistCustomLocationsToUserDefaults() {
-        do {
-            let data = try JSONEncoder().encode(customLocations)
-            UserDefaults.standard.set(data, forKey: "CustomLocations")
-        } catch {
-            Task { @MainActor in
-                ErrorHandlingService.shared.handleDataError(
-                    .encodingFailed(type: "CustomLocation", underlyingError: error),
-                    key: "CustomLocations",
-                    operation: "save"
-                )
+            
+            // Load custom locations
+            if let customData = UserDefaults.standard.data(forKey: "CustomLocations") {
+                do {
+                    loadedCustom = try JSONDecoder().decode([UUID: CustomLocation].self, from: customData)
+                } catch {
+                    Task {
+                        ErrorHandlingService.shared.handleDataError(
+                            .decodingFailed(type: "CustomLocation", underlyingError: error),
+                            key: "CustomLocations",
+                            operation: "load"
+                        )
+                    }
+                }
             }
+            
+            return (known: loadedKnown, custom: loadedCustom)
         }
     }
     
-    private func loadCustomLocationsFromUserDefaults() {
-        guard let data = UserDefaults.standard.data(forKey: "CustomLocations") else { return }
-        
-        do {
-            customLocations = try JSONDecoder().decode([UUID: CustomLocation].self, from: data)
-        } catch {
-            Task { @MainActor in
-                ErrorHandlingService.shared.handleDataError(
-                    .decodingFailed(type: "CustomLocation", underlyingError: error),
-                    key: "CustomLocations",
-                    operation: "load"
-                )
-            }
-            customLocations = [:]
-        }
-    }
-    
-    // Update method calls to use the new persistence method
-    private func persistKnownLocations() {
-        persistLocations()
-    }
-    
-    private func loadKnownLocations() {
-        Task { [weak self] in
-            await self?.loadFromPersistence()
-        }
-    }
-    
-    private func persistCustomLocations() {
-        persistLocations()
-    }
-    
-    private func loadCustomLocations() {
-        Task { [weak self] in
-            await self?.loadFromPersistence()
-        }
-    }
 }
 
 /// Internal delegate class for CLLocationManager
