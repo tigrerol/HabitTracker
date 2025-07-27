@@ -6,6 +6,9 @@ This document outlines the plan for creating a watchOS companion app for the Hab
 
 This section outlines the initial setup for the watchOS application, including the creation of the new target and the resulting file structure.
 
+**Status:** Complete
+
+
 ### 1.1. Add watchOS Target
 
 1.  **Add watchOS Target:** In Xcode, go to **File > New > Target...** and select the **watchOS** tab. Choose the **App** template and click **Next**.
@@ -46,6 +49,79 @@ We will use the **WatchConnectivity** framework to transfer data between the iOS
 ### 2.2. iOS App Implementation
 
 *   **`WatchConnectivityManager.swift`:** Create a new file named `WatchConnectivityManager.swift` in the `HabitTrackerPackage/Sources/HabitTrackerFeature/Services` directory. This file will contain a singleton class responsible for managing the `WCSession`.
+
+    ```swift
+    import WatchConnectivity
+    import Foundation
+
+    class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
+        static let shared = WatchConnectivityManager()
+
+        private override init() {
+            super.init()
+            if WCSession.isSupported() {
+                WCSession.default.delegate = self
+                WCSession.default.activate()
+            }
+        }
+
+        // MARK: - WCSessionDelegate
+
+        func session(_ session: WCSession, activationDidCompleteWith activationState: WCSessionActivationState, error: Error?) {
+            if let error = error {
+                print("WCSession activation failed with error: \(error.localizedDescription)")
+                return
+            }
+            print("WCSession activated with state: \(activationState.rawValue)")
+        }
+
+        func sessionDidBecomeInactive(_ session: WCSession) {
+            print("WCSession became inactive.")
+        }
+
+        func sessionDidDeactivate(_ session: WCSession) {
+            print("WCSession deactivated. Reactivating...")
+            WCSession.default.activate()
+        }
+
+        func session(_ session: WCSession, didReceiveMessage message: [String : Any]) {
+            // Handle incoming messages from Watch (if any, though plan focuses on Watch receiving)
+            print("Received message from Watch: \(message)")
+        }
+
+        func session(_ session: WCSession, didReceiveUserInfo userInfo: [String : Any] = [:]) {
+            // Handle incoming user info from Watch (if any)
+            print("Received user info from Watch: \(userInfo)")
+        }
+
+        func session(_ session: WCSession, didReceiveApplicationContext applicationContext: [String : Any]) {
+            // Handle incoming application context from Watch (if any)
+            print("Received application context from Watch: \(applicationContext)")
+        }
+
+        func session(_ session: WCSession, didFinish fileTransfer: WCSessionFileTransfer, error: Error?) {
+            if let error = error {
+                print("File transfer failed with error: \(error.localizedDescription)")
+                return
+            }
+            print("File transfer finished: \(fileTransfer.file.fileURL.lastPathComponent ?? "unknown file")")
+        }
+
+        // MARK: - Sending Data to Watch
+
+        func sendRoutineDataToWatch(routineData: [String: Any]) {
+            guard WCSession.default.isReachable else {
+                print("Watch is not reachable. Data will be queued.")
+                // Implement queuing mechanism for offline scenarios if needed
+                return
+            }
+
+            WCSession.default.transferUserInfo(routineData)
+            print("Sent routine data to Watch.")
+        }
+    }
+    ```
+
 *   **`WCSessionDelegate`:** The `WatchConnectivityManager` will conform to the `WCSessionDelegate` protocol and implement the following methods:
     *   `session(_:activationDidCompleteWith:error:)`
     *   `sessionDidBecomeInactive(_:)`
@@ -55,10 +131,100 @@ We will use the **WatchConnectivity** framework to transfer data between the iOS
 ### 2.3. watchOS App Implementation
 
 *   **`WatchConnectivityManager.swift`:** Create a new file named `WatchConnectivityManager.swift` in the `HabitTrackerWatch/Services` directory. This file will contain a singleton class responsible for managing the `WCSession`.
+
+    ```swift
+    import WatchConnectivity
+    import Foundation
+    import SwiftData // Assuming SwiftData is used for local storage
+
+    class WatchConnectivityManager: NSObject, ObservableObject, WCSessionDelegate {
+        static let shared = WatchConnectivityManager()
+
+        private override init() {
+            super.init()
+            if WCSession.isSupported() {
+                WCSession.default.delegate = self
+                WCSession.default.activate()
+            }
+        }
+
+        // MARK: - WCSessionDelegate
+
+        func session(_ session: WCSession, activationDidCompleteWith activationState: WCSessionActivationState, error: Error?) {
+            if let error = error {
+                print("WCSession activation failed with error: \(error.localizedDescription)")
+                return
+            }
+            print("WCSession activated with state: \(activationState.rawValue)")
+        }
+
+        func session(_ session: WCSession, didReceiveUserInfo userInfo: [String : Any] = [:]) {
+            // This method is called on a background queue.
+            // Dispatch to main queue for UI updates or background queue for data processing.
+            Task { @MainActor in // Or use DispatchQueue.main.async
+                print("Received user info from iOS: \(userInfo)")
+                // Example: Process routine data
+                if let routineData = userInfo["routine"] as? Data {
+                    do {
+                        let decoder = JSONDecoder()
+                        // Assuming RoutineTemplate is Decodable
+                        // let routine = try decoder.decode(RoutineTemplate.self, from: routineData)
+                        // Save to SwiftData
+                        // PersistenceService.shared.saveRoutine(routine)
+                        print("Successfully processed routine data.")
+                    } catch {
+                        print("Error decoding routine data: \(error.localizedDescription)")
+                    }
+                }
+            }
+        }
+
+        func session(_ session: WCSession, didReceiveApplicationContext applicationContext: [String : Any]) {
+            // Handle incoming application context from iOS (if any)
+            print("Received application context from iOS: \(applicationContext)")
+        }
+
+        func session(_ session: WCSession, didReceiveMessage message: [String : Any]) {
+            // Handle incoming messages from iOS (if any)
+            print("Received message from iOS: \(message)")
+        }
+
+        func session(_ session: WCSession, didFinish fileTransfer: WCSessionFileTransfer, error: Error?) {
+            if let error = error {
+                print("File transfer failed with error: \(error.localizedDescription)")
+                return
+            }
+            print("File transfer finished: \(fileTransfer.file.fileURL.lastPathComponent ?? "unknown file")")
+        }
+    }
+    ```
+
 *   **`WCSessionDelegate`:** The `WatchConnectivityManager` will conform to the `WCSessionDelegate` protocol and implement the following methods:
     *   `session(_:activationDidCompleteWith:error:)`
     *   `session(_:didReceiveUserInfo:)`
 *   **Receiving Data:** When the watch app receives new routine data in the `session(_:didReceiveUserInfo:)` method, it will decode the data and update its local SwiftData store. This will be done on a background queue to avoid blocking the main thread.
+
+### 2.4. Common Mistakes & Debugging Strategies for WatchConnectivity
+
+**Common Mistakes:**
+
+*   **Forgetting to activate the session:** `WCSession.default.activate()` must be called on both sides.
+*   **Not setting the delegate:** `WCSession.default.delegate = self` is crucial for receiving callbacks.
+*   **Incorrectly handling `isReachable`:** `isReachable` only indicates if the counterpart app is currently running and able to receive messages *immediately*. For background transfers, `transferUserInfo` or `transferFile` are more appropriate.
+*   **UI updates on background thread:** Attempting to update SwiftUI views directly from `WCSessionDelegate` methods (which are called on a background queue) will lead to crashes. Always dispatch UI updates to the main thread using `@MainActor` or `DispatchQueue.main.async`.
+*   **Data serialization/deserialization issues:** Ensure that the data sent (e.g., `[String: Any]`) can be correctly encoded/decoded on both ends. For custom types, `Codable` is highly recommended.
+*   **Missing entitlements:** Ensure both targets have the "App Groups" capability enabled and share a common app group if you plan to use shared containers for data. While not strictly necessary for `WatchConnectivity` itself, it's good practice for shared data.
+
+**Debugging Strategies:**
+
+*   **Print statements:** Use `print()` statements in all `WCSessionDelegate` methods to track the session's state and data flow.
+*   **Xcode Console:** Pay close attention to the Xcode console for WatchConnectivity-related errors or warnings.
+*   **Device Logs:** For more detailed logs, use the Devices and Simulators window (Window > Devices and Simulators) to view the device logs for both the iPhone and Apple Watch.
+*   **Breakpoints:** Set breakpoints in your `WCSessionDelegate` methods to step through the code and inspect the `session` and `userInfo` objects.
+*   **Reachability Check:** Regularly check `WCSession.default.isReachable` on the iOS side before attempting interactive messages.
+*   **Test on real devices:** While simulators are useful, WatchConnectivity behavior can sometimes differ on physical devices. Test thoroughly on both.
+*   **Background App Refresh:** Ensure "Background App Refresh" is enabled for your app on both the iPhone and Apple Watch (Settings > General > Background App Refresh).
+*   **Reset Simulator:** If you encounter persistent issues, try resetting the simulator (Hardware > Erase All Content and Settings).
 
 
 ## 7. Offline Functionality
