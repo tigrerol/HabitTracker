@@ -23,9 +23,9 @@ public struct ConditionalHabitInteractionView: View {
     }
     
     public var body: some View {
-        VStack(spacing: 24) {
+        VStack(spacing: AppConstants.Spacing.extraLarge) {
             // Question
-            VStack(spacing: 8) {
+            VStack(spacing: AppConstants.Spacing.standard) {
                 Image(systemName: "questionmark.circle.fill")
                     .font(.system(size: 48))
                     .foregroundStyle(Color(hex: habit.color) ?? .blue)
@@ -36,10 +36,10 @@ public struct ConditionalHabitInteractionView: View {
                     .multilineTextAlignment(.center)
                     .padding(.horizontal)
             }
-            .padding(.top, 40)
+            .padding(.top, AppConstants.Spacing.page)
             
             // Options
-            VStack(spacing: 12) {
+            VStack(spacing: AppConstants.Spacing.medium) {
                 ForEach(conditionalInfo.options) { option in
                     OptionButton(
                         option: option,
@@ -64,7 +64,7 @@ public struct ConditionalHabitInteractionView: View {
                     .foregroundStyle(.secondary)
             }
             .disabled(isProcessing)
-            .padding(.bottom, 20)
+            .padding(.bottom, AppConstants.Padding.extraLarge)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color(.systemBackground))
@@ -77,7 +77,7 @@ public struct ConditionalHabitInteractionView: View {
         selectedOption = option
         
         // Add a small delay for visual feedback
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + AppConstants.AnimationDurations.standard) {
             onOptionSelected(option)
         }
     }
@@ -111,14 +111,14 @@ private struct OptionButton: View {
                         )
                 }
             }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 16)
+            .padding(.horizontal, AppConstants.Padding.extraLarge)
+            .padding(.vertical, AppConstants.Padding.large)
             .background(
-                RoundedRectangle(cornerRadius: 12)
+                RoundedRectangle(cornerRadius: AppConstants.CornerRadius.medium)
                     .fill(isSelected ? color : Color(.systemGray6))
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 12)
+                RoundedRectangle(cornerRadius: AppConstants.CornerRadius.medium)
                     .strokeBorder(
                         isSelected ? color : Color(.systemGray4),
                         lineWidth: isSelected ? 2 : 1
@@ -133,7 +133,7 @@ private struct OptionButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .scaleEffect(configuration.isPressed ? 0.95 : 1)
-            .animation(.easeInOut(duration: 0.1), value: configuration.isPressed)
+            .animation(.easeInOut(duration: AppConstants.AnimationDurations.accessibilityDelay), value: configuration.isPressed)
     }
 }
 

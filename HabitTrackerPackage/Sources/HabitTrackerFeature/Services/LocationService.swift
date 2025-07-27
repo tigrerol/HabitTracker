@@ -12,7 +12,7 @@ public struct SavedLocation: Codable, Sendable {
         CLLocation(latitude: coordinate.latitude, longitude: coordinate.longitude)
     }
     
-    public init(location: CLLocation, name: String? = nil, radius: CLLocationDistance = 150) {
+    public init(location: CLLocation, name: String? = nil, radius: CLLocationDistance = AppConstants.Location.defaultRadius) {
         self.coordinate = LocationCoordinate(
             latitude: location.coordinate.latitude,
             longitude: location.coordinate.longitude
@@ -53,7 +53,7 @@ public actor LocationService {
     private var customLocations: [UUID: CustomLocation] = [:]
     
     /// Detection radius in meters
-    private let detectionRadius: CLLocationDistance = 150 // 150 meters
+    private let detectionRadius: CLLocationDistance = AppConstants.Location.defaultRadius
     
     /// Callback for location updates
     private var locationUpdateCallback: (@MainActor (LocationType, ExtendedLocationType) async -> Void)?
@@ -78,7 +78,7 @@ public actor LocationService {
             locationDelegate = delegate
             locationManager?.delegate = locationDelegate
             locationManager?.desiredAccuracy = kCLLocationAccuracyHundredMeters
-            locationManager?.distanceFilter = 100 // Update every 100 meters
+            locationManager?.distanceFilter = AppConstants.Location.distanceFilter
         }
     }
     

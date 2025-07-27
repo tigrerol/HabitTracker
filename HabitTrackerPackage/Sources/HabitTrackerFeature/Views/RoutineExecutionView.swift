@@ -101,13 +101,13 @@ public struct RoutineExecutionView: View {
     
     @ViewBuilder
     private func completionViewFromData(_ data: SessionDisplayData) -> some View {
-        VStack(spacing: 24) {
+        VStack(spacing: AppConstants.Spacing.extraLarge) {
             Spacer()
             
             // Celebration
-            VStack(spacing: 16) {
+            VStack(spacing: AppConstants.Spacing.large) {
                 Text("🎉")
-                    .font(.system(size: 60))
+                    .font(.system(size: AppConstants.FontSizes.largeIcon))
                 
                 Text(String(localized: "RoutineExecutionView.RoutineComplete", bundle: .module))
                     .font(.title)
@@ -163,7 +163,7 @@ public struct RoutineExecutionView: View {
                     .gesture(
                         DragGesture()
                             .onEnded { value in
-                                let threshold: CGFloat = 100
+                                let threshold: CGFloat = AppConstants.Spacing.page + AppConstants.Spacing.large
                                 
                                 if value.translation.width > threshold {
                                     // Swipe right - go to previous habit
@@ -231,11 +231,11 @@ public struct RoutineExecutionView: View {
     
     @ViewBuilder
     private func currentHabitViewFromData(_ habit: Habit, data: SessionDisplayData) -> some View {
-        VStack(spacing: 24) {
+        VStack(spacing: AppConstants.Spacing.extraLarge) {
             // Habit info
             VStack(spacing: 8) {
                 Image(systemName: habit.type.iconName)
-                    .font(.system(size: 40))
+                    .font(.system(size: AppConstants.Spacing.page))
                     .foregroundStyle(habit.swiftUIColor)
                 
                 Text(habit.name)
@@ -295,7 +295,7 @@ public struct RoutineExecutionView: View {
     
     @ViewBuilder
     private func navigationControlsFromData(_ data: SessionDisplayData) -> some View {
-        HStack(spacing: 16) {
+        HStack(spacing: AppConstants.Spacing.large) {
             // Previous habit
             Button {
                 routineService.currentSession?.goToPreviousHabit()

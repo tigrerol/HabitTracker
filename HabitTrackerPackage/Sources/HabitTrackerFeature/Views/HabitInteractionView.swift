@@ -82,14 +82,14 @@ struct CheckboxHabitView: View {
     }
     
     var body: some View {
-        VStack(spacing: 24) {
+        VStack(spacing: AppConstants.Spacing.extraLarge) {
             // Large tap target for quick completion
             Button {
                 completeHabit()
             } label: {
-                VStack(spacing: 16) {
+                VStack(spacing: AppConstants.Spacing.large) {
                     Image(systemName: isCompleting ? "checkmark.circle.fill" : "circle")
-                        .font(.system(size: 80))
+                        .font(.system(size: AppConstants.FontSizes.extraLargeIcon))
                         .foregroundStyle(isCompleting ? .green : habit.swiftUIColor)
                         .scaleEffect(isCompleting ? 1.2 : 1.0)
                     
@@ -97,10 +97,10 @@ struct CheckboxHabitView: View {
                         .font(.headline)
                         .foregroundStyle(isCompleting ? .green : .primary)
                 }
-                .padding(.vertical, 20)
+                .padding(.vertical, AppConstants.Padding.extraLarge)
                 .frame(maxWidth: .infinity)
                 .background(
-                    RoundedRectangle(cornerRadius: 20)
+                    RoundedRectangle(cornerRadius: AppConstants.CornerRadius.large)
                         .fill(.regularMaterial)
                         .stroke(isCompleting ? .green : habit.swiftUIColor.opacity(0.3), lineWidth: 2)
                 )
@@ -135,7 +135,7 @@ struct CheckboxHabitView: View {
         impactFeedback.impactOccurred()
         
         // Complete after brief delay for animation
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + AppConstants.AnimationDurations.habitCompletion) {
             onComplete(habit.id, nil, nil)
         }
     }

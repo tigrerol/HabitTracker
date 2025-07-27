@@ -263,7 +263,7 @@ extension View {
     /// Announce accessibility changes
     public func announceAccessibilityChange(_ announcement: String) -> some View {
         self.onReceive(NotificationCenter.default.publisher(for: UIAccessibility.announcementDidFinishNotification)) { _ in
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + AppConstants.AnimationDurations.accessibilityDelay) {
                 UIAccessibility.post(notification: .announcement, argument: announcement)
             }
         }
