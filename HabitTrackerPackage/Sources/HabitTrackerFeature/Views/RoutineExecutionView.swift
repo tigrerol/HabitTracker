@@ -32,16 +32,6 @@ public struct RoutineExecutionView: View {
             let currentHabit = currentHabitIndex >= 0 && currentHabitIndex < activeHabits.count ? activeHabits[currentHabitIndex] : nil
             let isCompleted = session.completedAt != nil
             
-            print("🔥 DEBUG: SessionDisplayData.from() called")
-            print("🔥 DEBUG:   - currentHabitIndex: \(currentHabitIndex)")
-            print("🔥 DEBUG:   - currentHabit: \(currentHabit?.name ?? "nil") (ID: \(currentHabit?.id.uuidString ?? "nil"))")
-            print("🔥 DEBUG:   - activeHabits count: \(activeHabits.count)")
-            print("🔥 DEBUG:   - completions count: \(completions.count)")
-            
-            for (i, habit) in activeHabits.enumerated() {
-                let hasCompletion = completions.contains { $0.habitId == habit.id }
-                print("🔥 DEBUG:     [\(i)] \(habit.name) (ID: \(habit.id)) - Completed: \(hasCompletion)")
-            }
             
             // Safely calculate duration
             let duration = session.duration
@@ -81,12 +71,9 @@ public struct RoutineExecutionView: View {
             .navigationTitle(sessionData?.templateName ?? String(localized: "RoutineExecutionView.NavigationTitle", bundle: .module))
             .navigationBarTitleDisplayMode(.inline)
             .onReceive(NotificationCenter.default.publisher(for: .routineQueueDidChange)) { _ in
-                print("🔥 DEBUG: RoutineExecutionView received .routineQueueDidChange notification")
                 // Force view refresh when routine queue changes (for conditional habits)
                 if let session = routineService.currentSession {
-                    print("🔥 DEBUG: Refreshing sessionData after notification")
                     sessionData = SessionDisplayData.from(session)
-                    print("🔥 DEBUG: New sessionData current habit: \(sessionData?.currentHabit?.name ?? "nil")")
                 }
             }
             .onChange(of: routineService.currentSession) { _, newSession in
@@ -264,16 +251,10 @@ public struct RoutineExecutionView: View {
             
             // Habit-specific interaction
             HabitInteractionView(habit: habit, onComplete: { habitId, duration, notes in
-                print("🔥🔥🔥 EXECUTION VIEW: HabitInteractionView onComplete called")
-                print("🔥🔥🔥   - habitId: \(habitId)")
-                print("🔥🔥🔥   - habit.name: \(habit.name)")
-                print("🔥🔥🔥   - duration: \(String(describing: duration))")
-                print("🔥🔥🔥   - notes: \(String(describing: notes))")
                 routineService.currentSession?.completeCurrentHabit(duration: duration, notes: notes)
                 // Refresh the cached data after completion
                 if let session = routineService.currentSession {
                     sessionData = SessionDisplayData.from(session)
-                    print("🔥🔥🔥   - Refreshed sessionData, new current habit: \(sessionData?.currentHabit?.name ?? "nil")")
                 }
             }, isCompleted: data.completions.contains(where: { $0.habitId == habit.id }))
         }
@@ -364,23 +345,11 @@ public struct RoutineExecutionView: View {
         let isCompleted = data.completions.contains(where: { $0.habitId == habit.id })
         let isCurrent = data.currentHabit?.id == habit.id
         
-        print("🔥🔥🔥 UI COLOR CHECK: habitStatusColorFromData - Habit: \(habit.name) (ID: \(habit.id))")
-        print("🔥🔥🔥   - isCompleted: \(isCompleted)")
-        print("🔥🔥🔥   - isCurrent: \(isCurrent)")
-        print("🔥🔥🔥   - currentHabitIndex: \(data.currentHabitIndex)")
-        print("🔥🔥🔥   - Total completions: \(data.completions.count)")
-        for (i, completion) in data.completions.enumerated() {
-            print("🔥🔥🔥     [\(i)] Completion for habit ID: \(completion.habitId) at \(completion.completedAt)")
-        }
-        
         if isCompleted {
-            print("🔥 DEBUG:   - Returning GREEN (completed)")
             return .green
         } else if isCurrent {
-            print("🔥 DEBUG:   - Returning habit color (current)")
             return habit.swiftUIColor
         } else {
-            print("🔥 DEBUG:   - Returning GRAY (not current/not completed)")
             return .gray.opacity(0.3)
         }
     }

@@ -82,29 +82,17 @@ public final class RoutineSession: Equatable {
 extension RoutineSession {
     /// Complete the current habit
     public func completeCurrentHabit(duration: TimeInterval? = nil, notes: String? = nil) {
-        guard let habitToComplete = currentHabit else { 
-            print("🔥 DEBUG: completeCurrentHabit - No current habit to complete!")
-            return 
-        }
-        
-        print("🔥 DEBUG: completeCurrentHabit - Completing habit: \(habitToComplete.name)")
-        print("🔥 DEBUG: completeCurrentHabit - Current index: \(currentHabitIndex)")
-        print("🔥 DEBUG: completeCurrentHabit - Active habits count: \(activeHabits.count)")
-        print("🔥 DEBUG: completeCurrentHabit - CALLER STACK: \(Thread.callStackSymbols.prefix(5).joined(separator: "\n"))")
+        guard let habitToComplete = currentHabit else { return }
         
         // Check if this habit is already completed (can happen with conditional habits)
         let existingCompletion = completions.first { $0.habitId == habitToComplete.id }
         if existingCompletion != nil {
-            print("🔥 DEBUG: completeCurrentHabit - Habit already completed, just advancing index")
             // Already completed, just advance the index if needed
             let habitCount = activeHabits.count
             if currentHabitIndex < habitCount - 1 {
                 currentHabitIndex += 1
-                print("🔥 DEBUG: completeCurrentHabit - Advanced to index: \(currentHabitIndex)")
-                print("🔥 DEBUG: completeCurrentHabit - New current habit: \(currentHabit?.name ?? "nil")")
             } else {
                 // Session completed
-                print("🔥 DEBUG: completeCurrentHabit - Session completed!")
                 completedAt = Date()
             }
             return
@@ -117,10 +105,6 @@ extension RoutineSession {
             notes: notes
         )
         
-        print("🚨🚨🚨 COMPLETION ADDED: \(completion.habitId) via completeCurrentHabit - Total completions now: \(completions.count + 1)")
-        print("🚨🚨🚨   - Function: completeCurrentHabit")
-        print("🚨🚨🚨   - Habit: \(habitToComplete.name) (ID: \(habitToComplete.id))")
-        print("🚨🚨🚨   - CALLER STACK: \(Thread.callStackSymbols.prefix(3).joined(separator: " -> "))")
         completions.append(completion)
         
         // Move to next habit
@@ -143,9 +127,6 @@ extension RoutineSession {
             notes: notes
         )
         
-        print("🚨🚨🚨 COMPLETION ADDED: \(completion.habitId) via completeConditionalHabit - Total completions now: \(completions.count + 1)")
-        print("🚨🚨🚨   - Function: completeConditionalHabit")
-        print("🚨🚨🚨   - CALLER STACK: \(Thread.callStackSymbols.prefix(3).joined(separator: " -> "))")
         completions.append(completion)
     }
     
@@ -161,10 +142,6 @@ extension RoutineSession {
             notes: reason
         )
         
-        print("🚨🚨🚨 COMPLETION ADDED: \(completion.habitId) via skipCurrentHabit - Total completions now: \(completions.count + 1)")
-        print("🚨🚨🚨   - Function: skipCurrentHabit")
-        print("🚨🚨🚨   - Habit: \(habitToSkip.name) (ID: \(habitToSkip.id))")
-        print("🚨🚨🚨   - CALLER STACK: \(Thread.callStackSymbols.prefix(3).joined(separator: " -> "))")
         completions.append(completion)
         
         // Move to next habit

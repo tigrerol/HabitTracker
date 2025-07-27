@@ -79,16 +79,10 @@ struct CheckboxHabitView: View {
         self.habit = habit
         self.onComplete = onComplete
         self.isCompleted = isCompleted
-        print("🔥🔥🔥 WARNING: CheckboxHabitView CREATED for habit: \(habit.name) (ID: \(habit.id))")
-        print("🔥🔥🔥   - This should NOT happen! AccessibleCheckboxHabitView should be used instead!")
     }
     
     var body: some View {
-        print("🔥🔥🔥 VISUAL: CheckboxHabitView.body rendering - habit: \(habit.name) (ID: \(habit.id))")
-        print("🔥🔥🔥   - isCompleting: \(isCompleting) (determines if shows green checkmark or circle)")
-        print("🔥🔥🔥   - Will show: \(isCompleting ? "GREEN CHECKMARK" : "EMPTY CIRCLE")")
-        
-        return VStack(spacing: 24) {
+        VStack(spacing: 24) {
             // Large tap target for quick completion
             Button {
                 completeHabit()
@@ -124,24 +118,14 @@ struct CheckboxHabitView: View {
         .onAppear {
             // Reset completion state when view appears for a new habit
             isCompleting = false
-            print("🔥🔥🔥 CRITICAL: CheckboxHabitView.onAppear - habit: \(habit.name) (ID: \(habit.id))")
-            print("🔥🔥🔥   - RESET isCompleting to false")
-            print("🔥🔥🔥   - THIS VIEW SHOULD NOT BE USED! Use AccessibleCheckboxHabitView!")
         }
         .onChange(of: habit.id) { _, newHabitId in
             // Reset completion state when habit changes (critical for injection scenarios)
             isCompleting = false
-            print("🔥🔥🔥 CRITICAL: CheckboxHabitView.onChange - habit changed to ID: \(newHabitId)")
-            print("🔥🔥🔥   - RESET isCompleting to false")
-            print("🔥🔥🔥   - THIS VIEW SHOULD NOT BE USED! Use AccessibleCheckboxHabitView!")
         }
     }
     
     private func completeHabit() {
-        print("🔥🔥🔥 DANGEROUS: CheckboxHabitView.completeHabit() called for habit: \(habit.name) (ID: \(habit.id))")
-        print("🔥🔥🔥   - This view should NOT be used! Use AccessibleCheckboxHabitView instead!")
-        print("🔥🔥🔥   - CALLER STACK: \(Thread.callStackSymbols.prefix(5).joined(separator: " -> "))")
-        
         withAnimation(.bouncy) {
             isCompleting = true
         }
@@ -152,7 +136,6 @@ struct CheckboxHabitView: View {
         
         // Complete after brief delay for animation
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            print("🔥🔥🔥 DANGEROUS: CheckboxHabitView auto-completing habit: \(habit.name) (ID: \(habit.id))")
             onComplete(habit.id, nil, nil)
         }
     }

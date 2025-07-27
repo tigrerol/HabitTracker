@@ -153,18 +153,7 @@ public final class RoutineService {
         for habitId: UUID,
         question: String
     ) {
-        print("🔥 DEBUG: handleConditionalOptionSelection called")
-        print("🔥 DEBUG: Option text: \(option.text)")
-        print("🔥 DEBUG: Option has \(option.habits.count) habits")
-        print("🔥 DEBUG: HabitId: \(habitId)")
-        
-        guard let session = currentSession else { 
-            print("🔥 DEBUG: ERROR - No current session!")
-            return 
-        }
-        
-        print("🔥 DEBUG: Current session index: \(session.currentHabitIndex)")
-        print("🔥 DEBUG: Active habits count: \(session.activeHabits.count)")
+        guard let session = currentSession else { return }
         
         // Log the response
         let response = ConditionalResponse(
@@ -185,7 +174,6 @@ public final class RoutineService {
         
         // If there are habits in the path, inject them into the session
         if !pathHabits.isEmpty {
-            print("🔥 DEBUG: Injecting \(pathHabits.count) path habits")
             let activeHabits = session.activeHabits
             
             // Create a reordered habit list that inserts the path habits after the current conditional
@@ -205,7 +193,6 @@ public final class RoutineService {
                 var pathHabit = habit
                 pathHabit.order = currentHabitIndex + 1 + index  // Sequential after current
                 newOrder.append(pathHabit)
-                print("🔥 DEBUG: Injected habit '\(pathHabit.name)' with order \(pathHabit.order)")
             }
             
             // Add remaining habits with adjusted sequential order values
@@ -214,13 +201,7 @@ public final class RoutineService {
                     var remainingHabit = activeHabits[i]
                     remainingHabit.order = currentHabitIndex + 1 + pathHabits.count + (i - currentHabitIndex - 1)
                     newOrder.append(remainingHabit)
-                    print("🔥 DEBUG: Reordered habit '\(remainingHabit.name)' with order \(remainingHabit.order)")
                 }
-            }
-            
-            print("🔥 DEBUG: Final newOrder before reorderHabits:")
-            for (i, h) in newOrder.enumerated() {
-                print("🔥 DEBUG:   [\(i)] \(h.name) order=\(h.order) id=\(h.id)")
             }
             
             // Apply the reordering modification
@@ -228,16 +209,6 @@ public final class RoutineService {
         }
         
         // Complete the conditional habit and advance to the next habit (which should be the first injected habit)
-        print("🔥 DEBUG: About to complete conditional habit")
-        print("🔥 DEBUG: BEFORE completion - Active habits:")
-        for (i, h) in session.activeHabits.enumerated() {
-            let isCompleted = session.completions.contains { $0.habitId == h.id }
-            print("🔥 DEBUG:   [\(i)] \(h.name) (ID: \(h.id)) - Completed: \(isCompleted)")
-        }
-        print("🔥 DEBUG: BEFORE completion - Completions:")
-        for comp in session.completions {
-            print("🔥 DEBUG:   - \(comp.habitId) at \(comp.completedAt)")
-        }
         
         session.completeConditionalHabit(
             habitId: habitId,
@@ -245,26 +216,11 @@ public final class RoutineService {
             notes: "Selected: \(option.text)"
         )
         
-        print("🔥 DEBUG: AFTER completion - Active habits:")
-        for (i, h) in session.activeHabits.enumerated() {
-            let isCompleted = session.completions.contains { $0.habitId == h.id }
-            print("🔥 DEBUG:   [\(i)] \(h.name) (ID: \(h.id)) - Completed: \(isCompleted)")
-        }
-        print("🔥 DEBUG: AFTER completion - Completions:")
-        for comp in session.completions {
-            print("🔥 DEBUG:   - \(comp.habitId) at \(comp.completedAt)")
-        }
-        
         // Move to the next habit (first injected habit if pathHabits is not empty,
         // or the next habit in the original sequence if pathHabits is empty)
         session.goToHabit(at: session.currentHabitIndex + 1)
         
-        
-        print("🔥 DEBUG: AFTER goToHabit - currentHabitIndex: \(session.currentHabitIndex)")
-        print("🔥 DEBUG: AFTER goToHabit - currentHabit: \(session.currentHabit?.name ?? "nil") (ID: \(session.currentHabit?.id.uuidString ?? "nil"))")
-        
         // Post notification that routine queue changed
-        print("🔥 DEBUG: Posting .routineQueueDidChange notification")
         NotificationCenter.default.post(name: .routineQueueDidChange, object: nil)
     }
     
