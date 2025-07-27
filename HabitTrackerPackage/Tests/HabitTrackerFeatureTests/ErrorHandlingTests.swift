@@ -52,8 +52,8 @@ struct ErrorHandlingTests {
         service.handle(DataError.keyNotFound(key: "test"))
         
         let locationErrors = service.getErrors(for: .location)
-        let routineErrors = service.getErrors(for: .routine)
-        let dataErrors = service.getErrors(for: .persistence)
+        let routineErrors = service.getErrors(for: .technical)
+        let dataErrors = service.getErrors(for: .data)
         
         #expect(locationErrors.count == 1)
         #expect(routineErrors.count == 1)
@@ -87,7 +87,7 @@ struct ErrorHandlingTests {
         let stats = service.getErrorStatistics()
         #expect(stats.totalErrors == 3)
         #expect(stats.categoryCounts[.location] == 2)
-        #expect(stats.categoryCounts[.routine] == 1)
+        #expect(stats.categoryCounts[.technical] == 1)
         #expect(stats.severityCounts[.high] == 1)
         #expect(stats.severityCounts[.medium] == 1)
         #expect(stats.severityCounts[.low] == 1)
@@ -172,7 +172,7 @@ struct RoutineErrorTests {
     func testRoutineErrorProperties() {
         let error = RoutineError.noActiveSession
         
-        #expect(error.category == .routine)
+        #expect(error.category == .technical)
         #expect(error.severity == .low)
         #expect(error.shouldLog == true)
         #expect(error.recoveryActions.contains(.retry))
@@ -214,7 +214,7 @@ struct DataErrorTests {
         let underlyingError = NSError(domain: "test", code: 1, userInfo: nil)
         let error = DataError.encodingFailed(type: "TestModel", underlyingError: underlyingError)
         
-        #expect(error.category == .persistence)
+        #expect(error.category == .data)
         #expect(error.severity == .medium)
         #expect(error.shouldLog == true)
         #expect(error.technicalDetails.contains("TestModel"))
@@ -285,7 +285,7 @@ struct UIErrorTests {
     func testUIErrorProperties() {
         let error = UIError.viewRenderingFailed(viewName: "RoutineView")
         
-        #expect(error.category == .ui)
+        #expect(error.category == .technical)
         #expect(error.severity == .low)
         #expect(error.shouldLog == true)
         #expect(error.technicalDetails.contains("RoutineView"))
@@ -398,14 +398,14 @@ struct AsyncErrorHandlingTests {
         let service = ErrorHandlingService.shared
         service.clearHistory()
         
-        var attemptCount = 0
+        let attemptCounter = AtomicCounter()
         
         let result = await service.withRetry(maxAttempts: 3, delay: 0.1) {
-            attemptCount += 1
-            if attemptCount < 3 {
+            let count = attemptCounter.increment()
+            if count < 3 {
                 throw ValidationError.invalidHabitName(name: "")
             }
-            return "success on attempt \(attemptCount)"
+            return "success on attempt \(count)"
         }
         
         switch result {
@@ -415,7 +415,7 @@ struct AsyncErrorHandlingTests {
             Issue.record("Expected success after retries")
         }
         
-        #expect(attemptCount == 3)
+        #expect(attemptCounter.value == 3)
     }
     
     @Test("ErrorHandlingService retry fails after max attempts")
@@ -423,10 +423,10 @@ struct AsyncErrorHandlingTests {
         let service = ErrorHandlingService.shared
         service.clearHistory()
         
-        var attemptCount = 0
+        let attemptCounter = AtomicCounter()
         
         let result = await service.withRetry(maxAttempts: 2, delay: 0.1) {
-            attemptCount += 1
+            attemptCounter.increment()
             throw ValidationError.invalidHabitName(name: "")
         }
         
@@ -437,6 +437,26 @@ struct AsyncErrorHandlingTests {
             #expect(error.category == .validation)
         }
         
-        #expect(attemptCount == 2)
+        #expect(attemptCounter.value == 2)
+    }
+}
+
+// MARK: - Test Utilities
+
+/// Thread-safe counter for testing async operations
+private final class AtomicCounter: @unchecked Sendable {
+    private var _value = 0
+    private let lock = NSLock()
+    
+    var value: Int {
+        lock.withLock { _value }
+    }
+    
+    @discardableResult
+    func increment() -> Int {
+        lock.withLock {
+            _value += 1
+            return _value
+        }
     }
 }

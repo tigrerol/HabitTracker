@@ -133,29 +133,29 @@ struct SmartTemplateSelectionView: View {
         HStack(spacing: 16) {
             // Time indicator
             Label {
-                Text(routineService.smartSelector.currentContext.timeSlot.displayName)
+                Text(routineService.routineSelector.currentContext.timeSlot.displayName)
             } icon: {
-                Image(systemName: routineService.smartSelector.currentContext.timeSlot.icon)
+                Image(systemName: routineService.routineSelector.currentContext.timeSlot.icon)
             }
             .font(.caption)
             .foregroundStyle(.secondary)
             
             // Day indicator
             Label {
-                Text(routineService.smartSelector.currentContext.dayCategory.displayName)
+                Text(routineService.routineSelector.currentContext.dayCategory.displayName)
             } icon: {
-                Image(systemName: routineService.smartSelector.currentContext.dayCategory.icon)
-                    .foregroundStyle(routineService.smartSelector.currentContext.dayCategory.color)
+                Image(systemName: routineService.routineSelector.currentContext.dayCategory.icon)
+                    .foregroundStyle(routineService.routineSelector.currentContext.dayCategory.color)
             }
             .font(.caption)
             .foregroundStyle(.secondary)
             
             // Location indicator (if known)
-            if routineService.smartSelector.currentContext.location != .unknown {
+            if routineService.routineSelector.currentContext.location != .unknown {
                 Label {
-                    Text(routineService.smartSelector.currentContext.location.displayName)
+                    Text(routineService.routineSelector.currentContext.location.displayName)
                 } icon: {
-                    Image(systemName: routineService.smartSelector.currentContext.location.icon)
+                    Image(systemName: routineService.routineSelector.currentContext.location.icon)
                 }
                 .font(.caption)
                 .foregroundStyle(.secondary)

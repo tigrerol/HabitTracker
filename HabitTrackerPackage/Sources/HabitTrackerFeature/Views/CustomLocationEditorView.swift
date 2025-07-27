@@ -16,8 +16,8 @@ struct CustomLocationEditorView: View {
         customLocation != nil
     }
     
-    private var locationManager: LocationManagerAdapter {
-        routineService.smartSelector.locationManager
+    private var locationCoordinator: LocationCoordinator {
+        routineService.routineSelector.locationCoordinator
     }
     
     init(customLocation: CustomLocation? = nil, onSave: @escaping (CustomLocation) -> Void) {

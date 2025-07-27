@@ -6,16 +6,16 @@ import CoreLocation
 @Suite("Error Handling Integration Tests")
 struct ErrorHandlingIntegrationTests {
     
-    @Test("LocationService handles invalid coordinates correctly")
-    @MainActor func testLocationServiceInvalidCoordinates() async {
-        let service = LocationService()
+    @Test("LocationCoordinator handles invalid coordinates correctly")
+    @MainActor func testLocationCoordinatorInvalidCoordinates() async {
+        let coordinator = LocationCoordinator()
         let errorService = ErrorHandlingService.shared
         errorService.clearHistory()
         
         let invalidLocation = CLLocation(latitude: 999.0, longitude: -999.0)
         
         do {
-            try await service.saveLocation(invalidLocation, as: .office)
+            try await coordinator.saveLocation(invalidLocation, as: .office)
             Issue.record("Expected error for invalid coordinates")
         } catch let error as LocationError {
             #expect(error.category == .location)
@@ -25,16 +25,16 @@ struct ErrorHandlingIntegrationTests {
         }
     }
     
-    @Test("LocationService handles invalid radius correctly")
-    @MainActor func testLocationServiceInvalidRadius() async {
-        let service = LocationService()
+    @Test("LocationCoordinator handles invalid radius correctly")
+    @MainActor func testLocationCoordinatorInvalidRadius() async {
+        let coordinator = LocationCoordinator()
         let errorService = ErrorHandlingService.shared
         errorService.clearHistory()
         
         let validLocation = CLLocation(latitude: 37.7749, longitude: -122.4194)
         
         do {
-            try await service.saveLocation(validLocation, as: .office, radius: 5000.0) // Too large
+            try await coordinator.saveLocation(validLocation, as: .office, radius: 5000.0) // Too large
             Issue.record("Expected error for invalid radius")
         } catch let error as LocationError {
             #expect(error.category == .location)
@@ -44,9 +44,9 @@ struct ErrorHandlingIntegrationTests {
         }
     }
     
-    @Test("LocationService handles invalid name correctly")
-    @MainActor func testLocationServiceInvalidName() async {
-        let service = LocationService()
+    @Test("LocationCoordinator handles invalid name correctly")
+    @MainActor func testLocationCoordinatorInvalidName() async {
+        let coordinator = LocationCoordinator()
         let errorService = ErrorHandlingService.shared
         errorService.clearHistory()
         
@@ -54,7 +54,7 @@ struct ErrorHandlingIntegrationTests {
         let invalidName = String(repeating: "a", count: 50) // Too long
         
         do {
-            try await service.saveLocation(validLocation, as: .office, name: invalidName)
+            try await coordinator.saveLocation(validLocation, as: .office, name: invalidName)
             Issue.record("Expected error for invalid name")
         } catch let error as ValidationError {
             #expect(error.category == .validation)
@@ -84,7 +84,7 @@ struct ErrorHandlingIntegrationTests {
             try service.startSession(with: template)
             Issue.record("Expected error for session already active")
         } catch let error as RoutineError {
-            #expect(error.category == .routine)
+            #expect(error.category == .technical)
             #expect(errorService.getErrorHistory().count == 1)
         } catch {
             Issue.record("Expected RoutineError but got \(error)")
@@ -107,7 +107,7 @@ struct ErrorHandlingIntegrationTests {
             try service.startSession(with: fakeTemplate)
             Issue.record("Expected error for template not found")
         } catch let error as RoutineError {
-            #expect(error.category == .routine)
+            #expect(error.category == .technical)
             #expect(errorService.getErrorHistory().count == 1)
         } catch {
             Issue.record("Expected RoutineError but got \(error)")
@@ -127,13 +127,13 @@ struct ErrorHandlingIntegrationTests {
         )
         
         // Add it to the service templates for validation to pass
-        service.templates.append(emptyTemplate)
+        service.addTemplate(emptyTemplate)
         
         do {
             try service.startSession(with: emptyTemplate)
             Issue.record("Expected error for empty template")
         } catch let error as RoutineError {
-            #expect(error.category == .routine)
+            #expect(error.category == .technical)
             #expect(errorService.getErrorHistory().count == 1)
         } catch {
             Issue.record("Expected RoutineError but got \(error)")
@@ -153,7 +153,7 @@ struct ErrorHandlingIntegrationTests {
             try service.completeCurrentSession()
             Issue.record("Expected error for no active session")
         } catch let error as RoutineError {
-            #expect(error.category == .routine)
+            #expect(error.category == .technical)
             #expect(errorService.getErrorHistory().count == 1)
         } catch {
             Issue.record("Expected RoutineError but got \(error)")
@@ -165,13 +165,13 @@ struct ErrorHandlingIntegrationTests {
         let errorService = ErrorHandlingService.shared
         errorService.clearHistory()
         
-        let locationService = LocationService()
+        let locationCoordinator = LocationCoordinator()
         let routineService = RoutineService()
         
         // Generate multiple errors
         let invalidLocation = CLLocation(latitude: 999.0, longitude: -999.0)
         do {
-            try await locationService.saveLocation(invalidLocation, as: .office)
+            try await locationCoordinator.saveLocation(invalidLocation, as: .office)
         } catch {
             // Expected to fail
         }
@@ -188,7 +188,7 @@ struct ErrorHandlingIntegrationTests {
         let stats = errorService.getErrorStatistics()
         #expect(stats.totalErrors == 2)
         #expect(stats.categoryCounts[.location] == 1)
-        #expect(stats.categoryCounts[.routine] == 1)
+        #expect(stats.categoryCounts[.technical] == 1)
     }
     
     @Test("Error recovery suggestions are contextual")
@@ -246,11 +246,11 @@ struct ErrorHandlingIntegrationTests {
             callbackErrors.append(error)
         }
         
-        let locationService = LocationService()
+        let locationCoordinator = LocationCoordinator()
         let invalidLocation = CLLocation(latitude: 999.0, longitude: -999.0)
         
         do {
-            try await locationService.saveLocation(invalidLocation, as: .office)
+            try await locationCoordinator.saveLocation(invalidLocation, as: .office)
         } catch {
             // Expected to fail
         }
@@ -264,7 +264,7 @@ struct ErrorHandlingIntegrationTests {
         let errorService = ErrorHandlingService.shared
         errorService.clearHistory()
         
-        let locationService = LocationService()
+        let locationCoordinator = LocationCoordinator()
         let routineService = RoutineService()
         
         // Simulate a series of errors that could destabilize the app
@@ -273,7 +273,7 @@ struct ErrorHandlingIntegrationTests {
         // This should not crash the app
         for _ in 0..<10 {
             do {
-                try await locationService.saveLocation(invalidLocation, as: .office)
+                try await locationCoordinator.saveLocation(invalidLocation, as: .office)
             } catch {
                 // Expected errors
             }
@@ -289,7 +289,7 @@ struct ErrorHandlingIntegrationTests {
         #expect(stats.totalErrors == 20) // 10 location + 10 routine errors
         
         // App should still be functional
-        #expect(locationService.currentLocationCategory == nil)
+        #expect(locationCoordinator.currentLocationType == .unknown)
         #expect(routineService.currentSession == nil)
         #expect(routineService.templates.count > 0)
     }

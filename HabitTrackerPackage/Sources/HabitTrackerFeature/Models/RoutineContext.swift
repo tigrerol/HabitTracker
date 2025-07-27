@@ -144,7 +144,7 @@ public struct RoutineContextRule: Codable, Hashable, Sendable {
     
     /// Check if this rule matches the given context
     @MainActor
-    public func matches(_ context: RoutineContext, locationManager: LocationManagerAdapter) -> Bool {
+    public func matches(_ context: RoutineContext, locationCoordinator: LocationCoordinator) -> Bool {
         let timeMatch = timeSlots.isEmpty || timeSlots.contains(context.timeSlot)
         let dayMatch = dayCategoryIds.isEmpty || dayCategoryIds.contains(context.dayCategory.id)
         
@@ -154,7 +154,7 @@ public struct RoutineContextRule: Codable, Hashable, Sendable {
             locationMatch = true
         } else {
             // Check current extended location type
-            switch locationManager.currentExtendedLocationType {
+            switch locationCoordinator.currentExtendedLocationType {
             case .builtin(let locationType):
                 locationMatch = locationIds.contains(locationType.rawValue)
             case .custom(let uuid):
@@ -167,8 +167,8 @@ public struct RoutineContextRule: Codable, Hashable, Sendable {
     
     /// Calculate match score (higher is better)
     @MainActor
-    public func matchScore(for context: RoutineContext, locationManager: LocationManagerAdapter) -> Int {
-        guard matches(context, locationManager: locationManager) else { 
+    public func matchScore(for context: RoutineContext, locationCoordinator: LocationCoordinator) -> Int {
+        guard matches(context, locationCoordinator: locationCoordinator) else { 
             print("   ❌ No match for timeSlots:\(timeSlots), dayCategories:\(dayCategoryIds), locations:\(locationIds)")
             return 0 
         }
@@ -187,7 +187,7 @@ public struct RoutineContextRule: Codable, Hashable, Sendable {
         }
         if !locationIds.isEmpty {
             // Check if current location matches
-            switch locationManager.currentExtendedLocationType {
+            switch locationCoordinator.currentExtendedLocationType {
             case .builtin(let locationType):
                 if locationIds.contains(locationType.rawValue) {
                     score += 100

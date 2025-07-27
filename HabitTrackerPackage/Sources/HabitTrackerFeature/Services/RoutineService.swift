@@ -14,8 +14,8 @@ public final class RoutineService {
     public private(set) var currentSession: RoutineSession?
     public private(set) var moodRatings: [MoodRating] = []
     
-    /// Smart routine selector for context-aware selection
-    public let smartSelector = SmartRoutineSelector()
+    /// Routine selector for context-aware selection
+    public let routineSelector = RoutineSelector()
     
     private let persistenceService: any PersistenceServiceProtocol
     
@@ -145,7 +145,7 @@ public final class RoutineService {
     /// Get smart template based on current context
     @MainActor
     public func getSmartTemplate() async -> (template: RoutineTemplate?, reason: String) {
-        await smartSelector.selectBestTemplate(from: templates)
+        await routineSelector.selectBestTemplate(from: templates)
     }
     
     /// Add a new template

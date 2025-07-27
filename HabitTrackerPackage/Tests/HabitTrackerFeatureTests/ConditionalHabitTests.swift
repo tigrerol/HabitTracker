@@ -136,7 +136,7 @@ struct ConditionalHabitTests {
 struct ResponseLoggingServiceTests {
     
     @Test("ResponseLoggingService can log and retrieve responses")
-    @MainActor func testLoggingAndRetrieval() {
+    @MainActor func testLoggingAndRetrieval() async {
         let service = ResponseLoggingService.shared
         
         // Clear existing data
@@ -153,22 +153,22 @@ struct ResponseLoggingServiceTests {
             routineId: routineId
         )
         
-        service.logResponse(response)
+        await service.logResponse(response)
         
-        let allResponses = service.getAllResponses()
+        let allResponses = await service.getAllResponses()
         #expect(allResponses.count == 1)
         #expect(allResponses.first?.question == "Test question?")
         
-        let habitResponses = service.getResponses(for: habitId)
+        let habitResponses = await service.getResponses(for: habitId)
         #expect(habitResponses.count == 1)
         #expect(habitResponses.first?.selectedOptionText == "Option A")
         
-        let routineResponses = service.getResponsesForRoutine(routineId)
+        let routineResponses = await service.getResponsesForRoutine(routineId)
         #expect(routineResponses.count == 1)
     }
     
     @Test("ResponseLoggingService calculates skip rate correctly")
-    @MainActor func testSkipRateCalculation() {
+    @MainActor func testSkipRateCalculation() async {
         let service = ResponseLoggingService.shared
         service.clearAllResponses()
         
@@ -200,15 +200,15 @@ struct ResponseLoggingServiceTests {
             routineId: routineId
         )
         
-        service.logResponse(response1)
-        service.logResponse(response2)
-        service.logResponse(response3)
+        await service.logResponse(response1)
+        await service.logResponse(response2)
+        await service.logResponse(response3)
         
-        let skipRate = service.getSkipRate(for: habitId)
+        let skipRate = await service.getSkipRate(for: habitId)
         #expect(skipRate == 1.0/3.0) // 1 skip out of 3 total
         
         // Test response counts (should exclude skipped)
-        let responseCounts = service.getResponseCounts(for: habitId)
+        let responseCounts = await service.getResponseCounts(for: habitId)
         #expect(responseCounts.count == 2)
         #expect(responseCounts["Option A"] == 1)
         #expect(responseCounts["Option B"] == 1)
@@ -216,19 +216,19 @@ struct ResponseLoggingServiceTests {
     }
     
     @Test("ResponseLoggingService handles empty data correctly")
-    @MainActor func testEmptyDataHandling() {
+    @MainActor func testEmptyDataHandling() async {
         let service = ResponseLoggingService.shared
         service.clearAllResponses()
         
         let randomHabitId = UUID()
         
-        let skipRate = service.getSkipRate(for: randomHabitId)
+        let skipRate = await service.getSkipRate(for: randomHabitId)
         #expect(skipRate == 0.0)
         
-        let responses = service.getResponses(for: randomHabitId)
+        let responses = await service.getResponses(for: randomHabitId)
         #expect(responses.isEmpty)
         
-        let counts = service.getResponseCounts(for: randomHabitId)
+        let counts = await service.getResponseCounts(for: randomHabitId)
         #expect(counts.isEmpty)
     }
 }

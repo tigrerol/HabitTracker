@@ -19,8 +19,8 @@ struct LocationSetupView: View {
     @State private var customLocations: [CustomLocation] = []
     @State private var savedLocations: [LocationType: SavedLocation] = [:]
     
-    private var locationManager: LocationManagerAdapter {
-        routineService.smartSelector.locationManager
+    private var locationCoordinator: LocationCoordinator {
+        routineService.routineSelector.locationCoordinator
     }
     
     var body: some View {
@@ -109,36 +109,48 @@ struct LocationSetupView: View {
         .sheet(isPresented: $showingLocationPicker) {
             if let locationType = selectedLocationType {
                 LocationPickerView(locationType: locationType) { location in
-                    locationManager.saveLocation(location, as: locationType)
-                    selectedLocationType = nil
+                    Task {
+                        try? await locationCoordinator.saveLocation(location, as: locationType)
+                        await MainActor.run {
+                            selectedLocationType = nil
+                        }
+                    }
                 }
             }
         }
         .sheet(isPresented: $showingCustomLocationPicker) {
             if let customLocationId = selectedCustomLocationId {
                 CustomLocationPickerView(customLocationId: customLocationId) { location in
-                    locationManager.setCustomLocationCoordinates(for: customLocationId, location: location)
-                    selectedCustomLocationId = nil
+                    Task {
+                        await locationCoordinator.setCustomLocationCoordinates(for: customLocationId, location: location)
+                        await MainActor.run {
+                            selectedCustomLocationId = nil
+                        }
+                    }
                 }
             }
         }
         .sheet(isPresented: $showingCustomLocationEditor) {
             CustomLocationEditorView(customLocation: editingCustomLocation) { customLocation in
-                if editingCustomLocation != nil {
-                    locationManager.updateCustomLocation(customLocation)
-                } else {
-                    Task {
-                        _ = await locationManager.createCustomLocation(name: customLocation.name, icon: customLocation.icon)
+                Task {
+                    if editingCustomLocation != nil {
+                        await locationCoordinator.updateCustomLocation(customLocation)
+                    } else {
+                        _ = await locationCoordinator.createCustomLocation(name: customLocation.name, icon: customLocation.icon)
+                    }
+                    await MainActor.run {
+                        editingCustomLocation = nil
                     }
                 }
-                editingCustomLocation = nil
             }
         }
         .alert(String(localized: "LocationSetupView.DeleteAlert.Title", bundle: .module), isPresented: $showingCustomDeleteAlert) {
             Button(String(localized: "LocationSetupView.DeleteAlert.Cancel", bundle: .module), role: .cancel) { }
             Button(String(localized: "LocationSetupView.DeleteAlert.Delete", bundle: .module), role: .destructive) {
                 if let customLocation = customLocationToDelete {
-                    locationManager.deleteCustomLocation(id: customLocation.id)
+                    Task {
+                        await locationCoordinator.deleteCustomLocation(id: customLocation.id)
+                    }
                 }
             }
         } message: {
@@ -147,8 +159,8 @@ struct LocationSetupView: View {
             }
         }
         .task {
-            customLocations = await locationManager.allCustomLocations
-            savedLocations = await locationManager.savedLocations
+            customLocations = locationCoordinator.getAllCustomLocations()
+            savedLocations = locationCoordinator.getSavedLocations()
         }
     }
 }
@@ -268,8 +280,8 @@ private struct CustomLocationPickerView: View {
     @State private var errorMessage: String?
     @State private var customLocation: CustomLocation?
     
-    private var locationManager: LocationManagerAdapter {
-        routineService.smartSelector.locationManager
+    private var locationCoordinator: LocationCoordinator {
+        routineService.routineSelector.locationCoordinator
     }
     
     var body: some View {
@@ -360,11 +372,11 @@ private struct CustomLocationPickerView: View {
     
     private func getCurrentLocation() {
         Task {
-            await locationManager.startUpdatingLocation()
+            await locationCoordinator.startUpdatingLocation()
             
             try? await Task.sleep(for: .seconds(2))
             
-            if let location = await locationManager.getCurrentLocation() {
+            if let location = await locationCoordinator.getCurrentLocation() {
                 await MainActor.run {
                     self.currentLocation = location
                     self.isLoading = false
@@ -391,8 +403,8 @@ private struct LocationPickerView: View {
     @State private var currentLocation: CLLocation?
     @State private var errorMessage: String?
     
-    private var locationManager: LocationManagerAdapter {
-        routineService.smartSelector.locationManager
+    private var locationCoordinator: LocationCoordinator {
+        routineService.routineSelector.locationCoordinator
     }
     
     var body: some View {
@@ -480,12 +492,12 @@ private struct LocationPickerView: View {
     private func getCurrentLocation() {
         // Request location permission and get current location
         Task {
-            await locationManager.startUpdatingLocation()
+            await locationCoordinator.startUpdatingLocation()
             
             // Wait a moment for location to be acquired
             try? await Task.sleep(for: .seconds(2))
             
-            if let location = await locationManager.getCurrentLocation() {
+            if let location = await locationCoordinator.getCurrentLocation() {
                 await MainActor.run {
                     self.currentLocation = location
                     self.isLoading = false

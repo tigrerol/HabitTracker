@@ -24,7 +24,7 @@ public final class ErrorRecoveryHandlers {
                 label: "Continue Without Location",
                 style: .secondary,
                 handler: {
-                    await LocationService().stopUpdatingLocation()
+                    await LocationCoordinator.shared.stopUpdatingLocation()
                 }
             )
         ]
@@ -44,7 +44,7 @@ public final class ErrorRecoveryHandlers {
                 label: "Try Again",
                 style: .primary,
                 handler: {
-                    await LocationService().startUpdatingLocation()
+                    await LocationCoordinator.shared.startUpdatingLocation()
                 }
             ),
             ErrorPresentationService.RecoveryActionButton(
@@ -339,7 +339,7 @@ struct LocationErrorRecovery: ErrorRecoverable {
                         label: "Try Again",
                         style: .primary,
                         handler: {
-                            await LocationService().startUpdatingLocation()
+                            await LocationCoordinator.shared.startUpdatingLocation()
                         }
                     )
                 ]

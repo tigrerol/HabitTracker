@@ -157,7 +157,7 @@ struct ContextRuleEditorView: View {
             loadExistingRule()
         }
         .task {
-            customLocations = await routineService.smartSelector.locationManager.allCustomLocations
+            customLocations = routineService.routineSelector.locationCoordinator.getAllCustomLocations()
         }
     }
     

@@ -7,16 +7,13 @@ struct HabitFactoryTests {
     
     @Test("HabitFactory creates office morning routine correctly")
     @MainActor func testOfficeRoutineCreation() {
-        let template = HabitFactory.createOfficeTemplate()
+        let habits = HabitFactory.createOfficeHabits()
         
-        #expect(template.name == "Office Day")
-        #expect(template.color == "#007AFF")
-        #expect(template.isDefault == false)
-        #expect(!template.habits.isEmpty)
+        #expect(!habits.isEmpty)
         
         // Check specific habits are present
-        let habitNames = Set(template.habits.map { $0.name })
-        #expect(habitNames.contains("HRV Check"))
+        let habitNames = Set(habits.map { $0.name })
+        #expect(habitNames.contains("Measure HRV"))
         #expect(habitNames.contains("Strength Training"))
         #expect(habitNames.contains("Coffee"))
         #expect(habitNames.contains("Supplements"))
@@ -25,8 +22,8 @@ struct HabitFactoryTests {
         #expect(habitNames.contains("Prepare Workspace"))
         
         // Check habit ordering
-        let sortedHabits = template.habits.sorted { $0.order < $1.order }
-        #expect(sortedHabits.first?.name == "HRV Check")
+        let sortedHabits = habits.sorted { $0.order < $1.order }
+        #expect(sortedHabits.first?.name == "Measure HRV")
         #expect(sortedHabits.first?.order == AppConstants.HabitOrder.hrv)
     }
     
@@ -199,8 +196,7 @@ struct HabitFactoryTests {
     
     @Test("HabitFactory creates habits with valid ordering")
     @MainActor func testHabitOrdering() {
-        let template = HabitFactory.createOfficeTemplate()
-        let habits = template.habits.sorted { $0.order < $1.order }
+        let habits = HabitFactory.createOfficeHabits().sorted { $0.order < $1.order }
         
         // Check that orders are sequential or properly spaced
         for i in 0..<habits.count - 1 {

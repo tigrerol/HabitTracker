@@ -81,7 +81,7 @@ public struct RoutineBuilderView: View {
             }
         }
         .task {
-            customLocations = await routineService.smartSelector.locationManager.allCustomLocations
+            customLocations = routineService.routineSelector.locationCoordinator.getAllCustomLocations()
         }
     }
     
