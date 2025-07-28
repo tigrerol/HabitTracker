@@ -44,6 +44,8 @@ final class RoutineNode {
     var id: UUID
     var type: NodeType // Enum: .habit, .conditionalQuestion
     var order: Int // For sequencing within a routine
+    var x: Double = 0.0 // X-coordinate for visual builder
+    var y: Double = 0.0 // Y-coordinate for visual builder
 
     // Relationships
     @Relationship(deleteRule: .cascade) var habit: Habit?
@@ -53,12 +55,14 @@ final class RoutineNode {
     // This could represent the 'next' node in a linear flow, or the target of an option
     @Relationship var nextNodes: [RoutineNode] = [] // For linear flow or multiple next steps
 
-    init(id: UUID = UUID(), type: NodeType, order: Int = 0, habit: Habit? = nil, conditionalInfo: ConditionalHabitInfo? = nil) {
+    init(id: UUID = UUID(), type: NodeType, order: Int = 0, habit: Habit? = nil, conditionalInfo: ConditionalHabitInfo? = nil, x: Double = 0.0, y: Double = 0.0) {
         self.id = id
         self.type = type
         self.order = order
         self.habit = habit
         self.conditionalInfo = conditionalInfo
+        self.x = x
+        self.y = y
     }
 }
 
@@ -314,44 +318,508 @@ If the decision is made to adopt the more flexible graph-like data structure, a 
 
 ### 7.2. Key UI Interactions and Implementation
 
-1.  **Adding New Nodes:**
-    *   **Palette:** A sidebar or floating palette containing "new habit" and "new question" buttons, or a list of existing habits/questions that can be dragged onto the canvas.
-    *   **Drag & Drop (`DragGesture`, `DropDelegate`):** Users would drag a new node type from the palette onto the canvas. This gesture would trigger the creation of a new `RoutineNode` (and its associated `Habit` or `ConditionalHabitInfo`) in the SwiftData `ModelContext`. The node's initial position would be based on the drop location.
+To manage the state of the builder, we'll use a `RoutineBuilderViewModel` that interacts with the SwiftData `ModelContext`.
 
-2.  **Connecting Nodes (Defining Relationships):**
-    *   **Connection Ports:** Each node would have visual "ports" (e.g., small circles) on its edges.
-        *   Habit nodes: An output port for `nextNodes`.
-        *   Question nodes: Output ports for each `ConditionalOptionNode`.
-        *   All nodes: An input port for incoming connections.
-    *   **Drawing Connections (`DragGesture`, `Path`, `Shape`):** Users would drag from an output port of one node to an input port of another. As they drag, a temporary line would be drawn. Upon release, if a valid connection is made, a new relationship would be established in the SwiftData model (e.g., `sourceNode.nextNodes.append(destinationNode)` or `optionNode.nextNodes.append(destinationNode)`). The line would then become permanent.
+```swift
+import SwiftUI
+import SwiftData
 
-3.  **Editing Node Content:**
-    *   **Tap to Edit:** Tapping a node would present a sheet or popover for editing its details (e.g., changing a habit's name, modifying a question's text, adding/removing/editing options for a question).
-    *   **SwiftUI Forms:** Standard SwiftUI forms would be used within these editing sheets, binding directly to the `Habit` or `ConditionalHabitInfo` properties.
+@Observable
+class RoutineBuilderViewModel {
+    var routine: RoutineTemplate
+    var selectedNode: RoutineNode? { // For editing or connecting
+        didSet { // Automatically deselect if a new connection is started
+            if selectedNode == nil { connectingFromNode = nil; connectingFromOptionNode = nil }
+        }
+    }
+    var connectingFromNode: RoutineNode? // Source node for a new connection
+    var connectingFromOptionNode: ConditionalOptionNode? // Source option for a new connection
 
-4.  **Deleting Nodes and Connections:**
-    *   **Context Menu:** A long press or right-click on a node/connection could bring up a context menu with a "Delete" option.
-    *   **Dedicated Button:** A selected node could display a small "X" button for deletion.
-    *   **SwiftData Cascade Delete:** When a `RoutineNode` is deleted, its associated `Habit` or `ConditionalHabitInfo` (and its `ConditionalOptionNode`s) would be automatically deleted due to the `@Relationship(deleteRule: .cascade)` rule. Deleting a connection would simply remove the `RoutineNode` from the `nextNodes` array of the source.
+    private var modelContext: ModelContext
 
-5.  **Arranging and Layout:**
-    *   **Manual Dragging:** Nodes would be freely draggable on the canvas (`DragGesture`). Their `x, y` coordinates could be stored as properties on the `RoutineNode` or in a separate UI state model.
-    *   **Automatic Layout (Advanced):** For complex graphs, an automatic layout algorithm (e.g., force-directed graph layout) could be implemented to help organize nodes, though this is a significant undertaking.
+    init(routine: RoutineTemplate, modelContext: ModelContext) {
+        self.routine = routine
+        self.modelContext = modelContext
+    }
 
-### 7.3. SwiftUI Implementation Considerations
+    func addHabitNode(at position: CGPoint) {
+        let newHabit = Habit(name: "New Habit")
+        let newNode = RoutineNode(type: .habit, habit: newHabit, x: position.x, y: position.y)
+        modelContext.insert(newHabit)
+        modelContext.insert(newNode)
+        routine.startNodes.append(newNode) // For simplicity, add to startNodes. In a real builder, user would connect it.
+        try? modelContext.save()
+    }
 
-*   **`GeometryReader`:** Essential for positioning nodes and drawing connections accurately within the canvas.
-*   **`@State` / `@Binding`:** For managing the UI state of individual nodes (e.g., selected, being dragged) and binding to their data.
-*   **`@ObservedObject` / `@StateObject` / `@EnvironmentObject`:** For managing view models that provide access to the SwiftData `ModelContext` and handle interactions.
-*   **`Canvas` (iOS 15+):** Could be used for more performant and flexible drawing of connections and custom node shapes.
-*   **Performance:** For routines with many nodes, optimizing drawing and interaction performance will be crucial. Consider `LazyVGrid`/`LazyHGrid` if nodes are arranged in a grid, or custom `ScrollView` behavior.
+    func addQuestionNode(at position: CGPoint) {
+        let newQuestion = ConditionalHabitInfo(question: "New Question?")
+        let newNode = RoutineNode(type: .conditionalQuestion, conditionalInfo: newQuestion, x: position.x, y: position.y)
+        modelContext.insert(newQuestion)
+        modelContext.insert(newNode)
+        routine.startNodes.append(newNode) // For simplicity
+        try? modelContext.save()
+    }
 
-### 7.4. Challenges and Considerations
+    func deleteNode(_ node: RoutineNode) {
+        // Remove all incoming connections to this node first
+        for routineNode in routine.allNodes() { // Use allNodes() to find all references
+            routineNode.nextNodes.removeAll(where: { $0.id == node.id })
+            if routineNode.type == .conditionalQuestion, let question = routineNode.conditionalInfo {
+                for optionNode in question.optionNodes {
+                    optionNode.nextNodes.removeAll(where: { $0.id == node.id })
+                }
+            }
+        }
+        // Remove from startNodes if it's a start node
+        routine.startNodes.removeAll(where: { $0.id == node.id })
 
-*   **Complexity:** Building a robust visual graph editor is a non-trivial task. It involves complex gesture handling, state management, and potentially custom drawing.
-*   **Performance:** As the number of nodes and connections grows, maintaining a smooth user experience (especially during dragging and layout changes) can be challenging.
-*   **Undo/Redo:** A critical feature for any editor, adding significant complexity to state management.
-*   **Accessibility:** Ensuring the visual builder is usable for users with various accessibility needs.
-*   **Data Validation:** Ensuring that connections form a valid routine flow (e.g., preventing cycles if routines are meant to be linear or DAGs).
+        // SwiftData's cascade delete on @Relationship will handle associated habit/question/options
+        modelContext.delete(node)
+        try? modelContext.save()
+    }
 
-Implementing a visual routine builder would be a large project in itself, but it would unlock a highly intuitive and powerful way for users to define and manage their habits and routines, fully leveraging the flexibility of the graph-like data structure.
+    func startConnecting(from node: RoutineNode) {
+        connectingFromNode = node
+        connectingFromOptionNode = nil
+        selectedNode = nil // Deselect any node when starting a connection
+    }
+
+    func startConnecting(from optionNode: ConditionalOptionNode) {
+        connectingFromOptionNode = optionNode
+        connectingFromNode = nil
+        selectedNode = nil // Deselect any node when starting a connection
+    }
+
+    func endConnecting(to targetNode: RoutineNode) {
+        if let sourceNode = connectingFromNode {
+            sourceNode.nextNodes.append(targetNode)
+        } else if let sourceOptionNode = connectingFromOptionNode {
+            sourceOptionNode.nextNodes.append(targetNode)
+        }
+        connectingFromNode = nil
+        connectingFromOptionNode = nil
+        try? modelContext.save()
+    }
+
+    func updateNodePosition(_ node: RoutineNode, newPosition: CGPoint) {
+        node.x = newPosition.x
+        node.y = newPosition.y
+        // No need to save immediately on every drag update, perhaps debounce or save on drag end
+    }
+
+    func saveChanges() {
+        try? modelContext.save()
+    }
+}
+
+// Main Canvas View
+struct RoutineBuilderView: View {
+    @Environment(\.modelContext) private var modelContext
+    @State private var routine: RoutineTemplate // Load or create a routine
+    @State private var viewModel: RoutineBuilderViewModel
+
+    // State for drawing temporary connection line
+    @State private var temporaryConnectionEnd: CGPoint? = nil
+
+    init(routine: RoutineTemplate) {
+        _routine = State(initialValue: routine)
+        _viewModel = State(initialValue: RoutineBuilderViewModel(routine: routine, modelContext: modelContext))
+    }
+
+    var body: some View {
+        GeometryReader { geometry in
+            ZStack {
+                // Background for drag-and-drop of new nodes
+                Color.clear
+                    .contentShape(Rectangle())
+                    .onDrop(of: [.text], isTargeted: nil) { providers in
+                        // Handle drop of new node from palette
+                        // This is a simplified example, actual implementation would parse the dropped item
+                        if let provider = providers.first {
+                            _ = provider.loadObject(ofClass: NSString.self) { item, error in
+                                DispatchQueue.main.async {
+                                    if let type = item as? String {
+                                        let dropLocation = CGPoint(x: geometry.size.width / 2, y: geometry.size.height / 2) // Placeholder
+                                        if type == "habit" { viewModel.addHabitNode(at: dropLocation) }
+                                        else if type == "question" { viewModel.addQuestionNode(at: dropLocation) }
+                                    }
+                                }
+                            }
+                        }
+                        return true
+                    }
+
+                // Drawing connections
+                // Iterate through all nodes to draw their outgoing connections
+                ForEach(Array(routine.allNodes()), id: \.id) { sourceNode in
+                    ConnectionDrawingView(sourceNode: sourceNode, allNodes: routine.allNodes())
+                }
+
+                // Draw temporary connection line
+                if let startPoint = viewModel.connectingFromNode?.centerPoint(in: geometry) ?? viewModel.connectingFromOptionNode?.centerPoint(in: geometry), let endPoint = temporaryConnectionEnd {
+                    Path { path in
+                        path.move(to: startPoint)
+                        path.addLine(to: endPoint)
+                    }
+                    .stroke(Color.accentColor, style: StrokeStyle(lineWidth: 2, dash: [5]))
+                }
+
+                // Drawing nodes
+                ForEach(Array(routine.allNodes()), id: \.id) { node in
+                    NodeView(node: node, viewModel: viewModel)
+                        .position(x: node.x, y: node.y)
+                        .gesture(
+                            DragGesture()
+                                .onChanged { value in
+                                    viewModel.updateNodePosition(node, newPosition: value.location)
+                                    temporaryConnectionEnd = value.location // Update temp line end
+                                }
+                                .onEnded { value in
+                                    viewModel.saveChanges()
+                                    // Attempt to end connection if dragging from a port to another node
+                                    if viewModel.connectingFromNode != nil || viewModel.connectingFromOptionNode != nil {
+                                        // This is where hit-testing for target node would happen
+                                        // For now, just reset temporary line
+                                        temporaryConnectionEnd = nil
+                                    }
+                                }
+                        )
+                        .onTapGesture {
+                            viewModel.selectedNode = node
+                        }
+                        .contextMenu {
+                            Button("Delete Node") {
+                                viewModel.deleteNode(node)
+                            }
+                        }
+                }
+
+                // Palette for adding new nodes (simplified for example)
+                VStack {
+                    Text("Drag to add:")
+                    Button("Habit") {
+                        // This button is for demonstration. Actual drag-and-drop would be better.
+                        viewModel.addHabitNode(at: CGPoint(x: 100, y: 100))
+                    }
+                    Button("Question") {
+                        viewModel.addQuestionNode(at: CGPoint(x: 100, y: 200))
+                    }
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                .padding()
+            }
+            .sheet(item: $viewModel.selectedNode) { node in
+                EditNodeView(node: node)
+            }
+        }
+    }
+}
+
+// Extension to RoutineTemplate to get all nodes for iteration
+extension RoutineTemplate {
+    func allNodes() -> Set<RoutineNode> {
+        var visited: Set<RoutineNode> = []
+        var queue: [RoutineNode] = Array(startNodes)
+
+        while !queue.isEmpty {
+            let currentNode = queue.removeFirst()
+            if visited.insert(currentNode).inserted {
+                // Add next nodes
+                for nextNode in currentNode.nextNodes {
+                    queue.append(nextNode)
+                }
+                // If it's a question, add its option nodes' next nodes
+                if let questionInfo = currentNode.conditionalInfo {
+                    for optionNode in questionInfo.optionNodes {
+                        for nextNode in optionNode.nextNodes {
+                            queue.append(nextNode)
+                        }
+                    }
+                }
+            }
+        }
+        return visited
+    }
+}
+
+// Extension to RoutineNode to get its center point for connection drawing
+extension RoutineNode {
+    // This needs to be calculated relative to the parent GeometryReader
+    // For now, it's a placeholder assuming the node's x,y are its top-left corner
+    func centerPoint(in geometry: GeometryProxy) -> CGPoint {
+        // Assuming a fixed size for the node view (150x100)
+        // In a real app, you'd pass the actual size or calculate it dynamically
+        return CGPoint(x: x + 75, y: y + 50)
+    }
+}
+
+// Extension to ConditionalOptionNode to get its center point for connection drawing
+extension ConditionalOptionNode {
+    // This would need to be calculated relative to its parent ConditionalHabitInfo node's position
+    // and its own position within the options stack.
+    func centerPoint(in geometry: GeometryProxy) {
+        // Placeholder for now
+        return CGPoint(x: 0, y: 0)
+    }
+}
+
+// Individual Node View
+struct NodeView: View {
+    @Bindable var node: RoutineNode
+    @ObservedObject var viewModel: RoutineBuilderViewModel
+
+    // State for drag gesture on connection ports
+    @State private var isConnecting = false
+
+    var body: some View {
+        RoundedRectangle(cornerRadius: 10)
+            .fill(node.type == .habit ? Color.blue.opacity(0.7) : Color.purple.opacity(0.7))
+            .frame(width: 150, height: 100)
+            .overlay(
+                VStack {
+                    if node.type == .habit, let habit = node.habit {
+                        Text(habit.name)
+                            .font(.headline)
+                            .foregroundColor(.white)
+                    } else if node.type == .conditionalQuestion, let question = node.conditionalInfo {
+                        Text(question.question)
+                            .font(.headline)
+                            .foregroundColor(.white)
+                        // Display options and their connection points
+                        ForEach(question.optionNodes) { option in
+                            HStack {
+                                Text(option.text)
+                                    .font(.caption)
+                                    .foregroundColor(.white)
+                                    .padding(.horizontal, 5)
+                                    .background(Capsule().fill(Color.gray.opacity(0.5)))
+
+                                // Connection Port for Option
+                                Circle()
+                                    .fill(Color.orange)
+                                    .frame(width: 15, height: 15)
+                                    .gesture(
+                                        DragGesture()
+                                            .onChanged { value in
+                                                isConnecting = true
+                                                viewModel.startConnecting(from: option)
+                                                // Update temporary line end in parent view
+                                                // This requires a binding or environment object for temporaryConnectionEnd
+                                            }
+                                            .onEnded { value in
+                                                isConnecting = false
+                                                // Logic to find target node and create connection
+                                                // This would involve hit-testing other nodes on the canvas
+                                                // For now, assume endConnecting is called by the canvas view
+                                            }
+                                    )
+                            }
+                        }
+                    }
+                }
+            )
+            .overlay(
+                // Connection Port (Output) for Habit/Question Node
+                Circle()
+                    .fill(Color.green)
+                    .frame(width: 20, height: 20)
+                    .offset(x: 75, y: 0) // Right side
+                    .gesture(
+                        DragGesture()
+                            .onChanged { value in
+                                isConnecting = true
+                                viewModel.startConnecting(from: node)
+                                // Update temporary line end in parent view
+                            }
+                            .onEnded { value in
+                                isConnecting = false
+                                // Logic to find target node and create connection
+                            }
+                    )
+                , alignment: .trailing
+            )
+            .border(viewModel.selectedNode?.id == node.id ? Color.yellow : Color.clear, width: 2)
+    }
+}
+
+// View for editing node content
+struct EditNodeView: View {
+    @Environment(\.modelContext) private var modelContext
+    @Environment(\.dismiss) var dismiss
+    @Bindable var node: RoutineNode
+
+    var body: some View {
+        NavigationView {
+            Form {
+                if node.type == .habit, let habit = node.habit {
+                    TextField("Habit Name", text: $habit.name)
+                } else if node.type == .conditionalQuestion, let question = node.conditionalInfo {
+                    TextField("Question", text: $question.question)
+                    Section("Options") {
+                        ForEach(question.optionNodes) { option in
+                            TextField("Option Text", text: $option.text)
+                        }
+                        .onDelete { indices in
+                            question.optionNodes.remove(atOffsets: indices)
+                        }
+                        Button("Add Option") {
+                            let newOption = ConditionalOptionNode(text: "New Option")
+                            question.optionNodes.append(newOption)
+                            modelContext.insert(newOption)
+                        }
+                    }
+                }
+            }
+            .navigationTitle("Edit Node")
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Done") {
+                        try? modelContext.save()
+                        dismiss()
+                    }
+                }
+            }
+        }
+    }
+}
+
+// View for drawing connections
+struct ConnectionDrawingView: View {
+    @Bindable var sourceNode: RoutineNode
+    var allNodes: Set<RoutineNode>
+
+    var body: some View {
+        // Connections from Habit/Question Node directly
+        ForEach(sourceNode.nextNodes) { targetNode in
+            Path {
+                path.move(to: sourceNode.centerPoint(in: .zero)) // Placeholder for actual geometry
+                path.addLine(to: targetNode.centerPoint(in: .zero)) // Placeholder
+            }
+            .stroke(Color.gray, lineWidth: 2)
+        }
+
+        // Connections from ConditionalOptionNodes within a Question Node
+        if sourceNode.type == .conditionalQuestion, let question = sourceNode.conditionalInfo {
+            ForEach(question.optionNodes) { optionNode in
+                ForEach(optionNode.nextNodes) { targetNode in
+                    Path {
+                        // This needs more precise calculation for option node's port position
+                        path.move(to: sourceNode.centerPoint(in: .zero)) // Simplified, needs option-specific start
+                        path.addLine(to: targetNode.centerPoint(in: .zero))
+                    }
+                    .stroke(Color.blue, lineWidth: 2)
+                }
+            }
+        }
+    }
+}
+
+// Extension to RoutineTemplate to get all nodes for iteration
+extension RoutineTemplate {
+    func allNodes() -> Set<RoutineNode> {
+        var visited: Set<RoutineNode> = []
+        var queue: [RoutineNode] = Array(startNodes)
+
+        while !queue.isEmpty {
+            let currentNode = queue.removeFirst()
+            if visited.insert(currentNode).inserted {
+                // Add next nodes
+                for nextNode in currentNode.nextNodes {
+                    queue.append(nextNode)
+                }
+                // If it's a question, add its option nodes' next nodes
+                if let questionInfo = currentNode.conditionalInfo {
+                    for optionNode in questionInfo.optionNodes {
+                        for nextNode in optionNode.nextNodes {
+                            queue.append(nextNode)
+                        }
+                    }
+                }
+            }
+        }
+        return visited
+    }
+}
+
+// Extension to RoutineNode to get its center point for connection drawing
+extension RoutineNode {
+    // This needs to be calculated relative to the parent GeometryReader
+    // For now, it's a placeholder assuming the node's x,y are its top-left corner
+    func centerPoint(in geometry: GeometryProxy) -> CGPoint {
+        // Assuming a fixed size for the node view (150x100)
+        // In a real app, you'd pass the actual size or calculate it dynamically
+        return CGPoint(x: x + 75, y: y + 50)
+    }
+}
+
+// Extension to ConditionalOptionNode to get its center point for connection drawing
+extension ConditionalOptionNode {
+    // This would need to be calculated relative to its parent ConditionalHabitInfo node's position
+    // and its own position within the options stack.
+    func centerPoint(in geometry: GeometryProxy) {
+        // Placeholder for now
+        return CGPoint(x: 0, y: 0)
+    }
+}
+
+## 8. Pre-Development Considerations
+
+Before embarking on the significant task of implementing the graph-like data structure and the visual routine builder, it's crucial to address several pre-development considerations. These aspects, often overlooked in the initial planning phase, can significantly impact the project's success, maintainability, and user experience.
+
+### 8.1. User Experience (UX) Design & User Flows
+
+*   **Detailed Wireframes/Mockups:** Before writing any code, create high-fidelity wireframes or mockups of the visual builder. How will users intuitively add, connect, edit, and delete nodes? What gestures will be used?
+*   **User Testing (Early Stage):** Even with mockups, conduct early user testing with non-technical users. Does the interface make sense? Are there any confusing elements or workflows? This can identify major UX flaws before development begins.
+*   **Error States & Feedback:** How will the builder communicate invalid connections (e.g., creating a cycle in a DAG if not allowed), unsaved changes, or other errors? Provide clear visual feedback.
+*   **Onboarding/Tutorial:** For a complex tool like a visual builder, a clear onboarding process or interactive tutorial will be essential to guide users through its functionality.
+
+### 8.2. Edge Cases & Constraints
+
+*   **Empty Routines:** How does the builder handle a routine with no nodes?
+*   **Disconnected Nodes:** Can nodes exist without any connections? How are they managed?
+*   **Cycles:** If the routine is intended to be a Directed Acyclic Graph (DAG), how will the builder prevent users from creating cycles? This requires validation logic during connection creation.
+*   **Maximum Nodes/Complexity:** What are the practical limits for the number of nodes and connections a routine can have before performance degrades or the UI becomes unmanageable?
+*   **Copy/Paste/Duplicate:** Will users be able to copy/paste individual nodes or entire sub-graphs? This adds complexity to data management.
+*   **Zooming & Panning:** How will users navigate large routines? Implement intuitive zoom and pan gestures.
+
+### 8.3. Performance Considerations (Deeper Dive)
+
+*   **Rendering Performance:** Drawing many nodes and connections, especially with complex shapes or animations, can be taxing.
+    *   **Optimization:** Explore `Canvas` (iOS 15+) for custom drawing, `drawingGroup()` for offscreen rendering, and `matchedGeometryEffect` for smooth transitions.
+    *   **Debouncing:** For drag gestures, debounce position updates to SwiftData to avoid excessive writes.
+*   **SwiftData Performance:**
+    *   **Batch Operations:** When creating or deleting many nodes/connections, use batch operations with `ModelContext` to improve performance.
+    *   **Efficient Queries:** Ensure data fetching for the builder is optimized (e.g., using `FetchDescriptor` with predicates and sort descriptors).
+*   **Memory Management:** Be mindful of memory usage, especially with large routine graphs. Ensure proper deallocation of views and view models.
+
+### 8.4. Testing Strategy
+
+*   **Unit Tests:**
+    *   **ViewModel Logic:** Thoroughly test `RoutineBuilderViewModel` methods (add, delete, connect, update position) to ensure they correctly manipulate the SwiftData models.
+    *   **Graph Traversal:** Test the `allNodes()` extension and any other graph traversal logic.
+*   **Integration Tests:**
+    *   **SwiftData Persistence:** Verify that changes made in the UI are correctly persisted to SwiftData and can be reloaded.
+    *   **WatchConnectivity (if applicable):** Test that complex routines created in the builder can be successfully transferred to and executed on the watch.
+*   **UI Tests (XCUITest):**
+    *   Automate tests for key user flows in the builder (e.g., adding a node, connecting two nodes, editing content).
+    *   Verify visual correctness and responsiveness.
+*   **Manual Testing:** Extensive manual testing will be required, especially for complex gesture interactions and edge cases.
+
+### 8.5. Future-Proofing & Extensibility
+
+*   **Modular Design:** Keep the UI components (NodeView, ConnectionDrawingView) and the ViewModel separate and modular to allow for easier modifications and extensions.
+*   **Node Types:** Consider how easy it would be to introduce new `NodeType`s in the future (e.g., a "Timer Node," a "Notification Node"). The current polymorphic `RoutineNode` is a good start.
+*   **Customizable Appearance:** If future requirements include custom colors, icons, or shapes for nodes, design the views with this extensibility in mind.
+
+### 8.6. Collaboration & Version Control
+
+*   **Clear Branching Strategy:** Given the significant refactoring, establish a clear Git branching strategy (e.g., feature branches, develop branch, main branch).
+*   **Code Reviews:** Implement rigorous code reviews for all changes related to the graph structure and builder.
+*   **Documentation:** Maintain up-to-date documentation for the new data model and builder logic.
+
+### 8.7. Analytics & Monitoring
+
+*   **Usage Tracking:** Consider adding analytics to understand how users interact with the builder (e.g., which node types are most used, how complex are the routines users create).
+*   **Performance Monitoring:** Implement performance monitoring to identify bottlenecks in the builder's UI or data operations in a production environment.
+
+By considering these points before development, you can build a more robust, user-friendly, and maintainable visual routine builder.

@@ -203,7 +203,7 @@ struct RoutineSessionErrorTests {
         session.completeCurrentHabit(duration: -100) // Negative duration
         
         // Should handle invalid completion gracefully
-        let completedHabits = session.completedHabits
+        let completedHabits = session.completions
         
         // Should either reject the completion or use a valid default
         if !completedHabits.isEmpty {
@@ -323,7 +323,7 @@ struct ConditionalHabitServiceErrorTests {
         service.recordResponse(invalidResponse)
         
         // Should handle invalid response gracefully
-        #expect(service.getResponseHistory().count >= 0) // Might accept or reject
+        #expect(service.getResponseHistory(for: invalidResponse.habitId).count >= 0) // Might accept or reject
     }
     
     @Test("ConditionalHabitService handles analytics calculation errors")
@@ -331,14 +331,15 @@ struct ConditionalHabitServiceErrorTests {
         let service = ConditionalHabitService.shared
         
         // Clear any existing data
-        service.clearHistory()
+        service.clearAllResponses()
         
         // Test analytics with no data
-        let analytics = service.getAnalytics()
+        let analytics = service.analytics
         
         #expect(analytics.totalResponses == 0)
-        #expect(analytics.responsesPerHabit.isEmpty)
-        #expect(analytics.optionPopularity.isEmpty)
+        #expect(analytics.completedResponses == 0)
+        #expect(analytics.skippedResponses == 0)
+        #expect(analytics.uniqueHabitsAnswered == 0)
     }
 }
 

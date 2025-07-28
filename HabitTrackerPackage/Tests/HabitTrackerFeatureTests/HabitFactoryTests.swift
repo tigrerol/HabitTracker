@@ -7,7 +7,7 @@ struct HabitFactoryTests {
     
     @Test("HabitFactory creates office morning routine correctly")
     @MainActor func testOfficeRoutineCreation() {
-        let habits = HabitFactory.createOfficeHabits()
+        let habits = HabitFactory.createOfficeMorningHabits()
         
         #expect(!habits.isEmpty)
         
@@ -19,7 +19,6 @@ struct HabitFactoryTests {
         #expect(habitNames.contains("Supplements"))
         #expect(habitNames.contains("Stretching"))
         #expect(habitNames.contains("Shower"))
-        #expect(habitNames.contains("Prepare Workspace"))
         
         // Check habit ordering
         let sortedHabits = habits.sorted { $0.order < $1.order }
@@ -29,139 +28,99 @@ struct HabitFactoryTests {
     
     @Test("HabitFactory creates home office routine correctly")
     @MainActor func testHomeOfficeRoutineCreation() {
-        let template = HabitFactory.createHomeOfficeTemplate()
+        let habits = HabitFactory.createHomeOfficeHabits()
         
-        #expect(template.name == "Home Office")
-        #expect(template.color == "#34C759")
-        #expect(template.isDefault == true)
-        #expect(!template.habits.isEmpty)
+        #expect(!habits.isEmpty)
         
         // Check specific habits
-        let habitNames = Set(template.habits.map { $0.name })
+        let habitNames = Set(habits.map { $0.name })
+        #expect(habitNames.contains("Measure HRV"))
+        #expect(habitNames.contains("Strength Training"))
         #expect(habitNames.contains("Coffee"))
         #expect(habitNames.contains("Supplements"))
         #expect(habitNames.contains("Stretching"))
-        #expect(habitNames.contains("Prepare Workspace"))
-        
-        // Verify context rules
-        #expect(!template.contextRules.isEmpty)
-        let locationRule = template.contextRules.first { $0.type == .location }
-        #expect(locationRule?.locationCategory == .homeOffice)
-        #expect(locationRule?.priority == AppConstants.Routine.homeOfficePriority)
+        #expect(habitNames.contains("Shower"))
+        #expect(habitNames.contains("Prep Workspace"))
     }
     
     @Test("HabitFactory creates weekend routine correctly")
     @MainActor func testWeekendRoutineCreation() {
-        let template = HabitFactory.createWeekendTemplate()
+        let habits = HabitFactory.createWeekendHabits()
         
-        #expect(template.name == "Weekend")
-        #expect(template.color == "#FF9500")
-        #expect(template.isDefault == false)
-        #expect(!template.habits.isEmpty)
+        #expect(!habits.isEmpty)
         
         // Check weekend-specific habits
-        let habitNames = Set(template.habits.map { $0.name })
+        let habitNames = Set(habits.map { $0.name })
+        #expect(habitNames.contains("Measure HRV"))
         #expect(habitNames.contains("Coffee"))
         #expect(habitNames.contains("Supplements"))
-        #expect(habitNames.contains("Stretching"))
+        #expect(habitNames.contains("Long Stretching"))
         #expect(habitNames.contains("Read News"))
-        
-        // Verify context rules for weekend
-        #expect(!template.contextRules.isEmpty)
-        let timeRule = template.contextRules.first { $0.type == .timeSlot }
-        #expect(timeRule?.timeSlots?.contains(.weekend) == true)
-        #expect(timeRule?.priority == AppConstants.Routine.weekendPriority)
     }
     
     @Test("HabitFactory creates afternoon routine correctly")
     @MainActor func testAfternoonRoutineCreation() {
-        let template = HabitFactory.createAfternoonTemplate()
+        let habits = HabitFactory.createAfternoonHabits()
         
-        #expect(template.name == "Afternoon Break")
-        #expect(template.color == "#FF3B30")
-        #expect(template.isDefault == false)
-        #expect(!template.habits.isEmpty)
+        #expect(!habits.isEmpty)
         
         // Check afternoon-specific habits
-        let habitNames = Set(template.habits.map { $0.name })
-        #expect(habitNames.contains("Goals Review"))
-        #expect(habitNames.contains("Stretching"))
+        let habitNames = Set(habits.map { $0.name })
+        #expect(habitNames.contains("Review Daily Goals"))
+        #expect(habitNames.contains("Afternoon Stretch"))
         #expect(habitNames.contains("Healthy Snack"))
         #expect(habitNames.contains("Focus Time"))
         #expect(habitNames.contains("Evening Planning"))
         
         // Verify ordering
-        let goalsHabit = template.habits.first { $0.name == "Goals Review" }
+        let goalsHabit = habits.first { $0.name == "Review Daily Goals" }
         #expect(goalsHabit?.order == AppConstants.HabitOrder.goalsReview)
-        
-        // Verify context rules
-        let timeRule = template.contextRules.first { $0.type == .timeSlot }
-        #expect(timeRule?.timeSlots?.contains(.afternoonWeekday) == true)
-        #expect(timeRule?.priority == AppConstants.Routine.afternoonPriority)
     }
     
-    @Test("HabitFactory creates pain assessment conditional habit correctly")
-    @MainActor func testPainAssessmentCreation() {
-        let habit = HabitFactory.createPainAssessmentHabit()
+    @Test("HabitFactory creates habits with proper content")
+    @MainActor func testHabitContent() {
+        let officeHabits = HabitFactory.createOfficeMorningHabits()
+        let homeOfficeHabits = HabitFactory.createHomeOfficeHabits()
+        let weekendHabits = HabitFactory.createWeekendHabits()
+        let afternoonHabits = HabitFactory.createAfternoonHabits()
         
-        #expect(habit.name == "Pain Assessment")
-        #expect(habit.color == "#FF9500")
+        // All should have content
+        #expect(!officeHabits.isEmpty)
+        #expect(!homeOfficeHabits.isEmpty)
+        #expect(!weekendHabits.isEmpty)
+        #expect(!afternoonHabits.isEmpty)
         
-        // Check conditional type
-        if case .conditional(let info) = habit.type {
-            #expect(info.question.contains("pain"))
-            #expect(info.options.count == 4)
-            
-            // Check specific options
-            let optionTexts = Set(info.options.map { $0.text })
-            #expect(optionTexts.contains("Shoulder"))
-            #expect(optionTexts.contains("Knee"))
-            #expect(optionTexts.contains("Back"))
-            #expect(optionTexts.contains("None"))
-            
-            // Check that options have appropriate sub-habits
-            let shoulderOption = info.options.first { $0.text == "Shoulder" }
-            #expect(shoulderOption?.habits.count == 2)
-            #expect(shoulderOption?.habits.contains { $0.name.contains("Shoulder") } == true)
-            
-            let noneOption = info.options.first { $0.text == "None" }
-            #expect(noneOption?.habits.isEmpty == true)
-        } else {
-            Issue.record("Pain assessment habit should be conditional type")
+        // Check that habits have valid names and colors
+        for habit in officeHabits + homeOfficeHabits + weekendHabits + afternoonHabits {
+            #expect(!habit.name.isEmpty)
+            #expect(habit.color.hasPrefix("#"))
+            #expect(habit.color.count == 7) // #RRGGBB format
         }
-    }
-    
-    @Test("HabitFactory creates all default templates")
-    @MainActor func testAllDefaultTemplates() {
-        let templates = HabitFactory.createDefaultTemplates()
-        
-        #expect(templates.count >= 4)
-        
-        let templateNames = Set(templates.map { $0.name })
-        #expect(templateNames.contains("Office Day"))
-        #expect(templateNames.contains("Home Office"))
-        #expect(templateNames.contains("Weekend"))
-        #expect(templateNames.contains("Afternoon Break"))
-        
-        // Verify one default template exists
-        let defaultTemplates = templates.filter { $0.isDefault }
-        #expect(defaultTemplates.count == 1)
-        #expect(defaultTemplates.first?.name == "Home Office")
     }
     
     @Test("HabitFactory creates habits with correct types")
     @MainActor func testHabitTypes() {
-        let templates = HabitFactory.createDefaultTemplates()
-        let allHabits = templates.flatMap { $0.habits }
+        let allHabits = HabitFactory.createOfficeMorningHabits() + 
+                       HabitFactory.createHomeOfficeHabits() + 
+                       HabitFactory.createWeekendHabits() + 
+                       HabitFactory.createAfternoonHabits()
         
         // Check that we have different habit types
         let hasCheckbox = allHabits.contains { $0.type.isCheckbox }
         let hasTimer = allHabits.contains { $0.type.isTimer }
-        let hasConditional = allHabits.contains { $0.type.isConditional }
+        let hasAppLaunch = allHabits.contains { 
+            if case .appLaunch = $0.type { return true }
+            return false
+        }
+        let hasWebsite = allHabits.contains {
+            if case .website = $0.type { return true }
+            return false
+        }
         
         #expect(hasCheckbox == true)
         #expect(hasTimer == true)
-        #expect(hasConditional == true)
+        #expect(hasAppLaunch == true)
+        #expect(hasWebsite == true)
         
         // Check timer durations are reasonable
         let timerHabits = allHabits.filter { $0.type.isTimer }
@@ -175,28 +134,19 @@ struct HabitFactoryTests {
     
     @Test("HabitFactory creates unique habit IDs")
     @MainActor func testUniqueHabitIDs() {
-        let templates = HabitFactory.createDefaultTemplates()
-        let allHabits = templates.flatMap { $0.habits }
+        let allHabits = HabitFactory.createOfficeMorningHabits() + 
+                       HabitFactory.createHomeOfficeHabits() + 
+                       HabitFactory.createWeekendHabits() + 
+                       HabitFactory.createAfternoonHabits()
         let habitIds = allHabits.map { $0.id }
         let uniqueIds = Set(habitIds)
         
         #expect(habitIds.count == uniqueIds.count)
     }
     
-    @Test("HabitFactory creates valid habit colors")
-    @MainActor func testHabitColors() {
-        let templates = HabitFactory.createDefaultTemplates()
-        let allHabits = templates.flatMap { $0.habits }
-        
-        for habit in allHabits {
-            #expect(habit.color.hasPrefix("#"))
-            #expect(habit.color.count == 7) // #RRGGBB format
-        }
-    }
-    
     @Test("HabitFactory creates habits with valid ordering")
     @MainActor func testHabitOrdering() {
-        let habits = HabitFactory.createOfficeHabits().sorted { $0.order < $1.order }
+        let habits = HabitFactory.createOfficeMorningHabits().sorted { $0.order < $1.order }
         
         // Check that orders are sequential or properly spaced
         for i in 0..<habits.count - 1 {
@@ -204,7 +154,7 @@ struct HabitFactoryTests {
         }
         
         // Check specific order values match constants
-        let hrvHabit = habits.first { $0.name == "HRV Check" }
+        let hrvHabit = habits.first { $0.name == "Measure HRV" }
         #expect(hrvHabit?.order == AppConstants.HabitOrder.hrv)
         
         let strengthHabit = habits.first { $0.name == "Strength Training" }

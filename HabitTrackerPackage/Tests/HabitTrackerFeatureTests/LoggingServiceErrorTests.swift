@@ -81,7 +81,6 @@ struct LoggingServiceErrorTests {
         service.info("Info test", category: .location)
         service.warning("Warning test", category: .data)
         service.error("Error test", category: .ui)
-        service.critical("Critical test", category: .validation)
         
         // All should complete without issues
         #expect(true)
@@ -93,7 +92,7 @@ struct ResponseLoggingServiceErrorTests {
     
     @Test("ResponseLoggingService handles invalid responses gracefully")
     func testResponseLoggingServiceInvalidResponses() async {
-        let service = ResponseLoggingService.shared
+        let service = await ResponseLoggingService.shared
         
         // Test response with empty question
         let invalidResponse1 = ConditionalResponse(
