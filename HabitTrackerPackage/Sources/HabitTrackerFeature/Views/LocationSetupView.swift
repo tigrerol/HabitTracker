@@ -1,26 +1,66 @@
 import SwiftUI
 import CoreLocation
 
+/// Alert item for managing different alert types
+private enum AlertItem: Identifiable {
+    case deleteLocation(LocationType)
+    case deleteCustomLocation(CustomLocation)
+    
+    var id: String {
+        switch self {
+        case .deleteLocation(let locationType):
+            return "delete_\(locationType.rawValue)"
+        case .deleteCustomLocation(let customLocation):
+            return "delete_custom_\(customLocation.id.uuidString)"
+        }
+    }
+}
+
+/// Active sheet for managing sheet presentations
+private enum ActiveSheet: Identifiable {
+    case locationPicker(LocationType)
+    case customLocationPicker(UUID)
+    case customLocationEditor(CustomLocation?)
+    
+    var id: String {
+        switch self {
+        case .locationPicker(let locationType):
+            return "location_picker_\(locationType.rawValue)"
+        case .customLocationPicker(let customLocationId):
+            return "custom_location_picker_\(customLocationId.uuidString)"
+        case .customLocationEditor(let customLocation):
+            return "custom_location_editor_\(customLocation?.id.uuidString ?? "new")"
+        }
+    }
+}
+
 /// View for setting up and managing saved locations
 struct LocationSetupView: View {
     @Environment(RoutineService.self) private var routineService
     @Environment(\.dismiss) private var dismiss
     
-    @State private var showingLocationPicker = false
-    @State private var selectedLocationType: LocationType?
-    @State private var showingDeleteAlert = false
-    @State private var locationToDelete: LocationType?
-    @State private var showingCustomLocationEditor = false
-    @State private var editingCustomLocation: CustomLocation?
-    @State private var showingCustomDeleteAlert = false
-    @State private var customLocationToDelete: CustomLocation?
-    @State private var showingCustomLocationPicker = false
-    @State private var selectedCustomLocationId: UUID?
+    // Single sheet state to prevent presentation conflicts
+    @State private var activeSheet: ActiveSheet?
+    
+    // Combined alert state
+    @State private var alertItem: AlertItem?
     @State private var customLocations: [CustomLocation] = []
     @State private var savedLocations: [LocationType: SavedLocation] = [:]
     
     private var locationCoordinator: LocationCoordinator {
         routineService.routineSelector.locationCoordinator
+    }
+    
+    /// Safely present an alert after a brief delay to avoid sheet conflicts
+    private func presentAlert(_ alert: AlertItem) {
+        // First dismiss any active sheet
+        activeSheet = nil
+        
+        // Wait for sheet dismissal animation to complete before showing alert
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(300))
+            alertItem = alert
+        }
     }
     
     var body: some View {
@@ -38,12 +78,10 @@ struct LocationSetupView: View {
                             locationType: locationType,
                             savedLocation: savedLocations[locationType],
                             onAdd: {
-                                selectedLocationType = locationType
-                                showingLocationPicker = true
+                                activeSheet = .locationPicker(locationType)
                             },
                             onRemove: {
-                                locationToDelete = locationType
-                                showingDeleteAlert = true
+                                presentAlert(.deleteLocation(locationType))
                             }
                         )
                     }
@@ -54,23 +92,19 @@ struct LocationSetupView: View {
                         CustomLocationRow(
                             customLocation: customLocation,
                             onSetLocation: {
-                                selectedCustomLocationId = customLocation.id
-                                showingCustomLocationPicker = true
+                                activeSheet = .customLocationPicker(customLocation.id)
                             },
                             onEdit: {
-                                editingCustomLocation = customLocation
-                                showingCustomLocationEditor = true
+                                activeSheet = .customLocationEditor(customLocation)
                             },
                             onDelete: {
-                                customLocationToDelete = customLocation
-                                showingCustomDeleteAlert = true
+                                presentAlert(.deleteCustomLocation(customLocation))
                             }
                         )
                     }
                     
                     Button {
-                        editingCustomLocation = nil
-                        showingCustomLocationEditor = true
+                        activeSheet = .customLocationEditor(nil)
                     } label: {
                         Label(String(localized: "LocationSetupView.AddCustomLocation.Label", bundle: .module), systemImage: "plus")
                             .foregroundStyle(.blue)
@@ -106,76 +140,71 @@ struct LocationSetupView: View {
                 }
             }
         }
-        .sheet(isPresented: $showingLocationPicker) {
-            if let locationType = selectedLocationType {
+        .sheet(item: $activeSheet) { sheet in
+            switch sheet {
+            case .locationPicker(let locationType):
                 LocationPickerView(locationType: locationType) { location in
                     Task {
                         try? await locationCoordinator.saveLocation(location, as: locationType)
-                        await MainActor.run {
-                            selectedLocationType = nil
-                        }
-                    }
-                }
-            }
-        }
-        .sheet(isPresented: $showingCustomLocationPicker) {
-            if let customLocationId = selectedCustomLocationId {
-                CustomLocationPickerView(customLocationId: customLocationId) { location in
-                    Task {
-                        await locationCoordinator.setCustomLocationCoordinates(for: customLocationId, location: location)
-                        await MainActor.run {
-                            selectedCustomLocationId = nil
-                        }
-                    }
-                }
-            }
-        }
-        .sheet(isPresented: $showingCustomLocationEditor) {
-            CustomLocationEditorView(customLocation: editingCustomLocation) { customLocation in
-                Task {
-                    if editingCustomLocation != nil {
-                        await locationCoordinator.updateCustomLocation(customLocation)
-                    } else {
-                        _ = await locationCoordinator.createCustomLocation(name: customLocation.name, icon: customLocation.icon)
-                    }
-                    await MainActor.run {
-                        editingCustomLocation = nil
-                    }
-                }
-            }
-        }
-        .alert(String(localized: "LocationSetupView.DeleteAlert.Title", bundle: .module), isPresented: $showingDeleteAlert) {
-            Button(String(localized: "LocationSetupView.DeleteAlert.Cancel", bundle: .module), role: .cancel) { }
-            Button(String(localized: "LocationSetupView.DeleteAlert.Delete", bundle: .module), role: .destructive) {
-                if let locationType = locationToDelete {
-                    Task {
-                        await locationCoordinator.removeLocation(for: locationType)
                         await MainActor.run {
                             savedLocations = locationCoordinator.getSavedLocations()
                         }
                     }
                 }
-            }
-        } message: {
-            if let locationType = locationToDelete {
-                Text(String(localized: "LocationSetupView.DeleteAlert.Message", bundle: .module).replacingOccurrences(of: "%@", with: locationType.displayName))
-            }
-        }
-        .alert(String(localized: "LocationSetupView.DeleteAlert.Title", bundle: .module), isPresented: $showingCustomDeleteAlert) {
-            Button(String(localized: "LocationSetupView.DeleteAlert.Cancel", bundle: .module), role: .cancel) { }
-            Button(String(localized: "LocationSetupView.DeleteAlert.Delete", bundle: .module), role: .destructive) {
-                if let customLocation = customLocationToDelete {
+            case .customLocationPicker(let customLocationId):
+                CustomLocationPickerView(customLocationId: customLocationId) { location in
                     Task {
-                        await locationCoordinator.deleteCustomLocation(id: customLocation.id)
+                        await locationCoordinator.setCustomLocationCoordinates(for: customLocationId, location: location)
+                        await MainActor.run {
+                            customLocations = locationCoordinator.getAllCustomLocations()
+                        }
+                    }
+                }
+            case .customLocationEditor(let customLocation):
+                CustomLocationEditorView(customLocation: customLocation) { updatedCustomLocation in
+                    Task {
+                        if customLocation != nil {
+                            await locationCoordinator.updateCustomLocation(updatedCustomLocation)
+                        } else {
+                            _ = await locationCoordinator.createCustomLocation(name: updatedCustomLocation.name, icon: updatedCustomLocation.icon)
+                        }
                         await MainActor.run {
                             customLocations = locationCoordinator.getAllCustomLocations()
                         }
                     }
                 }
             }
-        } message: {
-            if let customLocation = customLocationToDelete {
-                Text(String(localized: "LocationSetupView.DeleteAlert.Message", bundle: .module).replacingOccurrences(of: "%@", with: customLocation.name))
+        }
+        .alert(item: $alertItem) { alertItem in
+            switch alertItem {
+            case .deleteLocation(let locationType):
+                return Alert(
+                    title: Text(String(localized: "LocationSetupView.DeleteAlert.Title", bundle: .module)),
+                    message: Text(String(localized: "LocationSetupView.DeleteAlert.Message", bundle: .module).replacingOccurrences(of: "%@", with: locationType.displayName)),
+                    primaryButton: .destructive(Text(String(localized: "LocationSetupView.DeleteAlert.Delete", bundle: .module))) {
+                        Task {
+                            await locationCoordinator.removeLocation(for: locationType)
+                            await MainActor.run {
+                                savedLocations = locationCoordinator.getSavedLocations()
+                            }
+                        }
+                    },
+                    secondaryButton: .cancel(Text(String(localized: "LocationSetupView.DeleteAlert.Cancel", bundle: .module)))
+                )
+            case .deleteCustomLocation(let customLocation):
+                return Alert(
+                    title: Text(String(localized: "LocationSetupView.DeleteAlert.Title", bundle: .module)),
+                    message: Text(String(localized: "LocationSetupView.DeleteAlert.Message", bundle: .module).replacingOccurrences(of: "%@", with: customLocation.name)),
+                    primaryButton: .destructive(Text(String(localized: "LocationSetupView.DeleteAlert.Delete", bundle: .module))) {
+                        Task {
+                            await locationCoordinator.deleteCustomLocation(id: customLocation.id)
+                            await MainActor.run {
+                                customLocations = locationCoordinator.getAllCustomLocations()
+                            }
+                        }
+                    },
+                    secondaryButton: .cancel(Text(String(localized: "LocationSetupView.DeleteAlert.Cancel", bundle: .module)))
+                )
             }
         }
         .task {
