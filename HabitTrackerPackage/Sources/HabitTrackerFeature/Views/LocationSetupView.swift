@@ -144,12 +144,32 @@ struct LocationSetupView: View {
                 }
             }
         }
+        .alert(String(localized: "LocationSetupView.DeleteAlert.Title", bundle: .module), isPresented: $showingDeleteAlert) {
+            Button(String(localized: "LocationSetupView.DeleteAlert.Cancel", bundle: .module), role: .cancel) { }
+            Button(String(localized: "LocationSetupView.DeleteAlert.Delete", bundle: .module), role: .destructive) {
+                if let locationType = locationToDelete {
+                    Task {
+                        await locationCoordinator.removeLocation(for: locationType)
+                        await MainActor.run {
+                            savedLocations = locationCoordinator.getSavedLocations()
+                        }
+                    }
+                }
+            }
+        } message: {
+            if let locationType = locationToDelete {
+                Text(String(localized: "LocationSetupView.DeleteAlert.Message", bundle: .module).replacingOccurrences(of: "%@", with: locationType.displayName))
+            }
+        }
         .alert(String(localized: "LocationSetupView.DeleteAlert.Title", bundle: .module), isPresented: $showingCustomDeleteAlert) {
             Button(String(localized: "LocationSetupView.DeleteAlert.Cancel", bundle: .module), role: .cancel) { }
             Button(String(localized: "LocationSetupView.DeleteAlert.Delete", bundle: .module), role: .destructive) {
                 if let customLocation = customLocationToDelete {
                     Task {
                         await locationCoordinator.deleteCustomLocation(id: customLocation.id)
+                        await MainActor.run {
+                            customLocations = locationCoordinator.getAllCustomLocations()
+                        }
                     }
                 }
             }
