@@ -46,7 +46,9 @@
       "mcp__MCP_DOCKER__read_file",
       "mcp__MCP_DOCKER__write_file",
       "mcp__MCP_DOCKER__list_directory",
-      "mcp__MCP_DOCKER__start_process"
+      "mcp__MCP_DOCKER__start_process",
+      "Bash(git pull:*)",
+      "Bash(git merge:*)"
     ],
     "deny": []
   }
