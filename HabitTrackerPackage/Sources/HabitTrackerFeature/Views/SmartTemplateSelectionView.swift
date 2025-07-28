@@ -13,6 +13,21 @@ struct SmartTemplateSelectionView: View {
     @State private var showingLocationSetup = false
     @State private var showingContextSettings = false
     
+    private var timeBasedGreeting: String {
+        let hour = Calendar.current.component(.hour, from: Date())
+        
+        switch hour {
+        case 5..<12:
+            return String(localized: "SmartTemplateSelectionView.NavigationTitle.Morning", bundle: .module)
+        case 12..<17:
+            return String(localized: "SmartTemplateSelectionView.NavigationTitle.Afternoon", bundle: .module)
+        case 17..<22:
+            return String(localized: "SmartTemplateSelectionView.NavigationTitle.Evening", bundle: .module)
+        default:
+            return String(localized: "SmartTemplateSelectionView.NavigationTitle.Default", bundle: .module)
+        }
+    }
+    
     var body: some View {
         NavigationStack {
             VStack(spacing: 24) {
@@ -31,7 +46,7 @@ struct SmartTemplateSelectionView: View {
                 Spacer()
             }
             .padding()
-            .navigationTitle(String(localized: "SmartTemplateSelectionView.NavigationTitle", bundle: .module))
+            .navigationTitle(timeBasedGreeting)
             
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -69,6 +84,21 @@ struct SmartTemplateSelectionView: View {
         }
         .onChange(of: routineService.templates) {
             // Re-select smart template when templates are modified
+            selectSmartTemplate()
+        }
+        .onReceive(routineService.routineSelector.locationCoordinator.$currentLocationType) { newType in
+            // Force UI refresh when location type changes
+            print("🗺️ SmartTemplateView: Location type changed to \(newType), forcing selectSmartTemplate")
+            selectSmartTemplate()
+        }
+        .onReceive(routineService.routineSelector.locationCoordinator.$currentLocation) { location in
+            // Force UI refresh when location coordinates change
+            print("🗺️ SmartTemplateView: Location coordinates changed, has location: \(location != nil)")
+        }
+        // Add explicit observation of the RoutineSelector's context changes
+        .onChange(of: routineService.routineSelector.currentContext.location) { oldValue, newValue in
+            print("🗺️ SmartTemplateView: Context location changed from \(oldValue) to \(newValue)")
+            // Force template re-selection when location context changes
             selectSmartTemplate()
         }
         .sheet(isPresented: $showingLocationSetup) {
@@ -130,44 +160,66 @@ struct SmartTemplateSelectionView: View {
     }
     
     private var contextIndicatorView: some View {
-        HStack(spacing: 16) {
+        // Force reactivity by accessing the selector directly in the view
+        let selector = routineService.routineSelector
+        let context = selector.currentContext
+        let coordinator = selector.locationCoordinator
+        
+        // Debug logging for location state
+        let _ = print("🗺️ SmartTemplateView contextIndicatorView Debug:")
+        let _ = print("   - currentContext.location: \(context.location)")
+        let _ = print("   - locationCoordinator.currentLocationType: \(coordinator.currentLocationType)")
+        let _ = print("   - locationCoordinator.currentExtendedLocationType: \(coordinator.currentExtendedLocationType)")
+        let _ = print("   - locationCoordinator.currentLocation != nil: \(coordinator.currentLocation != nil)")
+        
+        return HStack(spacing: 16) {
             // Time indicator
             Label {
-                Text(routineService.routineSelector.currentContext.timeSlot.displayName)
+                Text(context.timeSlot.displayName)
             } icon: {
-                Image(systemName: routineService.routineSelector.currentContext.timeSlot.icon)
+                Image(systemName: context.timeSlot.icon)
             }
             .font(.caption)
             .foregroundStyle(.secondary)
             
             // Day indicator
             Label {
-                Text(routineService.routineSelector.currentContext.dayCategory.displayName)
+                Text(context.dayCategory.displayName)
             } icon: {
-                Image(systemName: routineService.routineSelector.currentContext.dayCategory.icon)
-                    .foregroundStyle(routineService.routineSelector.currentContext.dayCategory.color)
+                Image(systemName: context.dayCategory.icon)
+                    .foregroundStyle(context.dayCategory.color)
             }
             .font(.caption)
             .foregroundStyle(.secondary)
             
-            // Location indicator (if known)
-            if routineService.routineSelector.currentContext.location != .unknown {
+            // Location indicator - show actual location name when available
+            if context.location != .unknown {
+                // Show the actual detected location (Home, Office, etc.)
                 Label {
-                    Text(routineService.routineSelector.currentContext.location.displayName)
+                    Text(context.location.displayName)
                 } icon: {
-                    Image(systemName: routineService.routineSelector.currentContext.location.icon)
+                    Image(systemName: context.location.icon)
+                }
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            } else if coordinator.currentLocation != nil {
+                // Show that location is detected but not categorized as Home/Office
+                Label {
+                    Text("Current Location")
+                } icon: {
+                    Image(systemName: "location")
                 }
                 .font(.caption)
                 .foregroundStyle(.secondary)
             } else {
-                // Location setup button when location is unknown
+                // Location setup button when no location data is available
                 Button {
                     showingLocationSetup = true
                 } label: {
                     Label {
                         Text(String(localized: "SmartTemplateSelectionView.SetLocations", bundle: .module))
                     } icon: {
-                        Image(systemName: "location.badge.plus")
+                        Image(systemName: "location.circle")
                     }
                     .font(.caption)
                     .foregroundStyle(.blue)

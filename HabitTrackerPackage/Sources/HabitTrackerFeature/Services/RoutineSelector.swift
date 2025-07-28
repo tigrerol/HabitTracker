@@ -31,9 +31,18 @@ public final class RoutineSelector {
     private func setupLocationUpdates() async {
         locationCoordinator.setLocationUpdateCallback { [weak self] locationType, extendedLocationType in
             guard let self = self else { return }
+            
+            print("🗺️ RoutineSelector: Location update received - \(locationType), \(extendedLocationType)")
+            
             self.currentLocationType = locationType
             self.currentExtendedLocationType = extendedLocationType
+            
+            print("🗺️ RoutineSelector: Updated currentLocationType to \(self.currentLocationType)")
+            
             await self.updateContext()
+            
+            print("🗺️ RoutineSelector: Context updated - location is now \(self.currentContext.location)")
+            print("🗺️ RoutineSelector: Final verification - currentLocationType is \(self.currentLocationType)")
         }
         
         await locationCoordinator.startUpdatingLocation()
@@ -50,11 +59,26 @@ public final class RoutineSelector {
         let timeSlot = TimeSlotManager.shared.getCurrentTimeSlot()
         let dayCategory = DayCategoryManager.shared.getCurrentDayCategory()
         
+        // Use LocationCoordinator's current location directly to avoid race condition
+        let coordinatorLocation = locationCoordinator.currentLocationType
+        
+        print("🗺️ RoutineSelector.updateContext() Debug:")
+        print("   - Before update - currentLocationType: \(currentLocationType)")
+        print("   - Before update - currentContext.location: \(currentContext.location)")
+        print("   - LocationCoordinator.currentLocationType: \(coordinatorLocation)")
+        
         self.currentContext = RoutineContext(
             timeSlot: timeSlot,
             dayCategory: dayCategory,
-            location: currentLocationType
+            location: coordinatorLocation  // Use coordinator's location directly
         )
+        
+        // Update our cached value to match
+        self.currentLocationType = coordinatorLocation
+        
+        print("   - After update - currentContext.location: \(currentContext.location)")
+        print("   - After update - currentLocationType: \(currentLocationType)")
+        print("   - Verification - context location matches coordinator: \(currentContext.location == coordinatorLocation)")
     }
     
     /// Select the best routine template based on current context
