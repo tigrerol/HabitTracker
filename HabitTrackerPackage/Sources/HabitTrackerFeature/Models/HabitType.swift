@@ -151,4 +151,34 @@ extension HabitType {
             return "New Question"
         }
     }
+    
+    /// Whether this is a checkbox-type habit
+    public var isCheckbox: Bool {
+        switch self {
+        case .checkbox, .checkboxWithSubtasks:
+            return true
+        default:
+            return false
+        }
+    }
+    
+    /// Whether this is a timer-type habit
+    public var isTimer: Bool {
+        switch self {
+        case .timer, .restTimer:
+            return true
+        default:
+            return false
+        }
+    }
+    
+    /// Whether this is a conditional habit
+    public var isConditional: Bool {
+        switch self {
+        case .conditional:
+            return true
+        default:
+            return false
+        }
+    }
 }

@@ -60,7 +60,7 @@ public struct RoutineBuilderView: View {
             }
             .animation(.easeInOut(duration: 0.3), value: currentStep)
             .navigationTitle(editingTemplate != nil ? String(localized: "RoutineBuilderView.EditRoutine.NavigationTitle", bundle: .module) : String(localized: "RoutineBuilderView.CreateRoutine.NavigationTitle", bundle: .module))
-            .navigationBarTitleDisplayMode(.large)
+            
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(String(localized: "RoutineBuilderView.Cancel.Button", bundle: .module)) {
@@ -81,7 +81,7 @@ public struct RoutineBuilderView: View {
             }
         }
         .task {
-            customLocations = await routineService.smartSelector.locationManager.allCustomLocations
+            customLocations = routineService.routineSelector.locationCoordinator.getAllCustomLocations()
         }
     }
     
@@ -829,7 +829,7 @@ public struct RoutineBuilderView: View {
                     }
                 }
                 .listStyle(.plain)
-                .environment(\.editMode, .constant(.active))
+                
             }
             
             // Actions
@@ -1283,7 +1283,7 @@ struct ExpandableHabitRow: View {
         }
         .padding(.horizontal, 32)
         .padding(.bottom, 12)
-        .background(Color(.systemGray6).opacity(0.5))
+        .background(Color.gray.opacity(0.1).opacity(0.5))
         .cornerRadius(8)
     }
     
@@ -1726,7 +1726,7 @@ struct OptionEditorView: View {
                 }
             }
             .navigationTitle("Edit Option")
-            .navigationBarTitleDisplayMode(.inline)
+            
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(String(localized: "RoutineBuilderView.Cancel.Button", bundle: .module)) {

@@ -7,8 +7,8 @@ public final class RoutineSelector {
     /// Current detected context
     public private(set) var currentContext: RoutineContext
     
-    /// Location service for location data
-    private let locationService: LocationService
+    /// Location coordinator for location data
+    public let locationCoordinator: LocationCoordinator
     
     /// Reason for the last selection
     public private(set) var selectionReason: String = ""
@@ -17,8 +17,8 @@ public final class RoutineSelector {
     private var currentLocationType: LocationType = .unknown
     private var currentExtendedLocationType: ExtendedLocationType = .builtin(.unknown)
     
-    public init(locationService: LocationService = LocationService()) {
-        self.locationService = locationService
+    public init(locationCoordinator: LocationCoordinator = LocationCoordinator.shared) {
+        self.locationCoordinator = locationCoordinator
         self.currentContext = RoutineContext.current()
         
         // Set up location updates
@@ -29,18 +29,17 @@ public final class RoutineSelector {
     
     /// Set up location monitoring
     private func setupLocationUpdates() async {
-        await locationService.setLocationUpdateCallback { [weak self] locationType, extendedLocationType in
+        locationCoordinator.setLocationUpdateCallback { [weak self] locationType, extendedLocationType in
             guard let self = self else { return }
             self.currentLocationType = locationType
             self.currentExtendedLocationType = extendedLocationType
             await self.updateContext()
         }
         
-        locationService.setupLocationManager()
-        await locationService.startUpdatingLocation()
+        await locationCoordinator.startUpdatingLocation()
         
         // Get initial location types
-        let (locationType, extendedLocationType) = await locationService.getCurrentLocationTypes()
+        let (locationType, extendedLocationType) = await locationCoordinator.getCurrentLocationTypes()
         self.currentLocationType = locationType
         self.currentExtendedLocationType = extendedLocationType
         await updateContext()
@@ -180,7 +179,7 @@ public final class RoutineSelector {
         }
         
         // Check custom locations
-        let allCustomLocations = await locationService.getAllCustomLocations()
+        let allCustomLocations = locationCoordinator.getAllCustomLocations()
         for customLocation in allCustomLocations {
             if rule.locationIds.contains(customLocation.id.uuidString) {
                 // Check if we're currently at this custom location
@@ -231,11 +230,7 @@ public final class RoutineSelector {
     
     /// Force update location (for testing or manual refresh)
     public func refreshLocation() async {
-        await locationService.startUpdatingLocation()
+        await locationCoordinator.startUpdatingLocation()
     }
     
-    /// Get location service (for location management UI)
-    public func getLocationService() -> LocationService {
-        return locationService
-    }
 }

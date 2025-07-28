@@ -54,7 +54,7 @@ public struct ConditionalHabitEditorView: View {
                 depthWarningSection
             }
             .navigationTitle(existingHabit == nil ? String(localized: "ConditionalHabitEditorView.NewQuestion.NavigationTitle", bundle: .module) : String(localized: "ConditionalHabitEditorView.EditQuestion.NavigationTitle", bundle: .module))
-            .navigationBarTitleDisplayMode(.inline)
+            
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(String(localized: "ConditionalHabitEditorView.Cancel.Button", bundle: .module)) {
@@ -337,7 +337,7 @@ private struct OptionCard: View {
             }
         }
         .padding()
-        .background(Color(.systemGray6), in: RoundedRectangle(cornerRadius: 8))
+        .background(Color.gray.opacity(0.1), in: RoundedRectangle(cornerRadius: 8))
     }
     
     private func addQuickHabit(_ type: HabitType) {
@@ -510,7 +510,7 @@ struct PathBuilderView: View {
                 }
             }
             .navigationTitle(String(format: String(localized: "ConditionalHabitEditorView.PathFor.NavigationTitle", bundle: .module), optionText))
-            .navigationBarTitleDisplayMode(.inline)
+            
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(String(localized: "ConditionalHabitEditorView.Done.Button", bundle: .module)) {
@@ -704,7 +704,7 @@ struct HabitPickerView: View {
                 }
             }
             .navigationTitle(String(localized: "ConditionalHabitEditorView.AddHabit.NavigationTitle", bundle: .module))
-            .navigationBarTitleDisplayMode(.inline)
+            
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(String(localized: "ConditionalHabitEditorView.Cancel.Button", bundle: .module)) {

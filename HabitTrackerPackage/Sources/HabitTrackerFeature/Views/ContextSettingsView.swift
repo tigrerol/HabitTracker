@@ -71,15 +71,15 @@ struct ContextSettingsView: View {
                             .fontWeight(.medium)
                         
                         HStack(spacing: 16) {
-                            Label(routineService.smartSelector.currentContext.timeSlot.displayName, 
-                                  systemImage: routineService.smartSelector.currentContext.timeSlot.icon)
+                            Label(routineService.routineSelector.currentContext.timeSlot.displayName, 
+                                  systemImage: routineService.routineSelector.currentContext.timeSlot.icon)
                             
-                            Label(routineService.smartSelector.currentContext.dayCategory.displayName, 
-                                  systemImage: routineService.smartSelector.currentContext.dayCategory.icon)
+                            Label(routineService.routineSelector.currentContext.dayCategory.displayName, 
+                                  systemImage: routineService.routineSelector.currentContext.dayCategory.icon)
                             
-                            if routineService.smartSelector.currentContext.location != .unknown {
-                                Label(routineService.smartSelector.currentContext.location.displayName, 
-                                      systemImage: routineService.smartSelector.currentContext.location.icon)
+                            if routineService.routineSelector.currentContext.location != .unknown {
+                                Label(routineService.routineSelector.currentContext.location.displayName, 
+                                      systemImage: routineService.routineSelector.currentContext.location.icon)
                             }
                         }
                         .font(.caption)
@@ -90,7 +90,7 @@ struct ContextSettingsView: View {
                 }
             }
             .navigationTitle(String(localized: "ContextSettingsView.NavigationTitle", bundle: .module))
-            .navigationBarTitleDisplayMode(.inline)
+            
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button(String(localized: "ContextSettingsView.Done", bundle: .module)) {
@@ -109,8 +109,8 @@ struct ContextSettingsView: View {
             LocationSetupView()
         }
         .task {
-            savedLocationsCount = await routineService.smartSelector.locationManager.savedLocations.count
-            customLocationsCount = await routineService.smartSelector.locationManager.allCustomLocations.count
+            savedLocationsCount = routineService.routineSelector.locationCoordinator.getSavedLocations().count
+            customLocationsCount = routineService.routineSelector.locationCoordinator.getAllCustomLocations().count
         }
     }
     

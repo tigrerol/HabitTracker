@@ -137,7 +137,7 @@ struct ContextRuleEditorView: View {
                 }
             }
             .navigationTitle(String(localized: "ContextRuleEditorView.NavigationTitle", bundle: .module))
-            .navigationBarTitleDisplayMode(.inline)
+            
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(String(localized: "ContextRuleEditorView.Cancel.Button", bundle: .module)) {
@@ -157,7 +157,7 @@ struct ContextRuleEditorView: View {
             loadExistingRule()
         }
         .task {
-            customLocations = await routineService.smartSelector.locationManager.allCustomLocations
+            customLocations = routineService.routineSelector.locationCoordinator.getAllCustomLocations()
         }
     }
     

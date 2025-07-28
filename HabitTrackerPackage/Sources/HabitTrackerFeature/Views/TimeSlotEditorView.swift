@@ -68,7 +68,7 @@ struct TimeSlotEditorView: View {
                 }
             }
             .navigationTitle(String(localized: "TimeSlotEditorView.NavigationTitle", bundle: .module))
-            .navigationBarTitleDisplayMode(.inline)
+            
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(String(localized: "TimeSlotEditorView.Cancel.Button", bundle: .module)) {
@@ -308,7 +308,7 @@ private struct AddTimeSlotView: View {
                 }
             }
             .navigationTitle(String(localized: "TimeSlotEditorView.AddTimeSlot.NavigationTitle", bundle: .module))
-            .navigationBarTitleDisplayMode(.inline)
+            
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(String(localized: "TimeSlotEditorView.Cancel.Button", bundle: .module)) {

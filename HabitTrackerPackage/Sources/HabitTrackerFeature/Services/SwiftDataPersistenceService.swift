@@ -2,8 +2,7 @@ import Foundation
 import SwiftData
 
 /// SwiftData-based implementation of PersistenceService
-@MainActor
-public final class SwiftDataPersistenceService: PersistenceServiceProtocol {
+public final class SwiftDataPersistenceService: PersistenceServiceProtocol, @unchecked Sendable {
     private let modelContext: ModelContext
     
     /// Initialize with a ModelContext
@@ -12,7 +11,8 @@ public final class SwiftDataPersistenceService: PersistenceServiceProtocol {
     }
     
     /// Save routine templates
-    public func save<T: Codable>(_ object: T, forKey key: String) throws {
+    @MainActor
+    public func save<T: Codable & Sendable>(_ object: T, forKey key: String) async throws {
         switch key {
         case PersistenceKeys.routineTemplates:
             if let templates = object as? [RoutineTemplate] {
@@ -39,7 +39,7 @@ public final class SwiftDataPersistenceService: PersistenceServiceProtocol {
     }
     
     /// Load routine templates or other data
-    public func load<T: Codable>(_ type: T.Type, forKey key: String) throws -> T? {
+    public func load<T: Codable & Sendable>(_ type: T.Type, forKey key: String) async throws -> T? {
         switch key {
         case PersistenceKeys.routineTemplates:
             if type == [RoutineTemplate].self {
@@ -62,7 +62,7 @@ public final class SwiftDataPersistenceService: PersistenceServiceProtocol {
     }
     
     /// Delete data
-    public func delete(forKey key: String) {
+    public func delete(forKey key: String) async {
         switch key {
         case PersistenceKeys.routineTemplates:
             deleteAllRoutineTemplates()
@@ -73,7 +73,7 @@ public final class SwiftDataPersistenceService: PersistenceServiceProtocol {
     }
     
     /// Check if data exists
-    public func exists(forKey key: String) -> Bool {
+    public func exists(forKey key: String) async -> Bool {
         switch key {
         case PersistenceKeys.routineTemplates:
             return !getAllPersistedTemplates().isEmpty
@@ -85,6 +85,7 @@ public final class SwiftDataPersistenceService: PersistenceServiceProtocol {
     
     // MARK: - Routine Template Operations
     
+    @MainActor
     private func saveRoutineTemplates(_ templates: [RoutineTemplate]) throws {
         // Get existing persisted templates
         let existingTemplates = getAllPersistedTemplates()
@@ -145,6 +146,7 @@ public final class SwiftDataPersistenceService: PersistenceServiceProtocol {
     // MARK: - Session Operations
     
     /// Save a routine session
+    @MainActor
     public func saveRoutineSession(_ session: RoutineSession, templateId: UUID) throws {
         // Find the persisted template
         guard let persistedTemplate = getPersistedTemplate(id: templateId) else {
@@ -163,7 +165,7 @@ public final class SwiftDataPersistenceService: PersistenceServiceProtocol {
     }
     
     /// Load routine sessions for a specific template
-    public func loadRoutineSessions(for templateId: UUID) -> [RoutineSessionData] {
+    public func loadRoutineSessions(for templateId: UUID) async -> [RoutineSessionData] {
         guard let persistedTemplate = getPersistedTemplate(id: templateId) else { return [] }
         
         return persistedTemplate.sessions.compactMap { persistedSession in
@@ -206,6 +208,7 @@ public final class SwiftDataPersistenceService: PersistenceServiceProtocol {
     // MARK: - Mood Rating Operations
     
     /// Save mood ratings
+    @MainActor
     public func saveMoodRatings(_ ratings: [MoodRating]) throws {
         // Remove existing ratings and replace with new ones
         let existingRatings = getAllPersistedMoodRatings()
@@ -223,7 +226,7 @@ public final class SwiftDataPersistenceService: PersistenceServiceProtocol {
     }
     
     /// Load mood ratings
-    public func loadMoodRatings() -> [MoodRating] {
+    public func loadMoodRatings() async -> [MoodRating] {
         let persistedRatings = getAllPersistedMoodRatings()
         return persistedRatings.compactMap { $0.toDomainModel() }
     }
@@ -244,10 +247,11 @@ public final class SwiftDataPersistenceService: PersistenceServiceProtocol {
     // MARK: - Location Operations
     
     /// Save location data
+    @MainActor
     public func saveLocationData(
         savedLocations: [LocationType: SavedLocation],
         customLocations: [UUID: CustomLocation]
-    ) throws {
+    ) async throws {
         // Save saved locations
         let existingSavedLocations = getAllPersistedSavedLocations()
         for existingLocation in existingSavedLocations {
@@ -280,7 +284,7 @@ public final class SwiftDataPersistenceService: PersistenceServiceProtocol {
     }
     
     /// Load location data
-    public func loadLocationData() -> (savedLocations: [LocationType: SavedLocation], customLocations: [UUID: CustomLocation]) {
+    public func loadLocationData() async -> (savedLocations: [LocationType: SavedLocation], customLocations: [UUID: CustomLocation]) {
         let persistedSavedLocations = getAllPersistedSavedLocations()
         let persistedCustomLocations = getAllPersistedCustomLocations()
         

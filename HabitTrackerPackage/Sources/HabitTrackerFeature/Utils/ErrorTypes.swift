@@ -29,15 +29,12 @@ public protocol HabitTrackerError: LocalizedError, CustomStringConvertible {
 /// Categories for organizing errors
 public enum ErrorCategory: String, CaseIterable, Sendable {
     case location = "location"
-    case persistence = "persistence"
-    case routine = "routine"
-    case habitExecution = "habit_execution"
-    case conditional = "conditional"
-    case validation = "validation"
     case network = "network"
-    case permission = "permission"
-    case ui = "ui"
     case data = "data"
+    case validation = "validation"
+    case configuration = "configuration"
+    case synchronization = "synchronization"
+    case technical = "technical"
 }
 
 /// Error severity levels
@@ -62,7 +59,7 @@ public enum RecoveryAction: String, CaseIterable, Sendable {
 // MARK: - Location Errors
 
 /// Comprehensive location service errors
-public enum LocationError: HabitTrackerError {
+public enum LocationError: HabitTrackerError, Equatable {
     case permissionDenied
     case permissionRestricted
     case locationUnavailable
@@ -164,7 +161,7 @@ public enum LocationError: HabitTrackerError {
 // MARK: - Routine Errors
 
 /// Routine execution and management errors
-public enum RoutineError: HabitTrackerError {
+public enum RoutineError: HabitTrackerError, Equatable {
     case noActiveSession
     case sessionAlreadyActive
     case templateNotFound(id: UUID)
@@ -177,7 +174,7 @@ public enum RoutineError: HabitTrackerError {
     case conditionalOptionSelectionFailed
     case routineQueueCorrupted
     
-    public var category: ErrorCategory { .routine }
+    public var category: ErrorCategory { .technical }
     public var shouldLog: Bool { true }
     
     public var severity: ErrorSeverity {
@@ -271,7 +268,33 @@ public enum RoutineError: HabitTrackerError {
 // MARK: - Data Persistence Errors
 
 /// Enhanced persistence errors with more context
-public enum DataError: HabitTrackerError {
+public enum DataError: HabitTrackerError, Equatable {
+    public static func == (lhs: DataError, rhs: DataError) -> Bool {
+        switch (lhs, rhs) {
+        case (.encodingFailed(let lType, _), .encodingFailed(let rType, _)):
+            return lType == rType
+        case (.decodingFailed(let lType, _), .decodingFailed(let rType, _)):
+            return lType == rType
+        case (.keyNotFound(let lKey), .keyNotFound(let rKey)):
+            return lKey == rKey
+        case (.corruptedData(let lKey), .corruptedData(let rKey)):
+            return lKey == rKey
+        case (.storageFull, .storageFull):
+            return true
+        case (.permissionDenied, .permissionDenied):
+            return true
+        case (.migrationFailed(let lFrom, let lTo), .migrationFailed(let rFrom, let rTo)):
+            return lFrom == rFrom && lTo == rTo
+        case (.dataValidationFailed(let lReason), .dataValidationFailed(let rReason)):
+            return lReason == rReason
+        case (.swiftDataContextFailed, .swiftDataContextFailed):
+            return true
+        case (.modelConflict(let lModel), .modelConflict(let rModel)):
+            return lModel == rModel
+        default:
+            return false
+        }
+    }
     case encodingFailed(type: String, underlyingError: Error)
     case decodingFailed(type: String, underlyingError: Error)
     case keyNotFound(key: String)
@@ -283,7 +306,7 @@ public enum DataError: HabitTrackerError {
     case swiftDataContextFailed
     case modelConflict(modelName: String)
     
-    public var category: ErrorCategory { .persistence }
+    public var category: ErrorCategory { .data }
     public var shouldLog: Bool { true }
     
     public var severity: ErrorSeverity {
@@ -371,7 +394,7 @@ public enum DataError: HabitTrackerError {
 // MARK: - Validation Errors
 
 /// Input validation errors
-public enum ValidationError: HabitTrackerError {
+public enum ValidationError: HabitTrackerError, Equatable {
     case invalidHabitName(name: String)
     case invalidDuration(duration: TimeInterval)
     case invalidColor(color: String)
@@ -450,10 +473,100 @@ public enum ValidationError: HabitTrackerError {
     public var description: String { technicalDetails }
 }
 
+// MARK: - Network Errors
+
+/// Network connectivity and communication errors
+public enum NetworkError: HabitTrackerError, Equatable {
+    case connectionFailed
+    case timeout
+    case noInternetConnection
+    case serverError(statusCode: Int)
+    case invalidResponse
+    case rateLimitExceeded
+    case authenticationFailed
+    case certificateError
+    
+    public var category: ErrorCategory { .network }
+    public var shouldLog: Bool { true }
+    
+    public var severity: ErrorSeverity {
+        switch self {
+        case .noInternetConnection, .connectionFailed:
+            return .high
+        case .serverError, .authenticationFailed:
+            return .medium
+        case .timeout, .invalidResponse, .rateLimitExceeded, .certificateError:
+            return .low
+        }
+    }
+    
+    public var userMessage: String {
+        switch self {
+        case .connectionFailed:
+            return "Unable to connect to the server. Please check your internet connection."
+        case .timeout:
+            return "The connection timed out. Please try again."
+        case .noInternetConnection:
+            return "No internet connection available. Please check your network settings."
+        case .serverError(let statusCode):
+            return "Server error (\(statusCode)). Please try again later."
+        case .invalidResponse:
+            return "Received invalid response from server."
+        case .rateLimitExceeded:
+            return "Too many requests. Please wait a moment and try again."
+        case .authenticationFailed:
+            return "Authentication failed. Please check your credentials."
+        case .certificateError:
+            return "Security certificate error. Please check your connection."
+        }
+    }
+    
+    public var technicalDetails: String {
+        switch self {
+        case .connectionFailed:
+            return "Network connection failed"
+        case .timeout:
+            return "URLSession timeout exceeded"
+        case .noInternetConnection:
+            return "Network reachability status: not reachable"
+        case .serverError(let statusCode):
+            return "HTTP status code: \(statusCode)"
+        case .invalidResponse:
+            return "Response validation failed"
+        case .rateLimitExceeded:
+            return "Rate limit headers indicate limit exceeded"
+        case .authenticationFailed:
+            return "Authentication token invalid or expired"
+        case .certificateError:
+            return "SSL/TLS certificate validation failed"
+        }
+    }
+    
+    public var recoveryActions: [RecoveryAction] {
+        switch self {
+        case .connectionFailed, .noInternetConnection:
+            return [.checkInternet, .retry]
+        case .timeout:
+            return [.retry, .checkInternet]
+        case .serverError:
+            return [.retry, .contact]
+        case .invalidResponse, .certificateError:
+            return [.contact]
+        case .rateLimitExceeded:
+            return [.retry]
+        case .authenticationFailed:
+            return [.checkSettings, .contact]
+        }
+    }
+    
+    public var errorDescription: String? { userMessage }
+    public var description: String { technicalDetails }
+}
+
 // MARK: - UI Errors
 
 /// User interface related errors
-public enum UIError: HabitTrackerError {
+public enum UIError: HabitTrackerError, Equatable {
     case viewRenderingFailed(viewName: String)
     case navigationFailed(destination: String)
     case animationFailed(animation: String)
@@ -461,7 +574,7 @@ public enum UIError: HabitTrackerError {
     case imageLoadingFailed(imageName: String)
     case fontLoadingFailed(fontName: String)
     
-    public var category: ErrorCategory { .ui }
+    public var category: ErrorCategory { .technical }
     public var shouldLog: Bool { true }
     public var severity: ErrorSeverity { .low }
     

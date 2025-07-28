@@ -1,4 +1,7 @@
 import SwiftUI
+#if canImport(UIKit)
+import UIKit
+#endif
 
 /// Inline mood rating component for the completion screen
 struct InlineMoodRatingView: View {
@@ -73,8 +76,10 @@ struct InlineMoodRatingView: View {
         routineService.addMoodRating(mood, for: sessionId)
         
         // Haptic feedback
+        #if canImport(UIKit)
         let impactFeedback = UIImpactFeedbackGenerator(style: .light)
         impactFeedback.impactOccurred()
+        #endif
     }
 }
 

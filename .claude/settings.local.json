@@ -48,7 +48,12 @@
       "mcp__MCP_DOCKER__list_directory",
       "mcp__MCP_DOCKER__start_process",
       "Bash(git pull:*)",
-      "Bash(git merge:*)"
+      "Bash(git merge:*)",
+      "Bash(git checkout:*)",
+      "Bash(swift:*)",
+      "Bash(git branch:*)",
+      "Bash(sed:*)",
+      "mcp__XcodeBuildMCP__build_sim_id_ws"
     ],
     "deny": []
   }

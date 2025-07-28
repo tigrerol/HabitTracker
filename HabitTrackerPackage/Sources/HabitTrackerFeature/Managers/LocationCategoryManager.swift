@@ -63,26 +63,30 @@ public final class LocationCategoryManager: Sendable {
     // MARK: - Persistence
     
     private func loadSettings() {
-        do {
-            if let loadedSettings = try persistenceService.load(LocationCategorySettings.self, forKey: PersistenceKeys.locationCategorySettings) {
-                settings = loadedSettings
-                print("✅ Loaded location category settings from persistence")
-                return
+        Task { @MainActor in
+            do {
+                if let loadedSettings = try await persistenceService.load(LocationCategorySettings.self, forKey: PersistenceKeys.locationCategorySettings) {
+                    settings = loadedSettings
+                    print("✅ Loaded location category settings from persistence")
+                    return
+                }
+            } catch {
+                print("❌ Failed to load location category settings: \(error)")
             }
-        } catch {
-            print("❌ Failed to load location category settings: \(error)")
+            
+            // Fallback to defaults
+            settings = .default
+            print("🆕 Using default location category settings")
         }
-        
-        // Fallback to defaults
-        settings = .default
-        print("🆕 Using default location category settings")
     }
     
     private func persistSettings() {
-        do {
-            try persistenceService.save(settings, forKey: PersistenceKeys.locationCategorySettings)
-        } catch {
-            print("❌ Failed to save location category settings: \(error)")
+        Task { @MainActor in
+            do {
+                try await persistenceService.save(settings, forKey: PersistenceKeys.locationCategorySettings)
+            } catch {
+                print("❌ Failed to save location category settings: \(error)")
+            }
         }
     }
 }

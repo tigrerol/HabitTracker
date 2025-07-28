@@ -502,7 +502,7 @@ private struct HabitTypePickerView: View {
                 }
             }
             .navigationTitle(String(localized: "HabitTypePickerView.NavigationTitle", bundle: .module))
-            .navigationBarTitleDisplayMode(.inline)
+            
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(String(localized: "HabitTypePickerView.Cancel.Button", bundle: .module)) {

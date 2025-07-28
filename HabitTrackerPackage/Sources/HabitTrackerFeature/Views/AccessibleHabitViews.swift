@@ -1,4 +1,7 @@
 import SwiftUI
+#if canImport(UIKit)
+import UIKit
+#endif
 
 /// Example enhanced habit views with comprehensive accessibility support
 /// These demonstrate how to implement accessibility across different habit types
@@ -28,7 +31,7 @@ struct AccessibleCheckboxHabitView: View {
                 }
                 .padding()
                 .frame(maxWidth: .infinity)
-                .background(Color(.systemGray6))
+                .background(Color.gray.opacity(0.1))
                 .clipShape(RoundedRectangle(cornerRadius: 12))
             }
             .accessibilityButton(
@@ -141,10 +144,12 @@ struct AccessibleTimerHabitView: View {
         startTime = Date()
         
         // Announce start to VoiceOver
+        #if canImport(UIKit)
         UIAccessibility.post(
             notification: .announcement,
             argument: AccessibilityConfiguration.Announcements.timerStarted(habitName: habit.name)
         )
+        #endif
         
         timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
             Task { @MainActor in
@@ -163,10 +168,12 @@ struct AccessibleTimerHabitView: View {
         timer = nil
         
         // Announce pause to VoiceOver
+        #if canImport(UIKit)
         UIAccessibility.post(
             notification: .announcement,
             argument: AccessibilityConfiguration.Announcements.routinePaused
         )
+        #endif
     }
     
     private func stopTimer() {
@@ -182,10 +189,13 @@ struct AccessibleTimerHabitView: View {
         let actualDuration = startTime?.timeIntervalSinceNow.magnitude ?? defaultDuration
         
         // Provide completion feedback
+        #if canImport(UIKit)
         let impactFeedback = UIImpactFeedbackGenerator(style: .heavy)
         impactFeedback.impactOccurred()
+        #endif
         
         // Announce completion to VoiceOver
+        #if canImport(UIKit)
         UIAccessibility.post(
             notification: .announcement,
             argument: AccessibilityConfiguration.Announcements.timerStopped(
@@ -193,6 +203,7 @@ struct AccessibleTimerHabitView: View {
                 duration: actualDuration.formattedDuration
             )
         )
+        #endif
         
         onComplete(habit.id, actualDuration, nil)
     }
@@ -203,10 +214,12 @@ struct AccessibleTimerHabitView: View {
         isRunning = false
         
         // Announce early completion
+        #if canImport(UIKit)
         UIAccessibility.post(
             notification: .announcement,
             argument: AccessibilityConfiguration.Announcements.habitCompleted(habitName: habit.name)
         )
+        #endif
         
         onComplete(habit.id, actualDuration, "Completed early")
     }
@@ -250,7 +263,7 @@ struct AccessibleCounterHabitView: View {
                                 Spacer()
                             }
                             .padding()
-                            .background(Color(.systemGray6))
+                            .background(Color.gray.opacity(0.1))
                             .clipShape(RoundedRectangle(cornerRadius: 8))
                         }
                         .accessibilityButton(
@@ -301,16 +314,20 @@ struct AccessibleCounterHabitView: View {
         }
         
         // Provide haptic feedback
+        #if canImport(UIKit)
         let impactFeedback = UIImpactFeedbackGenerator(style: .light)
         impactFeedback.impactOccurred()
+        #endif
         
         // Announce the change
         let itemName = items[index]
         let isCompleted = completedItems.contains(index)
+        #if canImport(UIKit)
         UIAccessibility.post(
             notification: .announcement,
             argument: "\(itemName) marked as \(isCompleted ? "complete" : "incomplete")"
         )
+        #endif
     }
     
     private func completeHabit() {
@@ -319,10 +336,12 @@ struct AccessibleCounterHabitView: View {
         }
         
         // Announce completion
+        #if canImport(UIKit)
         UIAccessibility.post(
             notification: .announcement,
             argument: AccessibilityConfiguration.Announcements.habitCompleted(habitName: habit.name)
         )
+        #endif
         
         onComplete(habit.id, nil, "Completed items: \(completedItemNames.joined(separator: ", "))")
     }

@@ -1,4 +1,7 @@
 import SwiftUI
+#if canImport(UIKit)
+import UIKit
+#endif
 
 /// View that handles different types of habit interactions using protocol-based handlers
 public struct HabitInteractionView: View {
@@ -131,8 +134,10 @@ struct CheckboxHabitView: View {
         }
         
         // Haptic feedback
+        #if canImport(UIKit)
         let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
         impactFeedback.impactOccurred()
+        #endif
         
         // Complete after brief delay for animation
         DispatchQueue.main.asyncAfter(deadline: .now() + AppConstants.AnimationDurations.habitCompletion) {
@@ -382,11 +387,13 @@ struct AppLaunchHabitView: View {
         
         hasLaunchedApp = true
         startTime = Date()
+        #if canImport(UIKit)
         UIApplication.shared.open(url) { success in
             if !success {
                 print("Failed to open URL: \(urlString)")
             }
         }
+        #endif
     }
 }
 
@@ -458,7 +465,9 @@ struct WebsiteHabitView: View {
     private func openWebsite() {
         hasOpenedWebsite = true
         startTime = Date()
+        #if canImport(UIKit)
         UIApplication.shared.open(url)
+        #endif
     }
 }
 
@@ -566,8 +575,10 @@ struct SubtasksHabitView: View {
                                 completedSubtasks.insert(subtask.id)
                                 
                                 // Haptic feedback
+                                #if canImport(UIKit)
                                 let impactFeedback = UIImpactFeedbackGenerator(style: .light)
                                 impactFeedback.impactOccurred()
+                                #endif
                             }
                         }
                     } label: {
@@ -769,7 +780,9 @@ struct MeasurementHabitView: View {
                     TextField("0", text: $inputValue)
                         .font(.system(size: 48, weight: .bold, design: .monospaced))
                         .multilineTextAlignment(.center)
+                        #if canImport(UIKit)
                         .keyboardType(.decimalPad)
+                        #endif
                         .focused($isInputFocused)
                     
                     Text(unit)

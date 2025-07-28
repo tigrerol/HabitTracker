@@ -36,7 +36,7 @@ struct RoutineServiceTests {
         
         #expect(service.currentSession == nil)
         
-        service.startSession(with: template)
+        try? service.startSession(with: template)
         
         #expect(service.currentSession != nil)
         #expect(service.currentSession?.template.id == template.id)
@@ -50,10 +50,10 @@ struct RoutineServiceTests {
             return
         }
         
-        service.startSession(with: template)
+        try? service.startSession(with: template)
         #expect(service.currentSession != nil)
         
-        service.completeCurrentSession()
+        try? service.completeCurrentSession()
         #expect(service.currentSession == nil)
     }
     

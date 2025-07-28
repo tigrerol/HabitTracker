@@ -53,8 +53,8 @@ public enum DataModelConfiguration {
         let userDefaultsService = UserDefaultsPersistenceService()
         
         // Migrate routine templates
-        if let templates = try userDefaultsService.load([RoutineTemplate].self, forKey: PersistenceKeys.routineTemplates) {
-            try persistenceService.save(templates, forKey: PersistenceKeys.routineTemplates)
+        if let templates = try await userDefaultsService.load([RoutineTemplate].self, forKey: PersistenceKeys.routineTemplates) {
+            try await persistenceService.save(templates, forKey: PersistenceKeys.routineTemplates)
             print("✅ Migrated \(templates.count) routine templates to SwiftData")
         }
         

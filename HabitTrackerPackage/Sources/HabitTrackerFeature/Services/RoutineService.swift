@@ -14,8 +14,8 @@ public final class RoutineService {
     public private(set) var currentSession: RoutineSession?
     public private(set) var moodRatings: [MoodRating] = []
     
-    /// Smart routine selector for context-aware selection
-    public let smartSelector = SmartRoutineSelector()
+    /// Routine selector for context-aware selection
+    public let routineSelector = RoutineSelector()
     
     private let persistenceService: any PersistenceServiceProtocol
     
@@ -27,27 +27,29 @@ public final class RoutineService {
     
     /// Load templates from persistence, or create sample templates if none exist
     private func loadTemplates() {
-        do {
-            if let loadedTemplates = try persistenceService.load([RoutineTemplate].self, forKey: PersistenceKeys.routineTemplates) {
-                templates = loadedTemplates
-                return
+        Task { @MainActor in
+            do {
+                if let loadedTemplates = try await persistenceService.load([RoutineTemplate].self, forKey: PersistenceKeys.routineTemplates) {
+                    templates = loadedTemplates
+                    return
+                }
+            } catch {
+                ErrorHandlingService.shared.handleDataError(
+                    .decodingFailed(type: "RoutineTemplate", underlyingError: error),
+                    key: PersistenceKeys.routineTemplates,
+                    operation: "load"
+                )
             }
-        } catch {
-            ErrorHandlingService.shared.handleDataError(
-                .decodingFailed(type: "RoutineTemplate", underlyingError: error),
-                key: PersistenceKeys.routineTemplates,
-                operation: "load"
+            
+            // First time launch or failed to load - create sample templates
+            LoggingService.shared.info(
+                "Creating sample templates for first launch",
+                category: .routine,
+                metadata: ["reason": "no_existing_templates"]
             )
+            loadSampleTemplates()
+            await persistTemplates()
         }
-        
-        // First time launch or failed to load - create sample templates
-        LoggingService.shared.info(
-            "Creating sample templates for first launch",
-            category: .routine,
-            metadata: ["reason": "no_existing_templates"]
-        )
-        loadSampleTemplates()
-        persistTemplates()
     }
     
     /// Load predefined sample templates
@@ -61,9 +63,9 @@ public final class RoutineService {
     }
     
     /// Persist templates using PersistenceService
-    private func persistTemplates() {
+    private func persistTemplates() async {
         do {
-            try persistenceService.save(templates, forKey: PersistenceKeys.routineTemplates)
+            try await persistenceService.save(templates, forKey: PersistenceKeys.routineTemplates)
         } catch {
             ErrorHandlingService.shared.handleDataError(
                 .encodingFailed(type: "RoutineTemplate", underlyingError: error),
@@ -101,7 +103,7 @@ public final class RoutineService {
         // Update template's last used date
         if let index = templates.firstIndex(where: { $0.id == template.id }) {
             templates[index].lastUsedAt = Date()
-            persistTemplates()
+            Task { await persistTemplates() }
         }
     }
     
@@ -143,7 +145,7 @@ public final class RoutineService {
     /// Get smart template based on current context
     @MainActor
     public func getSmartTemplate() async -> (template: RoutineTemplate?, reason: String) {
-        await smartSelector.selectBestTemplate(from: templates)
+        await routineSelector.selectBestTemplate(from: templates)
     }
     
     /// Add a new template
@@ -162,7 +164,7 @@ public final class RoutineService {
             }
         }
         
-        persistTemplates()
+        Task { await persistTemplates() }
     }
     
     /// Update an existing template
@@ -177,14 +179,14 @@ public final class RoutineService {
                 }
             }
             
-            persistTemplates()
+            Task { await persistTemplates() }
         }
     }
     
     /// Delete a template
     public func deleteTemplate(withId id: UUID) {
         templates.removeAll { $0.id == id }
-        persistTemplates()
+        Task { await persistTemplates() }
     }
     
     /// Handle selection of a conditional habit option
@@ -205,6 +207,7 @@ public final class RoutineService {
             wasSkipped: false
         )
         ResponseLoggingService.shared.logResponse(response)
+        ConditionalHabitService.shared.recordResponse(response)
         
         // Get the habits from the selected path
         let pathHabits = option.habits
@@ -275,6 +278,7 @@ public final class RoutineService {
             routineId: session.id
         )
         ResponseLoggingService.shared.logResponse(response)
+        ConditionalHabitService.shared.recordResponse(response)
     }
 }
 

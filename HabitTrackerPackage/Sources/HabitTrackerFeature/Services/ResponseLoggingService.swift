@@ -5,40 +5,51 @@ import Foundation
 public final class ResponseLoggingService: Sendable {
     public static let shared = ResponseLoggingService()
     
-    private let userDefaults = UserDefaults.standard
+    private let persistenceService: any PersistenceServiceProtocol
     private let responsesKey = "ConditionalHabitResponses"
     
-    private init() {}
+    /// Initialize with dependency injection
+    public init(persistenceService: any PersistenceServiceProtocol = UserDefaultsPersistenceService()) {
+        self.persistenceService = persistenceService
+    }
+    
+    private convenience init() {
+        self.init(persistenceService: UserDefaultsPersistenceService())
+    }
     
     /// Log a response for a conditional habit
     public func logResponse(_ response: ConditionalResponse) {
-        var responses = getAllResponses()
-        responses.append(response)
-        saveResponses(responses)
+        Task { @MainActor in
+            var responses = await getAllResponses()
+            responses.append(response)
+            await saveResponses(responses)
+        }
     }
     
     /// Get all logged responses
-    public func getAllResponses() -> [ConditionalResponse] {
-        guard let data = userDefaults.data(forKey: responsesKey),
-              let responses = try? JSONDecoder().decode([ConditionalResponse].self, from: data) else {
+    public func getAllResponses() async -> [ConditionalResponse] {
+        do {
+            return try await persistenceService.load([ConditionalResponse].self, forKey: responsesKey) ?? []
+        } catch {
             return []
         }
-        return responses
     }
     
     /// Get responses for a specific habit
-    public func getResponses(for habitId: UUID) -> [ConditionalResponse] {
-        getAllResponses().filter { $0.habitId == habitId }
+    public func getResponses(for habitId: UUID) async -> [ConditionalResponse] {
+        let allResponses = await getAllResponses()
+        return allResponses.filter { $0.habitId == habitId }
     }
     
     /// Get responses for a specific routine
-    public func getResponsesForRoutine(_ routineId: UUID) -> [ConditionalResponse] {
-        getAllResponses().filter { $0.routineId == routineId }
+    public func getResponsesForRoutine(_ routineId: UUID) async -> [ConditionalResponse] {
+        let allResponses = await getAllResponses()
+        return allResponses.filter { $0.routineId == routineId }
     }
     
     /// Get skip rate for a specific habit
-    public func getSkipRate(for habitId: UUID) -> Double {
-        let responses = getResponses(for: habitId)
+    public func getSkipRate(for habitId: UUID) async -> Double {
+        let responses = await getResponses(for: habitId)
         guard !responses.isEmpty else { return 0 }
         
         let skippedCount = responses.filter { $0.wasSkipped }.count
@@ -46,8 +57,8 @@ public final class ResponseLoggingService: Sendable {
     }
     
     /// Get response counts by option for a specific habit
-    public func getResponseCounts(for habitId: UUID) -> [String: Int] {
-        let responses = getResponses(for: habitId).filter { !$0.wasSkipped }
+    public func getResponseCounts(for habitId: UUID) async -> [String: Int] {
+        let responses = await getResponses(for: habitId).filter { !$0.wasSkipped }
         var counts: [String: Int] = [:]
         
         for response in responses {
@@ -59,12 +70,17 @@ public final class ResponseLoggingService: Sendable {
     
     /// Clear all responses (useful for testing or data reset)
     public func clearAllResponses() {
-        userDefaults.removeObject(forKey: responsesKey)
+        Task { @MainActor in
+            await persistenceService.delete(forKey: responsesKey)
+        }
     }
     
-    private func saveResponses(_ responses: [ConditionalResponse]) {
-        if let data = try? JSONEncoder().encode(responses) {
-            userDefaults.set(data, forKey: responsesKey)
+    private func saveResponses(_ responses: [ConditionalResponse]) async {
+        do {
+            try await persistenceService.save(responses, forKey: responsesKey)
+        } catch {
+            // Log error but don't crash
+            print("Failed to save conditional responses: \(error)")
         }
     }
 }
