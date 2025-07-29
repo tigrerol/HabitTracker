@@ -724,9 +724,16 @@ public struct RoutineBuilderView: View {
                         .accessibilityLabel("Step 3 of 3: Review routine")
                         .padding(.bottom, 4)
                         
-                        Text(templateName)
-                            .font(.title2)
-                            .fontWeight(.semibold)
+                        if editingTemplate != nil {
+                            TextField("Routine Name", text: $templateName)
+                                .font(.title2)
+                                .fontWeight(.semibold)
+                                .textFieldStyle(.plain)
+                        } else {
+                            Text(templateName)
+                                .font(.title2)
+                                .fontWeight(.semibold)
+                        }
                         
                         Text(String(localized: "RoutineBuilderView.Summary.HabitsCount", bundle: .module).replacingOccurrences(of: "%d", with: "\(habits.count)").replacingOccurrences(of: "%@", with: totalDuration.formattedDuration))
                             .font(.subheadline)
@@ -872,7 +879,12 @@ public struct RoutineBuilderView: View {
     // MARK: - Helpers
     
     private var totalDuration: TimeInterval {
-        habits.reduce(0) { $0 + $1.estimatedDuration }
+        let total = habits.reduce(0) { accum, habit in
+            let duration = habit.estimatedDuration
+            guard duration.isFinite, !duration.isNaN else { return accum }
+            return accum + duration
+        }
+        return max(0, total)
     }
     
     /// Generate a human-readable summary of the context rule

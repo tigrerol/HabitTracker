@@ -39,7 +39,12 @@ public struct RoutineTemplate: Identifiable, Codable, Hashable, Sendable {
 extension RoutineTemplate {
     /// Total estimated duration for the template
     public var estimatedDuration: TimeInterval {
-        habits.reduce(0) { $0 + $1.estimatedDuration }
+        let total = habits.reduce(0) { accum, habit in
+            let duration = habit.estimatedDuration
+            guard duration.isFinite, !duration.isNaN else { return accum }
+            return accum + duration
+        }
+        return max(0, total)
     }
     
     /// Number of active habits in the template
@@ -49,7 +54,11 @@ extension RoutineTemplate {
     
     /// Formatted duration string (e.g., "25 min")
     public var formattedDuration: String {
-        let minutes = Int(estimatedDuration / 60)
+        let duration = estimatedDuration
+        guard duration.isFinite, !duration.isNaN else {
+            return "0 min"
+        }
+        let minutes = Int(max(0, duration / 60))
         return "\(minutes) min"
     }
     

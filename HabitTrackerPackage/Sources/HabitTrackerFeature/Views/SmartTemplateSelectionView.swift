@@ -351,7 +351,7 @@ struct SmartTemplateSelectionView: View {
             }
         }
         .listStyle(.plain)
-        .frame(height: CGFloat(routineService.templates.count) * 60) // Approximate height per row
+        .frame(height: max(60, CGFloat(routineService.templates.count) * 60)) // Approximate height per row, minimum 60
         .transition(.opacity.combined(with: .scale(scale: 0.95)))
     }
     

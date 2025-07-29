@@ -541,8 +541,12 @@ struct CounterHabitView: View {
 // Helper extension for time formatting
 extension TimeInterval {
     var formattedMinutesSeconds: String {
-        let minutes = Int(self) / 60
-        let seconds = Int(self) % 60
+        guard self.isFinite, !self.isNaN else {
+            return "0:00"
+        }
+        let duration = max(0, self)
+        let minutes = Int(duration) / 60
+        let seconds = Int(duration) % 60
         return String(format: "%d:%02d", minutes, seconds)
     }
 }
