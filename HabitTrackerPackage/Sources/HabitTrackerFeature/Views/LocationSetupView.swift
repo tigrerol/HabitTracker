@@ -34,6 +34,57 @@ private enum ActiveSheet: Identifiable {
     }
 }
 
+/// Unified location item type for consistent handling
+private enum LocationItem {
+    case builtin(LocationType, SavedLocation?)
+    case custom(CustomLocation)
+    
+    var id: String {
+        switch self {
+        case .builtin(let locationType, _):
+            return "builtin_\(locationType.rawValue)"
+        case .custom(let customLocation):
+            return "custom_\(customLocation.id.uuidString)"
+        }
+    }
+    
+    var name: String {
+        switch self {
+        case .builtin(let locationType, _):
+            return locationType.displayName
+        case .custom(let customLocation):
+            return customLocation.name
+        }
+    }
+    
+    var icon: String {
+        switch self {
+        case .builtin(let locationType, _):
+            return locationType.icon
+        case .custom(let customLocation):
+            return customLocation.icon
+        }
+    }
+    
+    var isConfigured: Bool {
+        switch self {
+        case .builtin(_, let savedLocation):
+            return savedLocation != nil
+        case .custom(let customLocation):
+            return customLocation.hasCoordinates
+        }
+    }
+    
+    var dateConfigured: Date? {
+        switch self {
+        case .builtin(_, let savedLocation):
+            return savedLocation?.dateCreated
+        case .custom(let customLocation):
+            return customLocation.hasCoordinates ? customLocation.dateCreated : nil
+        }
+    }
+}
+
 /// Isolated state management for location setup to avoid conflicts
 @MainActor
 @Observable
@@ -80,42 +131,47 @@ struct LocationSetupView: View {
                     .foregroundStyle(.secondary)
             }
             
-            Section(String(localized: "LocationSetupView.BuiltInLocations.Title", bundle: .module)) {
-                ForEach(LocationType.allCases.filter { $0 != .unknown }, id: \.self) { locationType in
-                    LocationRow(
-                        locationType: locationType,
-                        savedLocation: locationState.savedLocations[locationType],
-                        onAdd: {
-                            locationState.setSheet(.locationPicker(locationType))
-                        },
-                        onRemove: {
-                            locationState.clearSheet()
-                            locationState.setAlert(.deleteLocation(locationType))
-                        }
-                    )
-                }
-            }
-            
-            customLocationsSection
+            allLocationsSection
             
             privacySection
         }
     }
     
-    private var customLocationsSection: some View {
-        Section(String(localized: "LocationSetupView.CustomLocations.Title", bundle: .module)) {
+    private var allLocationsSection: some View {
+        Section(String(localized: "LocationSetupView.Locations.Title", bundle: .module)) {
+            // Built-in locations
+            ForEach(LocationType.allCases.filter { $0 != .unknown }, id: \.self) { locationType in
+                UnifiedLocationRow(
+                    locationItem: .builtin(locationType, locationState.savedLocations[locationType]),
+                    onEdit: {
+                        locationState.clearAlert()
+                        locationState.setSheet(.locationPicker(locationType))
+                    }
+                )
+            }
+            .onDelete { indexSet in
+                for index in indexSet {
+                    let locationType = LocationType.allCases.filter { $0 != .unknown }[index]
+                    locationState.clearSheet()
+                    locationState.setAlert(.deleteLocation(locationType))
+                }
+            }
+            
+            // Custom locations
             ForEach(locationState.customLocations) { customLocation in
-                CustomLocationRow(
-                    customLocation: customLocation,
+                UnifiedLocationRow(
+                    locationItem: .custom(customLocation),
                     onEdit: {
                         locationState.clearAlert()
                         if customLocation.hasCoordinates {
-                            // Edit existing location
-                            locationState.setSheet(.customLocationEditor(customLocation))
+                            locationState.setSheet(.customLocationPicker(customLocation.id))
                         } else {
-                            // Set location coordinates first
                             locationState.setSheet(.customLocationPicker(customLocation.id))
                         }
+                    },
+                    onEditName: {
+                        locationState.clearAlert()
+                        locationState.setSheet(.customLocationEditor(customLocation))
                     }
                 )
             }
@@ -135,6 +191,7 @@ struct LocationSetupView: View {
             }
         }
     }
+    
     
     private var privacySection: some View {
         Section {
@@ -245,71 +302,33 @@ struct LocationSetupView: View {
     }
 }
 
-/// Row showing a location type and its setup status
-private struct LocationRow: View {
-    let locationType: LocationType
-    let savedLocation: SavedLocation?
-    let onAdd: () -> Void
-    let onRemove: () -> Void
-    
-    var body: some View {
-        HStack {
-            Label {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(locationType.displayName)
-                        .foregroundStyle(.primary)
-                    
-                    if let savedLocation = savedLocation {
-                        Text(String(localized: "LocationSetupView.LocationSet.Date", bundle: .module).replacingOccurrences(of: "%@", with: savedLocation.dateCreated.formatted(date: .abbreviated, time: .omitted)))
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    } else {
-                        Text(String(localized: "LocationSetupView.LocationSet.NotSet", bundle: .module))
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-            } icon: {
-                Image(systemName: locationType.icon)
-                    .foregroundStyle(.blue)
-            }
-            
-            Spacer()
-            
-            if savedLocation != nil {
-                Button(String(localized: "LocationSetupView.Change.Button", bundle: .module), action: onAdd)
-                    .font(.caption)
-                    .foregroundStyle(.blue)
-                
-                Button(String(localized: "LocationSetupView.Remove.Button", bundle: .module), action: onRemove)
-                    .font(.caption)
-                    .foregroundStyle(.red)
-            } else {
-                Button(String(localized: "LocationSetupView.SetCurrentLocation.Button", bundle: .module), action: onAdd)
-                    .font(.caption)
-                    .foregroundStyle(.blue)
-            }
-        }
-    }
-}
 
-/// Row showing a custom location and its setup status
-private struct CustomLocationRow: View {
-    let customLocation: CustomLocation
+/// Unified row for both built-in and custom locations
+private struct UnifiedLocationRow: View {
+    let locationItem: LocationItem
     let onEdit: () -> Void
+    let onEditName: (() -> Void)?
+    
+    init(locationItem: LocationItem, onEdit: @escaping () -> Void, onEditName: (() -> Void)? = nil) {
+        self.locationItem = locationItem
+        self.onEdit = onEdit
+        self.onEditName = onEditName
+    }
     
     var body: some View {
         Button(action: onEdit) {
             HStack {
                 Label {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(customLocation.name)
+                        Text(locationItem.name)
                             .foregroundStyle(.primary)
                         
-                        if customLocation.hasCoordinates {
-                            Text(String(localized: "LocationSetupView.LocationSet.Date", bundle: .module).replacingOccurrences(of: "%@", with: customLocation.dateCreated.formatted(date: .abbreviated, time: .omitted)))
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+                        if locationItem.isConfigured {
+                            if let date = locationItem.dateConfigured {
+                                Text(String(localized: "LocationSetupView.LocationSet.Date", bundle: .module).replacingOccurrences(of: "%@", with: date.formatted(date: .abbreviated, time: .omitted)))
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
                         } else {
                             Text(String(localized: "LocationSetupView.LocationSet.NotSet", bundle: .module))
                                 .font(.caption)
@@ -317,15 +336,15 @@ private struct CustomLocationRow: View {
                         }
                     }
                 } icon: {
-                    Image(systemName: customLocation.icon)
+                    Image(systemName: locationItem.icon)
                         .foregroundStyle(.blue)
                 }
                 
                 Spacer()
                 
                 // Show appropriate action text
-                Text(customLocation.hasCoordinates ? 
-                     String(localized: "LocationSetupView.Edit.Button", bundle: .module) : 
+                Text(locationItem.isConfigured ? 
+                     String(localized: "LocationSetupView.Change.Button", bundle: .module) : 
                      String(localized: "LocationSetupView.SetLocation.Button", bundle: .module))
                     .font(.caption)
                     .foregroundStyle(.blue)
@@ -336,6 +355,17 @@ private struct CustomLocationRow: View {
             }
         }
         .buttonStyle(.plain)
+        .swipeActions(edge: .leading, allowsFullSwipe: false) {
+            // Only show edit name/icon for custom locations
+            if case .custom = locationItem, let onEditName = onEditName {
+                Button {
+                    onEditName()
+                } label: {
+                    Label("Edit Name", systemImage: "pencil")
+                }
+                .tint(.orange)
+            }
+        }
     }
 }
 
