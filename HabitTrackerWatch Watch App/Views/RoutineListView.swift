@@ -57,12 +57,14 @@ struct RoutineRowView: View {
                 Text(routine.name)
                     .font(.headline)
                     .lineLimit(1)
+                    .accessibilityLabel("Routine name: \(routine.name)")
                 
                 Spacer()
                 
                 Text(routine.formattedDuration)
                     .font(.caption)
                     .foregroundColor(.secondary)
+                    .accessibilityLabel("Duration: \(routine.formattedDuration)")
             }
             
             if let description = routine.description, !description.isEmpty {
@@ -70,6 +72,7 @@ struct RoutineRowView: View {
                     .font(.caption)
                     .foregroundColor(.secondary)
                     .lineLimit(2)
+                    .accessibilityLabel("Description: \(description)")
             }
             
             HStack {
@@ -80,6 +83,7 @@ struct RoutineRowView: View {
                 Text("\(routine.activeHabitsCount) habits")
                     .font(.caption)
                     .foregroundColor(.secondary)
+                    .accessibilityLabel("\(routine.activeHabitsCount) habits")
                 
                 Spacer()
                 

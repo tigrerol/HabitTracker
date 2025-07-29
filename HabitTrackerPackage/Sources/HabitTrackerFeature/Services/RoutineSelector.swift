@@ -17,6 +17,12 @@ public final class RoutineSelector {
     private var currentLocationType: LocationType = .unknown
     private var currentExtendedLocationType: ExtendedLocationType = .builtin(.unknown)
     
+    /// Throttling for context updates to reduce performance impact
+    private var lastContextUpdate: Date = Date.distantPast
+    
+    /// Flag to control whether location updates should be active
+    private var shouldUpdateLocation: Bool = false
+    
     public init(locationCoordinator: LocationCoordinator = LocationCoordinator.shared) {
         self.locationCoordinator = locationCoordinator
         self.currentContext = RoutineContext.current()
@@ -34,11 +40,26 @@ public final class RoutineSelector {
             
             print("🗺️ RoutineSelector: Location update received - \(locationType), \(extendedLocationType)")
             
+            // Check if location actually changed to avoid unnecessary updates
+            guard self.currentLocationType != locationType || self.currentExtendedLocationType != extendedLocationType else {
+                print("🗺️ RoutineSelector: Location unchanged, skipping context update")
+                return
+            }
+            
+            // Only update if location updates are enabled
+            guard self.shouldUpdateLocation else {
+                print("🗺️ RoutineSelector: Location updates disabled, only caching location")
+                self.currentLocationType = locationType
+                self.currentExtendedLocationType = extendedLocationType
+                return
+            }
+            
             self.currentLocationType = locationType
             self.currentExtendedLocationType = extendedLocationType
             
             print("🗺️ RoutineSelector: Updated currentLocationType to \(self.currentLocationType)")
             
+            // Apply throttling to location-triggered context updates too
             await self.updateContext()
             
             print("🗺️ RoutineSelector: Context updated - location is now \(self.currentContext.location)")
@@ -51,11 +72,28 @@ public final class RoutineSelector {
         let (locationType, extendedLocationType) = await locationCoordinator.getCurrentLocationTypes()
         self.currentLocationType = locationType
         self.currentExtendedLocationType = extendedLocationType
-        await updateContext()
+        await updateContext(force: true)
+    }
+    
+    /// Enable location-based context updates (call when template selection is needed)
+    public func enableLocationUpdates() {
+        shouldUpdateLocation = true
+    }
+    
+    /// Disable location-based context updates (call when not actively needed)
+    public func disableLocationUpdates() {
+        shouldUpdateLocation = false
     }
     
     /// Update the current context
-    public func updateContext() async {
+    public func updateContext(force: Bool = false) async {
+        // Throttle context updates to prevent performance issues
+        let now = Date()
+        if !force && now.timeIntervalSince(lastContextUpdate) < AppConstants.Location.contextUpdateInterval {
+            return
+        }
+        lastContextUpdate = now
+        
         let timeSlot = TimeSlotManager.shared.getCurrentTimeSlot()
         let dayCategory = DayCategoryManager.shared.getCurrentDayCategory()
         
@@ -83,7 +121,11 @@ public final class RoutineSelector {
     
     /// Select the best routine template based on current context
     public func selectBestTemplate(from templates: [RoutineTemplate]) async -> (template: RoutineTemplate?, reason: String) {
-        await updateContext()
+        // Enable location updates only when actively selecting templates
+        enableLocationUpdates()
+        defer { disableLocationUpdates() }
+        
+        await updateContext(force: true)
         
         // Filter templates with context rules and calculate scores
         print("🔍 RoutineSelector: Current context - Time: \(currentContext.timeSlot.displayName), Day: \(currentContext.dayCategory.displayName), Location: \(currentContext.location.displayName)")

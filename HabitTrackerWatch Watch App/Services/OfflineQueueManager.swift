@@ -112,6 +112,22 @@ final class QueueStatusViewModel {
     private let queueManager = OfflineQueueManager.shared
     private let connectivityManager = WatchConnectivityManager.shared
     
+    private var showSyncedMessage = false
+    private var hideTask: Task<Void, Never>?
+    
+    init() {
+        // Listen for sync completion notifications
+        NotificationCenter.default.addObserver(
+            forName: NSNotification.Name("WatchSyncCompleted"),
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in
+                self?.onSyncCompleted()
+            }
+        }
+    }
+    
     var isConnected: Bool {
         connectivityManager.isConnected
     }
@@ -128,8 +144,10 @@ final class QueueStatusViewModel {
         if isConnected {
             if hasQueuedItems {
                 return "Syncing \(queuedItemsCount) items..."
-            } else {
+            } else if showSyncedMessage {
                 return "Synced"
+            } else {
+                return "" // Hidden after 5 seconds or never shown yet
             }
         } else {
             if hasQueuedItems {
@@ -150,6 +168,25 @@ final class QueueStatusViewModel {
     
     func forceSyncIfPossible() {
         queueManager.forceSyncIfPossible()
+        onSyncCompleted()
+    }
+    
+    func onSyncCompleted() {
+        // Cancel any existing hide task
+        hideTask?.cancel()
+        
+        // Show the message immediately
+        showSyncedMessage = true
+        
+        // Start new task to hide after 5 seconds
+        hideTask = Task {
+            try? await Task.sleep(for: .seconds(5))
+            if !Task.isCancelled {
+                await MainActor.run {
+                    showSyncedMessage = false
+                }
+            }
+        }
     }
 }
 
@@ -159,26 +196,39 @@ struct QueueStatusView: View {
     @State private var viewModel = QueueStatusViewModel()
     
     var body: some View {
-        HStack(spacing: 8) {
-            Image(systemName: viewModel.isConnected ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
-                .foregroundColor(viewModel.statusColor)
-                .font(.caption)
-            
-            Text(viewModel.statusText)
-                .font(.caption)
-                .foregroundColor(.secondary)
-            
-            if viewModel.hasQueuedItems && viewModel.isConnected {
-                Button("Sync") {
-                    viewModel.forceSyncIfPossible()
+        Group {
+            if !viewModel.statusText.isEmpty {
+                HStack(spacing: 8) {
+                    Image(systemName: viewModel.isConnected ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
+                        .foregroundColor(viewModel.statusColor)
+                        .font(.caption)
+                    
+                    Text(viewModel.statusText)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    
+                    if viewModel.hasQueuedItems && viewModel.isConnected {
+                        Button("Sync") {
+                            viewModel.forceSyncIfPossible()
+                        }
+                        .font(.caption)
+                        .buttonStyle(.borderless)
+                    }
                 }
-                .font(.caption)
-                .buttonStyle(.borderless)
+                .padding(.horizontal)
+                .padding(.vertical, 4)
+                .background(Color.gray.opacity(0.2))
+                .cornerRadius(8)
+                .transition(.opacity.combined(with: .scale))
             }
         }
-        .padding(.horizontal)
-        .padding(.vertical, 4)
-        .background(Color.gray.opacity(0.2))
-        .cornerRadius(8)
+        .animation(.easeInOut(duration: 0.3), value: viewModel.statusText.isEmpty)
+        .onChange(of: viewModel.hasQueuedItems) { oldValue, newValue in
+            // Detect when we transition from having items to no items while connected
+            if oldValue && !newValue && viewModel.isConnected {
+                print("Sync completed - triggering auto-hide message")
+                viewModel.onSyncCompleted()
+            }
+        }
     }
 }

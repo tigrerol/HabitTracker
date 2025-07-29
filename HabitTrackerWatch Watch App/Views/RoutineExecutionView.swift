@@ -41,77 +41,117 @@ struct RoutineExecutionView: View {
     }
     
     private var executionView: some View {
-        VStack(spacing: 0) {
-            // Progress Header
-            VStack(spacing: 8) {
-                ProgressView(value: progress)
-                    .progressViewStyle(LinearProgressViewStyle())
-                
-                Text("\(completedHabits.count) of \(routine.habits.count)")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            }
-            .padding()
-            
-            // Current Habit Content
-            if currentHabit != nil {
-                TabView(selection: $currentHabitIndex) {
-                    ForEach(Array(routine.habits.enumerated()), id: \.element.id) { index, habit in
-                        HabitView(
-                            habit: habit,
-                            isCompleted: completedHabits.contains(habit.id),
-                            onComplete: {
-                                completeHabit(habit)
-                            },
-                            onSkip: {
-                                skipHabit(habit)
-                            }
-                        )
-                        .tag(index)
-                    }
+        ScrollView {
+            VStack(spacing: 0) {
+                // Progress Header
+                VStack(spacing: 8) {
+                    ProgressView(value: progress)
+                        .progressViewStyle(LinearProgressViewStyle())
+                    
+                    Text("\(completedHabits.count) of \(routine.habits.count)")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
                 }
-                .tabViewStyle(PageTabViewStyle())
-            } else {
-                Spacer()
-                Text("All habits completed!")
-                    .font(.headline)
-                Spacer()
-            }
-            
-            // Navigation Controls
-            VStack(spacing: 8) {
-                HStack {
-                    Button("Previous") {
-                        withAnimation {
-                            currentHabitIndex = max(0, currentHabitIndex - 1)
+                .padding()
+                
+                // Current Habit Content
+                if let currentHabit = currentHabit {
+                    HabitView(
+                        habit: currentHabit,
+                        isCompleted: completedHabits.contains(currentHabit.id),
+                        onComplete: {
+                            completeHabit(currentHabit)
+                            WKInterfaceDevice.current().play(.success) // Haptic feedback
+                        },
+                        onSkip: {
+                            skipHabit(currentHabit)
+                            WKInterfaceDevice.current().play(.failure) // Haptic feedback
                         }
+                    )
+                    .gesture(DragGesture(minimumDistance: 20, coordinateSpace: .local)
+                        .onEnded { value in
+                            if value.translation.width < 0 { // Swipe left
+                                if currentHabitIndex < routine.habits.count - 1 {
+                                    withAnimation {
+                                        currentHabitIndex += 1
+                                    }
+                                    WKInterfaceDevice.current().play(.click)
+                                }
+                            } else if value.translation.width > 0 { // Swipe right
+                                if currentHabitIndex > 0 {
+                                    withAnimation {
+                                        currentHabitIndex -= 1
+                                    }
+                                    WKInterfaceDevice.current().play(.click)
+                                }
+                            }
+                        }
+                    )
+                } else {
+                    VStack {
+                        Text("All habits completed!")
+                            .font(.footnote)
+                            .fontWeight(.semibold)
+                        Text("Tap Finish to complete the routine")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
                     }
-                    .disabled(currentHabitIndex <= 0)
-                    
-                    Spacer()
-                    
-                    if currentHabitIndex >= routine.habits.count - 1 {
-                        Button("Finish") {
-                            finishRoutine()
-                        }
-                        .buttonStyle(.borderedProminent)
-                    } else {
-                        Button("Next") {
+                    .padding()
+                }
+                
+                Spacer() // Pushes content to top
+                
+                // Navigation Controls
+                VStack(spacing: 4) {
+                    HStack(spacing: 8) {
+                        Button {
                             withAnimation {
-                                currentHabitIndex = min(routine.habits.count - 1, currentHabitIndex + 1)
+                                currentHabitIndex = max(0, currentHabitIndex - 1)
                             }
+                            WKInterfaceDevice.current().play(.click) // Haptic feedback
+                        } label: {
+                            Image(systemName: "chevron.left.circle.fill")
+                                .font(.title)
+                        }
+                        .disabled(currentHabitIndex <= 0)
+                        .buttonStyle(.bordered)
+                        .opacity(currentHabitIndex <= 0 ? 0.3 : 1.0)
+                        
+                        Spacer()
+                        
+                        if currentHabitIndex >= routine.habits.count - 1 {
+                            Button("Finish") {
+                                finishRoutine()
+                                WKInterfaceDevice.current().play(.success) // Haptic feedback for completion
+                            }
+                            .buttonStyle(.borderedProminent)
+                            .font(.caption)
+                            .frame(height: 24)
+                        } else {
+                            Button {
+                                withAnimation {
+                                    currentHabitIndex = min(routine.habits.count - 1, currentHabitIndex + 1)
+                                }
+                                WKInterfaceDevice.current().play(.click) // Haptic feedback
+                            } label: {
+                                Image(systemName: "chevron.right.circle.fill")
+                                    .font(.title)
+                            }
+                            .buttonStyle(.bordered)
                         }
                     }
+                    
+                    // Cancel button at the bottom
+                    Button("Cancel") {
+                        showingCancelAlert = true
+                    }
+                    .font(.caption2)
+                    .foregroundColor(.red)
                 }
-                
-                // Cancel button at the bottom
-                Button("Cancel Routine") {
-                    showingCancelAlert = true
-                }
-                .font(.caption)
-                .foregroundColor(.red)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
             }
-            .padding()
         }
         .navigationTitle(routine.name)
         .navigationBarTitleDisplayMode(.inline)
@@ -242,109 +282,182 @@ struct HabitView: View {
     let onComplete: () -> Void
     let onSkip: () -> Void
     
+    @State private var showAllSubtasks: Bool = false
+    @State private var showAllCounterItems: Bool = false
+    @State private var scrollAmount: Double = 0.0
+    
     var body: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 12) {
             // Habit Header
-            VStack(spacing: 8) {
+            VStack(spacing: 6) {
                 HStack {
                     Image(systemName: habit.iconName)
-                        .font(.title2)
+                        .font(.body)
                         .foregroundColor(habit.swiftUIColor)
                     
                     Spacer()
                     
                     if isCompleted {
                         Image(systemName: "checkmark.circle.fill")
-                            .font(.title2)
+                            .font(.body)
                             .foregroundColor(.green)
                     }
                 }
                 
                 Text(habit.name)
-                    .font(.headline)
+                    .font(.footnote)
+                    .fontWeight(.semibold)
                     .multilineTextAlignment(.center)
+                    .lineLimit(2)
                 
                 if let notes = habit.notes, !notes.isEmpty {
                     Text(notes)
-                        .font(.caption)
+                        .font(.caption2)
                         .foregroundColor(.secondary)
                         .multilineTextAlignment(.center)
+                        .lineLimit(2)
                 }
             }
             
             Spacer()
             
             // Habit-specific content
-            habitSpecificContent
+            ScrollView {
+                habitSpecificContent
+            }
+            .focusable()
+            .digitalCrownRotation($scrollAmount, from: 0, through: 100000, by: 1, sensitivity: .low, isContinuous: false)
             
             Spacer()
             
             // Action Buttons
             if !isCompleted {
-                VStack(spacing: 8) {
+                VStack(spacing: 6) {
                     Button("Complete") {
                         onComplete()
                     }
-                    .buttonStyle(.borderedProminent)
+                    .buttonStyle(.bordered)
+                    .font(.caption)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 32)
                     
                     if habit.isOptional {
                         Button("Skip") {
                             onSkip()
                         }
+                        .buttonStyle(.borderless)
                         .font(.caption)
+                        .foregroundColor(.secondary)
                     }
                 }
             }
         }
-        .padding()
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
     }
     
     @ViewBuilder
     private var habitSpecificContent: some View {
         switch habit.type {
         case .checkbox:
-            Image(systemName: "checkmark.square")
-                .font(.system(size: 40))
-                .foregroundColor(.secondary)
+            VStack(spacing: 8) {
+                Image(systemName: "checkmark.square")
+                    .font(.system(size: 24))
+                    .foregroundColor(habit.swiftUIColor)
+                
+                Text("Tap Complete when done")
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+            }
             
         case .timer(let duration):
-            VStack {
+            VStack(spacing: 8) {
                 Image(systemName: "timer")
-                    .font(.system(size: 40))
-                    .foregroundColor(.secondary)
+                    .font(.system(size: 24))
+                    .foregroundColor(habit.swiftUIColor)
                 
-                Text("\(Int(duration / 60)) min")
-                    .font(.title3)
+                Text("\(Int(duration / 60)) minutes")
+                    .font(.footnote)
+                    .fontWeight(.medium)
+                
+                Text("Set a timer and complete when done")
+                    .font(.caption2)
                     .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
             }
             
         case .checkboxWithSubtasks(let subtasks):
-            VStack(alignment: .leading, spacing: 4) {
-                ForEach(subtasks) { subtask in
-                    HStack {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Complete these tasks:")
+                    .font(.caption)
+                    .fontWeight(.medium)
+                
+                ForEach(showAllSubtasks ? subtasks : Array(subtasks.prefix(3))) { subtask in
+                    HStack(alignment: .top, spacing: 6) {
                         Image(systemName: "circle")
-                            .font(.caption)
+                            .font(.caption2)
+                            .foregroundColor(habit.swiftUIColor)
                         Text(subtask.name)
-                            .font(.caption)
+                            .font(.caption2)
+                            .lineLimit(1)
+                    }
+                }
+                
+                if subtasks.count > 3 {
+                    Button(action: {
+                        showAllSubtasks.toggle()
+                    }) {
+                        Text(showAllSubtasks ? "Show Less" : "... and \(subtasks.count - 3) more")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                            .padding(.leading, 12)
                     }
                 }
             }
             
         case .counter(let items):
-            VStack {
+            VStack(spacing: 8) {
                 Image(systemName: "list.bullet")
-                    .font(.system(size: 40))
-                    .foregroundColor(.secondary)
+                    .font(.system(size: 24))
+                    .foregroundColor(habit.swiftUIColor)
                 
-                Text("\(items.count) items")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                Text("\(items.count) items to track")
+                    .font(.footnote)
+                    .fontWeight(.medium)
+                
+                if !items.isEmpty {
+                    VStack(alignment: .leading, spacing: 4) {
+                        ForEach(showAllCounterItems ? items : Array(items.prefix(2)), id: \.self) { item in
+                            Text("- \(item)")
+                                .font(.caption2)
+                                .foregroundColor(habit.swiftUIColor) // Ensure consistent coloring
+                        }
+                        
+                        if items.count > 2 {
+                            Button(action: {
+                                showAllCounterItems.toggle()
+                            }) {
+                                Text(showAllCounterItems ? "Show Less" : "... and \(items.count - 2) more")
+                                    .font(.caption2)
+                                    .foregroundColor(.secondary)
+                                    .padding(.leading, 8)
+                            }
+                        }
+                    }
+                }
             }
             
         default:
-            Image(systemName: habit.iconName)
-                .font(.system(size: 40))
-                .foregroundColor(.secondary)
+            VStack(spacing: 8) {
+                Image(systemName: habit.iconName)
+                    .font(.system(size: 24))
+                    .foregroundColor(habit.swiftUIColor)
+                
+                Text("Complete this habit")
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+            }
         }
     }
 }

@@ -29,7 +29,7 @@ public final class LocationStorageService: ObservableObject {
                 latitude: location.coordinate.latitude,
                 longitude: location.coordinate.longitude
             )
-            await ErrorHandlingService.shared.handleLocationError(error)
+            ErrorHandlingService.shared.handleLocationError(error)
             throw error
         }
         
@@ -37,7 +37,7 @@ public final class LocationStorageService: ObservableObject {
         let finalRadius = radius ?? AppConstants.Location.defaultRadius
         guard finalRadius >= 10 && finalRadius <= 1000 else {
             let error = LocationError.radiusValidationFailed(radius: finalRadius)
-            await ErrorHandlingService.shared.handleLocationError(error)
+            ErrorHandlingService.shared.handleLocationError(error)
             throw error
         }
         
@@ -46,7 +46,7 @@ public final class LocationStorageService: ObservableObject {
             let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !trimmedName.isEmpty, trimmedName.count <= 30 else {
                 let error = ValidationError.invalidLocationName(name: name)
-                await ErrorHandlingService.shared.handle(error)
+                ErrorHandlingService.shared.handle(error)
                 throw error
             }
         }
@@ -59,7 +59,7 @@ public final class LocationStorageService: ObservableObject {
         knownLocations[type] = savedLocation
         
         // Log location save event
-        await LoggingService.shared.logLocationEvent(
+        LoggingService.shared.logLocationEvent(
             .locationSaved,
             metadata: [
                 "location_type": type.rawValue,
@@ -149,7 +149,7 @@ public final class LocationStorageService: ObservableObject {
             try await persistenceService.save(knownLocations, forKey: savedLocationsKey)
             try await persistenceService.save(customLocations, forKey: customLocationsKey)
         } catch {
-            await ErrorHandlingService.shared.handleDataError(
+            ErrorHandlingService.shared.handleDataError(
                 .encodingFailed(type: "LocationData", underlyingError: error),
                 key: "LocationStoragePersistence",
                 operation: "save"
@@ -164,7 +164,7 @@ public final class LocationStorageService: ObservableObject {
                 knownLocations = known
             }
         } catch {
-            await ErrorHandlingService.shared.handleDataError(
+            ErrorHandlingService.shared.handleDataError(
                 .decodingFailed(type: "SavedLocation", underlyingError: error),
                 key: savedLocationsKey,
                 operation: "load"
@@ -177,7 +177,7 @@ public final class LocationStorageService: ObservableObject {
                 customLocations = custom
             }
         } catch {
-            await ErrorHandlingService.shared.handleDataError(
+            ErrorHandlingService.shared.handleDataError(
                 .decodingFailed(type: "CustomLocation", underlyingError: error),
                 key: customLocationsKey,
                 operation: "load"

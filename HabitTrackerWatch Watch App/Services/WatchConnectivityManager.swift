@@ -160,7 +160,7 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate {
             print("File transfer failed with error: \(error.localizedDescription)")
             return
         }
-        print("File transfer finished: \(fileTransfer.file.fileURL.lastPathComponent ?? "unknown file")")
+        print("File transfer finished: \(fileTransfer.file.fileURL.lastPathComponent)")
     }
     
     // MARK: - Data Processing
@@ -289,6 +289,13 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate {
             
             WCSession.default.transferUserInfo(userInfo)
             print("Sent routine completion to iOS.")
+            
+            // Trigger sync completed message
+            DispatchQueue.main.async {
+                // Access QueueStatusView's viewModel to trigger sync message
+                // We'll use a notification instead to avoid tight coupling
+                NotificationCenter.default.post(name: NSNotification.Name("WatchSyncCompleted"), object: nil)
+            }
         } catch {
             print("Failed to encode completion data: \(error.localizedDescription)")
             // If encoding fails, we should still queue it for retry

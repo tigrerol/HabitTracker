@@ -34,120 +34,147 @@ private enum ActiveSheet: Identifiable {
     }
 }
 
+/// Isolated state management for location setup to avoid conflicts
+@MainActor
+@Observable
+private final class LocationSetupState {
+    var activeSheet: ActiveSheet?
+    var alertItem: AlertItem?
+    var customLocations: [CustomLocation] = []
+    var savedLocations: [LocationType: SavedLocation] = [:]
+    
+    func clearAlert() {
+        alertItem = nil
+    }
+    
+    func clearSheet() {
+        activeSheet = nil
+    }
+    
+    func setSheet(_ sheet: ActiveSheet) {
+        activeSheet = sheet
+    }
+    
+    func setAlert(_ alert: AlertItem) {
+        alertItem = alert
+    }
+}
+
 /// View for setting up and managing saved locations
 struct LocationSetupView: View {
     @Environment(RoutineService.self) private var routineService
     @Environment(\.dismiss) private var dismiss
     
-    // Single sheet state to prevent presentation conflicts
-    @State private var activeSheet: ActiveSheet?
-    
-    // Combined alert state
-    @State private var alertItem: AlertItem?
-    @State private var customLocations: [CustomLocation] = []
-    @State private var savedLocations: [LocationType: SavedLocation] = [:]
+    // Isolated state management
+    @State private var locationState = LocationSetupState()
     
     private var locationCoordinator: LocationCoordinator {
         routineService.routineSelector.locationCoordinator
     }
     
-    /// Safely present an alert after a brief delay to avoid sheet conflicts
-    private func presentAlert(_ alert: AlertItem) {
-        // First dismiss any active sheet
-        activeSheet = nil
-        
-        // Wait for sheet dismissal animation to complete before showing alert
-        Task { @MainActor in
-            try? await Task.sleep(for: .milliseconds(300))
-            alertItem = alert
+    private var contentView: some View {
+        List {
+            Section {
+                Text(String(localized: "LocationSetupView.MainDescription", bundle: .module))
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+            
+            Section(String(localized: "LocationSetupView.BuiltInLocations.Title", bundle: .module)) {
+                ForEach(LocationType.allCases.filter { $0 != .unknown }, id: \.self) { locationType in
+                    LocationRow(
+                        locationType: locationType,
+                        savedLocation: locationState.savedLocations[locationType],
+                        onAdd: {
+                            locationState.setSheet(.locationPicker(locationType))
+                        },
+                        onRemove: {
+                            locationState.clearSheet()
+                            locationState.setAlert(.deleteLocation(locationType))
+                        }
+                    )
+                }
+            }
+            
+            customLocationsSection
+            
+            privacySection
+        }
+    }
+    
+    private var customLocationsSection: some View {
+        Section(String(localized: "LocationSetupView.CustomLocations.Title", bundle: .module)) {
+            ForEach(locationState.customLocations) { customLocation in
+                CustomLocationRow(
+                    customLocation: customLocation,
+                    onSetLocation: {
+                        print("🔵 SET LOCATION: Button tapped for \(customLocation.name)")
+                        print("🔵 SET LOCATION: Before - activeSheet: \(String(describing: locationState.activeSheet)), alertItem: \(String(describing: locationState.alertItem))")
+                        locationState.clearAlert()
+                        locationState.setSheet(.customLocationPicker(customLocation.id))
+                        print("🔵 SET LOCATION: After - activeSheet: \(String(describing: locationState.activeSheet)), alertItem: \(String(describing: locationState.alertItem))")
+                    },
+                    onEdit: {
+                        print("🟠 EDIT: Button tapped for \(customLocation.name)")
+                        print("🟠 EDIT: Before - activeSheet: \(String(describing: locationState.activeSheet)), alertItem: \(String(describing: locationState.alertItem))")
+                        locationState.clearAlert()
+                        locationState.setSheet(.customLocationEditor(customLocation))
+                        print("🟠 EDIT: After - activeSheet: \(String(describing: locationState.activeSheet)), alertItem: \(String(describing: locationState.alertItem))")
+                    },
+                    onDelete: {
+                        print("🔴 DELETE: Button tapped for \(customLocation.name)")
+                        print("🔴 DELETE: Before - activeSheet: \(String(describing: locationState.activeSheet)), alertItem: \(String(describing: locationState.alertItem))")
+                        locationState.clearSheet()
+                        locationState.setAlert(.deleteCustomLocation(customLocation))
+                        print("🔴 DELETE: After - activeSheet: \(String(describing: locationState.activeSheet)), alertItem: \(String(describing: locationState.alertItem))")
+                    }
+                )
+            }
+            
+            Button {
+                locationState.setSheet(.customLocationEditor(nil))
+            } label: {
+                Label(String(localized: "LocationSetupView.AddCustomLocation.Label", bundle: .module), systemImage: "plus")
+                    .foregroundStyle(.blue)
+            }
+        }
+    }
+    
+    private var privacySection: some View {
+        Section {
+            VStack(alignment: .leading, spacing: 8) {
+                Text(String(localized: "LocationSetupView.HowItWorks.Title", bundle: .module))
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(String(localized: "LocationSetupView.HowItWorks.Step1", bundle: .module))
+                    Text(String(localized: "LocationSetupView.HowItWorks.Step2", bundle: .module))
+                    Text(String(localized: "LocationSetupView.HowItWorks.Step3", bundle: .module))
+                    Text(String(localized: "LocationSetupView.HowItWorks.Step4", bundle: .module))
+                }
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            }
+        } header: {
+            Text(String(localized: "LocationSetupView.PrivacyTitle", bundle: .module))
         }
     }
     
     var body: some View {
         NavigationStack {
-            List {
-                Section {
-                    Text(String(localized: "LocationSetupView.MainDescription", bundle: .module))
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                }
-                
-                Section(String(localized: "LocationSetupView.BuiltInLocations.Title", bundle: .module)) {
-                    ForEach(LocationType.allCases.filter { $0 != .unknown }, id: \.self) { locationType in
-                        LocationRow(
-                            locationType: locationType,
-                            savedLocation: savedLocations[locationType],
-                            onAdd: {
-                                activeSheet = .locationPicker(locationType)
-                            },
-                            onRemove: {
-                                presentAlert(.deleteLocation(locationType))
-                            }
-                        )
-                    }
-                }
-                
-                Section(String(localized: "LocationSetupView.CustomLocations.Title", bundle: .module)) {
-                    ForEach(customLocations) { customLocation in
-                        CustomLocationRow(
-                            customLocation: customLocation,
-                            onSetLocation: {
-                                activeSheet = .customLocationPicker(customLocation.id)
-                            },
-                            onEdit: {
-                                activeSheet = .customLocationEditor(customLocation)
-                            },
-                            onDelete: {
-                                presentAlert(.deleteCustomLocation(customLocation))
-                            }
-                        )
-                    }
-                    
-                    Button {
-                        activeSheet = .customLocationEditor(nil)
-                    } label: {
-                        Label(String(localized: "LocationSetupView.AddCustomLocation.Label", bundle: .module), systemImage: "plus")
-                            .foregroundStyle(.blue)
-                    }
-                }
-                
-                Section {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text(String(localized: "LocationSetupView.HowItWorks.Title", bundle: .module))
-                            .font(.subheadline)
-                            .fontWeight(.medium)
-                        
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(String(localized: "LocationSetupView.HowItWorks.Step1", bundle: .module))
-                            Text(String(localized: "LocationSetupView.HowItWorks.Step2", bundle: .module))
-                            Text(String(localized: "LocationSetupView.HowItWorks.Step3", bundle: .module))
-                            Text(String(localized: "LocationSetupView.HowItWorks.Step4", bundle: .module))
-                        }
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    }
-                } header: {
-                    Text(String(localized: "LocationSetupView.PrivacyTitle", bundle: .module))
-                }
-            }
-            .navigationTitle(String(localized: "LocationSetupView.NavigationTitle", bundle: .module))
-            
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button(String(localized: "LocationSetupView.Done.Button", bundle: .module)) {
-                        dismiss()
-                    }
-                }
-            }
+            contentView
+                .navigationTitle(String(localized: "LocationSetupView.NavigationTitle", bundle: .module))
         }
-        .sheet(item: $activeSheet) { sheet in
+        .sheet(item: $locationState.activeSheet) { sheet in
             switch sheet {
             case .locationPicker(let locationType):
                 LocationPickerView(locationType: locationType) { location in
                     Task {
                         try? await locationCoordinator.saveLocation(location, as: locationType)
                         await MainActor.run {
-                            savedLocations = locationCoordinator.getSavedLocations()
+                            locationState.savedLocations = locationCoordinator.getSavedLocations()
+                            locationState.clearSheet()
                         }
                     }
                 }
@@ -156,7 +183,8 @@ struct LocationSetupView: View {
                     Task {
                         await locationCoordinator.setCustomLocationCoordinates(for: customLocationId, location: location)
                         await MainActor.run {
-                            customLocations = locationCoordinator.getAllCustomLocations()
+                            locationState.customLocations = locationCoordinator.getAllCustomLocations()
+                            locationState.clearSheet()
                         }
                     }
                 }
@@ -169,47 +197,54 @@ struct LocationSetupView: View {
                             _ = await locationCoordinator.createCustomLocation(name: updatedCustomLocation.name, icon: updatedCustomLocation.icon)
                         }
                         await MainActor.run {
-                            customLocations = locationCoordinator.getAllCustomLocations()
+                            locationState.customLocations = locationCoordinator.getAllCustomLocations()
+                            locationState.clearSheet()
                         }
                     }
                 }
             }
         }
-        .alert(item: $alertItem) { alertItem in
-            switch alertItem {
+        .alert(item: $locationState.alertItem) { item in
+            switch item {
             case .deleteLocation(let locationType):
                 return Alert(
-                    title: Text(String(localized: "LocationSetupView.DeleteAlert.Title", bundle: .module)),
-                    message: Text(String(localized: "LocationSetupView.DeleteAlert.Message", bundle: .module).replacingOccurrences(of: "%@", with: locationType.displayName)),
-                    primaryButton: .destructive(Text(String(localized: "LocationSetupView.DeleteAlert.Delete", bundle: .module))) {
+                    title: Text("Delete Location"),
+                    message: Text("Are you sure you want to delete \(locationType.displayName)?"),
+                    primaryButton: .destructive(Text("Delete")) {
                         Task {
                             await locationCoordinator.removeLocation(for: locationType)
                             await MainActor.run {
-                                savedLocations = locationCoordinator.getSavedLocations()
+                                locationState.savedLocations = locationCoordinator.getSavedLocations()
+                                locationState.clearAlert()
                             }
                         }
                     },
-                    secondaryButton: .cancel(Text(String(localized: "LocationSetupView.DeleteAlert.Cancel", bundle: .module)))
+                    secondaryButton: .cancel {
+                        locationState.clearAlert()
+                    }
                 )
             case .deleteCustomLocation(let customLocation):
                 return Alert(
-                    title: Text(String(localized: "LocationSetupView.DeleteAlert.Title", bundle: .module)),
-                    message: Text(String(localized: "LocationSetupView.DeleteAlert.Message", bundle: .module).replacingOccurrences(of: "%@", with: customLocation.name)),
-                    primaryButton: .destructive(Text(String(localized: "LocationSetupView.DeleteAlert.Delete", bundle: .module))) {
+                    title: Text("Delete Location"),
+                    message: Text("Are you sure you want to delete \(customLocation.name)?"),
+                    primaryButton: .destructive(Text("Delete")) {
                         Task {
                             await locationCoordinator.deleteCustomLocation(id: customLocation.id)
                             await MainActor.run {
-                                customLocations = locationCoordinator.getAllCustomLocations()
+                                locationState.customLocations = locationCoordinator.getAllCustomLocations()
+                                locationState.clearAlert()
                             }
                         }
                     },
-                    secondaryButton: .cancel(Text(String(localized: "LocationSetupView.DeleteAlert.Cancel", bundle: .module)))
+                    secondaryButton: .cancel {
+                        locationState.clearAlert()
+                    }
                 )
             }
         }
         .task {
-            customLocations = locationCoordinator.getAllCustomLocations()
-            savedLocations = locationCoordinator.getSavedLocations()
+            locationState.customLocations = locationCoordinator.getAllCustomLocations()
+            locationState.savedLocations = locationCoordinator.getSavedLocations()
         }
     }
 }
@@ -290,27 +325,63 @@ private struct CustomLocationRow: View {
                 Image(systemName: customLocation.icon)
                     .foregroundStyle(.blue)
             }
+            .allowsHitTesting(false)
             
             Spacer()
+                .allowsHitTesting(false)
             
-            HStack(spacing: 8) {
-                if customLocation.hasCoordinates {
-                    Button(String(localized: "LocationSetupView.Change.Button", bundle: .module), action: onSetLocation)
+            VStack {
+                HStack(spacing: 12) {
+                    if customLocation.hasCoordinates {
+                        Button(String(localized: "LocationSetupView.Change.Button", bundle: .module)) {
+                            print("🔵 BUTTON: Change button pressed for \(customLocation.name)")
+                            onSetLocation()
+                            print("🔵 BUTTON: onSetLocation() completed for \(customLocation.name)")
+                        }
                         .font(.caption)
                         .foregroundStyle(.blue)
-                } else {
-                    Button(String(localized: "LocationSetupView.SetLocation.Button", bundle: .module), action: onSetLocation)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(.blue.opacity(0.1), in: RoundedRectangle(cornerRadius: 6))
+                        .contentShape(RoundedRectangle(cornerRadius: 6))
+                    } else {
+                        Button(String(localized: "LocationSetupView.SetLocation.Button", bundle: .module)) {
+                            print("🔵 BUTTON: Set Location button pressed for \(customLocation.name)")
+                            onSetLocation()
+                            print("🔵 BUTTON: onSetLocation() completed for \(customLocation.name)")
+                        }
                         .font(.caption)
                         .foregroundStyle(.blue)
-                }
-                
-                Button(String(localized: "LocationSetupView.Edit.Button", bundle: .module), action: onEdit)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(.blue.opacity(0.1), in: RoundedRectangle(cornerRadius: 6))
+                        .contentShape(RoundedRectangle(cornerRadius: 6))
+                    }
+                    
+                    Button(String(localized: "LocationSetupView.Edit.Button", bundle: .module)) {
+                        print("🟠 BUTTON: Edit button pressed for \(customLocation.name)")
+                        onEdit()
+                        print("🟠 BUTTON: onEdit() completed for \(customLocation.name)")
+                    }
                     .font(.caption)
                     .foregroundStyle(.orange)
-                
-                Button(String(localized: "LocationSetupView.Delete.Button", bundle: .module), action: onDelete)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(.orange.opacity(0.1), in: RoundedRectangle(cornerRadius: 6))
+                    .contentShape(RoundedRectangle(cornerRadius: 6))
+                    
+                    Button(String(localized: "LocationSetupView.Delete.Button", bundle: .module)) {
+                        print("🔴 BUTTON: Delete button pressed for \(customLocation.name)")
+                        onDelete()
+                        print("🔴 BUTTON: onDelete() completed for \(customLocation.name)")
+                    }
                     .font(.caption)
                     .foregroundStyle(.red)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(.red.opacity(0.1), in: RoundedRectangle(cornerRadius: 6))
+                    .contentShape(RoundedRectangle(cornerRadius: 6))
+                }
             }
         }
     }
@@ -414,7 +485,8 @@ private struct CustomLocationPickerView: View {
             .navigationTitle("Set Location")
             
         }
-        .onAppear {
+        .task {
+            customLocation = locationCoordinator.getAllCustomLocations().first { $0.id == customLocationId }
             getCurrentLocation()
         }
     }

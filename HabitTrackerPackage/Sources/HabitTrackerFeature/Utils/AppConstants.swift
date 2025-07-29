@@ -73,8 +73,11 @@ public enum AppConstants {
         /// Default radius for location detection (meters)
         public static let defaultRadius: CLLocationDistance = 150
         
-        /// Distance filter for location updates (meters)
-        public static let distanceFilter: CLLocationDistance = 100
+        /// Distance filter for location updates (meters) - increased to reduce frequency
+        public static let distanceFilter: CLLocationDistance = 500
+        
+        /// Minimum time interval between context updates (seconds) - 15 minutes
+        public static let contextUpdateInterval: TimeInterval = 15 * 60
     }
     
     // MARK: - Routine Constants
