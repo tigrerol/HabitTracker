@@ -257,20 +257,9 @@ struct SmartTemplateSelectionView: View {
                         
                         Spacer()
                         
-                        HStack(spacing: 8) {
-                            Button {
-                                editingTemplate = template
-                            } label: {
-                                Image(systemName: "pencil.circle.fill")
-                                    .font(.system(size: 24))
-                                    .foregroundStyle(.secondary)
-                            }
-                            .buttonStyle(.plain)
-                            
-                            Image(systemName: "play.circle.fill")
-                                .font(.system(size: 32))
-                                .foregroundStyle(template.swiftUIColor)
-                        }
+                        Image(systemName: "play.circle.fill")
+                            .font(.system(size: 32))
+                            .foregroundStyle(template.swiftUIColor)
                     }
                     
                     HStack {
@@ -291,6 +280,22 @@ struct SmartTemplateSelectionView: View {
                 )
             }
             .buttonStyle(.plain)
+            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                Button(role: .destructive) {
+                    templateToDelete = template
+                    showingDeleteAlert = true
+                } label: {
+                    Label("Delete", systemImage: "trash")
+                }
+            }
+            .swipeActions(edge: .leading, allowsFullSwipe: false) {
+                Button {
+                    editingTemplate = template
+                } label: {
+                    Label("Edit", systemImage: "pencil")
+                }
+                .tint(.orange)
+            }
         }
     }
     
@@ -336,13 +341,6 @@ struct SmartTemplateSelectionView: View {
                         showingDeleteAlert = true
                     }
                 )
-            }
-            .onDelete { indexSet in
-                for index in indexSet {
-                    let template = routineService.templates[index]
-                    templateToDelete = template
-                    showingDeleteAlert = true
-                }
             }
         }
         .transition(.opacity.combined(with: .scale(scale: 0.95)))
@@ -399,29 +397,13 @@ private struct CompactTemplateCard: View {
                 
                 Spacer()
                 
-                HStack(spacing: 8) {
-                    Image(systemName: "play.circle.fill")
-                        .foregroundStyle(template.swiftUIColor)
-                    
-                    Menu {
-                        Button {
-                            onEdit()
-                        } label: {
-                            Label(String(localized: "SmartTemplateSelectionView.Edit", bundle: .module), systemImage: "pencil")
-                        }
-                        
-                        Button(role: .destructive) {
-                            onDelete()
-                        } label: {
-                            Label(String(localized: "SmartTemplateSelectionView.Delete", bundle: .module), systemImage: "trash")
-                        }
-                    } label: {
-                        Image(systemName: "ellipsis")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .frame(width: 24, height: 24)
-                    }
-                }
+                Image(systemName: "play.circle.fill")
+                    .font(.title2)
+                    .foregroundStyle(template.swiftUIColor)
+                
+                Image(systemName: "chevron.right")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
@@ -431,6 +413,21 @@ private struct CompactTemplateCard: View {
             )
         }
         .buttonStyle(.plain)
+        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+            Button(role: .destructive) {
+                onDelete()
+            } label: {
+                Label("Delete", systemImage: "trash")
+            }
+        }
+        .swipeActions(edge: .leading, allowsFullSwipe: false) {
+            Button {
+                onEdit()
+            } label: {
+                Label("Edit", systemImage: "pencil")
+            }
+            .tint(.orange)
+        }
     }
 }
 
