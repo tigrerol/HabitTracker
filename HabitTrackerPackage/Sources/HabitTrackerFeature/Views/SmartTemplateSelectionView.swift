@@ -236,50 +236,48 @@ struct SmartTemplateSelectionView: View {
     }
     
     private func quickStartSection(_ template: RoutineTemplate) -> some View {
-        VStack(spacing: 16) {
-            // Quick Start Card
-            Button {
-                startRoutine(with: template)
-            } label: {
-                VStack(spacing: 12) {
-                    HStack {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(String(localized: "SmartTemplateSelectionView.QuickStart", bundle: .module))
-                                .font(.caption)
-                                .fontWeight(.semibold)
-                                .foregroundStyle(.secondary)
-                            
-                            Text(template.name)
-                                .font(.title3)
-                                .fontWeight(.semibold)
-                                .foregroundStyle(.primary)
-                        }
+        List {
+            VStack(spacing: 12) {
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(String(localized: "SmartTemplateSelectionView.QuickStart", bundle: .module))
+                            .font(.caption)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(.secondary)
                         
-                        Spacer()
-                        
-                        Image(systemName: "play.circle.fill")
-                            .font(.system(size: 32))
-                            .foregroundStyle(template.swiftUIColor)
+                        Text(template.name)
+                            .font(.title3)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(.primary)
                     }
                     
-                    HStack {
-                        Label(String(format: String(localized: "SmartTemplateSelectionView.HabitsCount", bundle: .module), template.activeHabitsCount), systemImage: "list.bullet")
-                        
-                        Spacer()
-                        
-                        Label(template.formattedDuration, systemImage: "clock")
-                    }
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                    Spacer()
+                    
+                    Image(systemName: "play.circle.fill")
+                        .font(.system(size: 32))
+                        .foregroundStyle(template.swiftUIColor)
                 }
-                .padding()
-                .background(
-                    RoundedRectangle(cornerRadius: 16)
-                        .fill(.regularMaterial)
-                        .stroke(template.swiftUIColor.opacity(0.3), lineWidth: 1)
-                )
+                
+                HStack {
+                    Label(String(format: String(localized: "SmartTemplateSelectionView.HabitsCount", bundle: .module), template.activeHabitsCount), systemImage: "list.bullet")
+                    
+                    Spacer()
+                    
+                    Label(template.formattedDuration, systemImage: "clock")
+                }
+                .font(.caption)
+                .foregroundStyle(.secondary)
             }
-            .buttonStyle(.plain)
+            .padding()
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(.regularMaterial)
+                    .stroke(template.swiftUIColor.opacity(0.3), lineWidth: 1)
+            )
+            .contentShape(Rectangle())
+            .onTapGesture {
+                startRoutine(with: template)
+            }
             .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                 Button(role: .destructive) {
                     templateToDelete = template
@@ -296,7 +294,13 @@ struct SmartTemplateSelectionView: View {
                 }
                 .tint(.orange)
             }
+            .listRowBackground(Color.clear)
+            .listRowSeparator(.hidden)
+            .listRowInsets(EdgeInsets())
         }
+        .listStyle(.plain)
+        .frame(height: 120) // Fixed height for the quick start card
+        .scrollDisabled(true)
     }
     
     private var templateSwitcher: some View {
@@ -324,7 +328,7 @@ struct SmartTemplateSelectionView: View {
     }
     
     private var allTemplatesSection: some View {
-        LazyVStack(spacing: 8) {
+        List {
             ForEach(routineService.templates) { template in
                 CompactTemplateCard(
                     template: template,
@@ -341,8 +345,13 @@ struct SmartTemplateSelectionView: View {
                         showingDeleteAlert = true
                     }
                 )
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
+                .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 4, trailing: 0))
             }
         }
+        .listStyle(.plain)
+        .frame(height: CGFloat(routineService.templates.count) * 60) // Approximate height per row
         .transition(.opacity.combined(with: .scale(scale: 0.95)))
     }
     
@@ -382,37 +391,38 @@ private struct CompactTemplateCard: View {
     let onDelete: () -> Void
     
     var body: some View {
-        Button(action: onTap) {
-            HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(template.name)
-                        .font(.subheadline)
-                        .fontWeight(.medium)
-                        .foregroundStyle(.primary)
-                    
-                    Text("\(String(format: String(localized: "SmartTemplateSelectionView.HabitsCount", bundle: .module), template.activeHabitsCount)) • \(template.formattedDuration)")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
+        HStack {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(template.name)
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                    .foregroundStyle(.primary)
                 
-                Spacer()
-                
-                Image(systemName: "play.circle.fill")
-                    .font(.title2)
-                    .foregroundStyle(template.swiftUIColor)
-                
-                Image(systemName: "chevron.right")
-                    .font(.caption2)
-                    .foregroundStyle(.tertiary)
+                Text("\(String(format: String(localized: "SmartTemplateSelectionView.HabitsCount", bundle: .module), template.activeHabitsCount)) • \(template.formattedDuration)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            .background(
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(.regularMaterial)
-            )
+            
+            Spacer()
+            
+            Image(systemName: "play.circle.fill")
+                .font(.title2)
+                .foregroundStyle(template.swiftUIColor)
+            
+            Image(systemName: "chevron.right")
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
         }
-        .buttonStyle(.plain)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(
+            RoundedRectangle(cornerRadius: 8)
+                .fill(.regularMaterial)
+        )
+        .contentShape(Rectangle())
+        .onTapGesture {
+            onTap()
+        }
         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
             Button(role: .destructive) {
                 onDelete()
