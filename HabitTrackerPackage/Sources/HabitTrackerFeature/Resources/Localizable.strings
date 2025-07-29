@@ -251,7 +251,10 @@
 "DayTypeEditorView.WorkPatternDescription" = "Choose a preset schedule that matches your work pattern.";
 
 /* SmartTemplateSelectionView Strings */
-"SmartTemplateSelectionView.NavigationTitle" = "Good Morning!";
+"SmartTemplateSelectionView.NavigationTitle.Morning" = "Good Morning!";
+"SmartTemplateSelectionView.NavigationTitle.Afternoon" = "Good Afternoon!";
+"SmartTemplateSelectionView.NavigationTitle.Evening" = "Good Evening!";
+"SmartTemplateSelectionView.NavigationTitle.Default" = "Ready to Start!";
 "SmartTemplateSelectionView.BuildNumber" = "Build: %@ (%@)";
 "SmartTemplateSelectionView.DeleteAlert.Title" = "Delete Routine";
 "SmartTemplateSelectionView.DeleteAlert.Cancel" = "Cancel";
@@ -280,7 +283,10 @@
 "RoutineExecutionView.CompletedOfTotal" = "%1$d of %2$d completed";
 
 /* TemplateSelectionView Strings */
-"TemplateSelectionView.NavigationTitle" = "Good Morning!";
+"TemplateSelectionView.NavigationTitle.Morning" = "Good Morning!";
+"TemplateSelectionView.NavigationTitle.Afternoon" = "Good Afternoon!";
+"TemplateSelectionView.NavigationTitle.Evening" = "Good Evening!";
+"TemplateSelectionView.NavigationTitle.Default" = "Ready to Start!";
 "TemplateSelectionView.ChooseRoutine" = "Choose your routine";
 "TemplateSelectionView.SelectTemplate" = "Select the template that fits your day";
 "TemplateSelectionView.StartRoutine" = "Start Routine";

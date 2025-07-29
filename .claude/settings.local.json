@@ -53,7 +53,8 @@
       "Bash(swift:*)",
       "Bash(git branch:*)",
       "Bash(sed:*)",
-      "mcp__XcodeBuildMCP__build_sim_id_ws"
+      "mcp__XcodeBuildMCP__build_sim_id_ws",
+      "mcp__XcodeBuildMCP__build_dev_ws"
     ],
     "deny": []
   }

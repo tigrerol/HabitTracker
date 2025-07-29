@@ -188,7 +188,12 @@ public struct AppLaunchHabitHandler: HabitInteractionHandler {
         onComplete: @escaping (UUID, TimeInterval?, String?) -> Void,
         isCompleted: Bool
     ) -> AnyView {
-        AnyView(AccessibleCheckboxHabitView(habit: habit, onComplete: onComplete, isCompleted: isCompleted))
+        switch habit.type {
+        case .appLaunch(let bundleId, let appName):
+            return AnyView(AppLaunchHabitView(habit: habit, bundleId: bundleId, appName: appName, onComplete: onComplete))
+        default:
+            return AnyView(Text("Invalid habit type for AppLaunchHabitHandler"))
+        }
     }
     
     public func canHandle(habit: Habit) -> Bool {

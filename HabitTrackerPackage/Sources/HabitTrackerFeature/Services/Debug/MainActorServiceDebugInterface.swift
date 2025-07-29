@@ -35,7 +35,7 @@ public struct MainActorServiceDebugInterface {
         
         let totalDuration = (CFAbsoluteTimeGetCurrent() - startTime) * 1000
         
-        await ActorDebugService.shared.logActorOperation(
+        ActorDebugService.shared.logActorOperation(
             actorType: "RoutineService",
             operation: "testOperations",
             duration: totalDuration,
@@ -80,7 +80,7 @@ public struct MainActorServiceDebugInterface {
         
         let totalDuration = (CFAbsoluteTimeGetCurrent() - startTime) * 1000
         
-        await ActorDebugService.shared.logActorOperation(
+        ActorDebugService.shared.logActorOperation(
             actorType: "ErrorPresentationService",
             operation: "testOperations",
             duration: totalDuration,
@@ -137,7 +137,7 @@ public struct MainActorServiceDebugInterface {
         let totalDuration = (CFAbsoluteTimeGetCurrent() - startTime) * 1000
         let averageDuration = operations.map(\.duration).reduce(0, +) / Double(operations.count)
         
-        await ActorDebugService.shared.logActorOperation(
+        ActorDebugService.shared.logActorOperation(
             actorType: "MainActor",
             operation: "testConcurrentUIUpdates",
             duration: totalDuration,
@@ -201,7 +201,7 @@ public struct MainActorServiceDebugInterface {
         let totalAccesses = observerMetrics.map(\.accessCount).reduce(0, +)
         let averageAccessDuration = observerMetrics.map(\.duration).reduce(0, +) / Double(observerMetrics.count)
         
-        await ActorDebugService.shared.logActorOperation(
+        ActorDebugService.shared.logActorOperation(
             actorType: "RoutineService",
             operation: "testObservationPerformance",
             duration: totalDuration,

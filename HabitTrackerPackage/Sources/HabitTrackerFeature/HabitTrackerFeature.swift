@@ -6,4 +6,9 @@ public struct HabitTrackerFeature {
     public static func morningRoutineView() -> some View {
         MorningRoutineView()
     }
+    
+    // MARK: - Watch Connectivity
+    public static var watchConnectivityManager: WatchConnectivityManager {
+        WatchConnectivityManager.shared
+    }
 }

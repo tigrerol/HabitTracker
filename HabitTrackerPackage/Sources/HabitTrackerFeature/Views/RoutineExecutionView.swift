@@ -4,6 +4,7 @@ import SwiftUI
 public struct RoutineExecutionView: View {
     @Environment(RoutineService.self) private var routineService
     @State private var sessionData: SessionDisplayData?
+    @State private var showingCancelAlert = false
     
     public init() {}
     
@@ -69,7 +70,24 @@ public struct RoutineExecutionView: View {
                 }
             }
             .navigationTitle(sessionData?.templateName ?? String(localized: "RoutineExecutionView.NavigationTitle", bundle: .module))
-            
+            .toolbar {
+                if sessionData != nil && !sessionData!.isCompleted {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button("Cancel") {
+                            showingCancelAlert = true
+                        }
+                        .foregroundColor(.red)
+                    }
+                }
+            }
+            .alert("Cancel Routine?", isPresented: $showingCancelAlert) {
+                Button("Continue", role: .cancel) { }
+                Button("Cancel Routine", role: .destructive) {
+                    cancelRoutine()
+                }
+            } message: {
+                Text("Your progress will be lost.")
+            }
             .onReceive(NotificationCenter.default.publisher(for: .routineQueueDidChange)) { _ in
                 // Force view refresh when routine queue changes (for conditional habits)
                 if let session = routineService.currentSession {
@@ -172,6 +190,18 @@ public struct RoutineExecutionView: View {
     private func refreshSessionData() {
         if let session = routineService.currentSession {
             sessionData = SessionDisplayData.from(session)
+        }
+    }
+    
+    /// Cancel the current routine session
+    private func cancelRoutine() {
+        do {
+            // This will cancel the current session and clean up any partial data
+            try routineService.cancelCurrentSession()
+            sessionData = nil // Clear the cached data
+        } catch {
+            // Handle error - could show an alert or log the error
+            LoggingService.shared.error("Failed to cancel routine session", category: .routine, metadata: ["error": error.localizedDescription])
         }
     }
 }

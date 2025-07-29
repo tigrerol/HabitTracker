@@ -31,6 +31,9 @@ public final class RoutineService {
             do {
                 if let loadedTemplates = try await persistenceService.load([RoutineTemplate].self, forKey: PersistenceKeys.routineTemplates) {
                     templates = loadedTemplates
+                    
+                    // Send loaded templates to watch on app startup
+                    WatchConnectivityManager.shared.sendRoutineDataToWatch(templates)
                     return
                 }
             } catch {
@@ -66,6 +69,11 @@ public final class RoutineService {
     private func persistTemplates() async {
         do {
             try await persistenceService.save(templates, forKey: PersistenceKeys.routineTemplates)
+            
+            // Send updated templates to watch
+            await MainActor.run {
+                WatchConnectivityManager.shared.sendRoutineDataToWatch(templates)
+            }
         } catch {
             ErrorHandlingService.shared.handleDataError(
                 .encodingFailed(type: "RoutineTemplate", underlyingError: error),
@@ -117,6 +125,27 @@ public final class RoutineService {
         
         // Complete the session manually
         session.forceComplete()
+        currentSession = nil
+    }
+    
+    /// Cancel the current session
+    public func cancelCurrentSession() throws {
+        guard let session = currentSession else {
+            let error = RoutineError.noActiveSession
+            ErrorHandlingService.shared.handleRoutineError(error)
+            throw error
+        }
+        
+        // Log the cancellation for analytics/debugging
+        LoggingService.shared.info("Routine session cancelled", category: .routine, metadata: [
+            "sessionId": session.id.uuidString,
+            "templateName": session.template.name,
+            "progress": String(session.progress),
+            "completedHabits": String(session.completions.filter { !$0.isSkipped }.count),
+            "totalHabits": String(session.activeHabits.count)
+        ])
+        
+        // Clear the current session without completing it
         currentSession = nil
     }
     
