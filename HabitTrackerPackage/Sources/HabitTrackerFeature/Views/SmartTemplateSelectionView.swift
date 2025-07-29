@@ -5,7 +5,6 @@ struct SmartTemplateSelectionView: View {
     @Environment(RoutineService.self) private var routineService
     @State private var selectedTemplate: RoutineTemplate?
     @State private var selectionReason: String = ""
-    @State private var showAllTemplates = false
     @State private var showingRoutineBuilder = false
     @State private var editingTemplate: RoutineTemplate?
     @State private var templateToDelete: RoutineTemplate?
@@ -37,13 +36,7 @@ struct SmartTemplateSelectionView: View {
                     quickStartSection(quickStartTemplate)
                 }
                 
-                templateSwitcher
-                
-                if showAllTemplates {
-                    allTemplatesSection
-                }
-                
-                Spacer()
+                allTemplatesSection
             }
             .padding()
             .navigationTitle(timeBasedGreeting)
@@ -138,23 +131,17 @@ struct SmartTemplateSelectionView: View {
     }
     
     private var headerView: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 12) {
             contextIndicatorView
                 .padding(.bottom, 8)
-            
-            Text(String(localized: "SmartTemplateSelectionView.ReadyToStart", bundle: .module))
-                .font(.title2)
-                .fontWeight(.medium)
             
             if !selectionReason.isEmpty {
                 Text(selectionReason)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
-            } else {
-                Text(String(localized: "SmartTemplateSelectionView.TapQuickStart", bundle: .module))
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                    .lineLimit(nil)
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
     }
@@ -303,29 +290,6 @@ struct SmartTemplateSelectionView: View {
         .scrollDisabled(true)
     }
     
-    private var templateSwitcher: some View {
-        VStack(spacing: 12) {
-            Button {
-                withAnimation(.easeInOut) {
-                    showAllTemplates.toggle()
-                }
-            } label: {
-                HStack {
-                    Text(showAllTemplates ? String(localized: "SmartTemplateSelectionView.HideOptions", bundle: .module) : String(localized: "SmartTemplateSelectionView.ChangeRoutine", bundle: .module))
-                        .font(.subheadline)
-                        .fontWeight(.medium)
-                    
-                    Spacer()
-                    
-                    Image(systemName: showAllTemplates ? "chevron.up" : "chevron.down")
-                        .font(.caption)
-                }
-                .foregroundStyle(.blue)
-                .padding(.horizontal, 4)
-            }
-            .buttonStyle(.plain)
-        }
-    }
     
     private var allTemplatesSection: some View {
         List {
@@ -351,7 +315,6 @@ struct SmartTemplateSelectionView: View {
             }
         }
         .listStyle(.plain)
-        .frame(height: max(60, CGFloat(routineService.templates.count) * 60)) // Approximate height per row, minimum 60
         .transition(.opacity.combined(with: .scale(scale: 0.95)))
     }
     
