@@ -107,28 +107,24 @@ struct LocationSetupView: View {
             ForEach(locationState.customLocations) { customLocation in
                 CustomLocationRow(
                     customLocation: customLocation,
-                    onSetLocation: {
-                        print("🔵 SET LOCATION: Button tapped for \(customLocation.name)")
-                        print("🔵 SET LOCATION: Before - activeSheet: \(String(describing: locationState.activeSheet)), alertItem: \(String(describing: locationState.alertItem))")
-                        locationState.clearAlert()
-                        locationState.setSheet(.customLocationPicker(customLocation.id))
-                        print("🔵 SET LOCATION: After - activeSheet: \(String(describing: locationState.activeSheet)), alertItem: \(String(describing: locationState.alertItem))")
-                    },
                     onEdit: {
-                        print("🟠 EDIT: Button tapped for \(customLocation.name)")
-                        print("🟠 EDIT: Before - activeSheet: \(String(describing: locationState.activeSheet)), alertItem: \(String(describing: locationState.alertItem))")
                         locationState.clearAlert()
-                        locationState.setSheet(.customLocationEditor(customLocation))
-                        print("🟠 EDIT: After - activeSheet: \(String(describing: locationState.activeSheet)), alertItem: \(String(describing: locationState.alertItem))")
-                    },
-                    onDelete: {
-                        print("🔴 DELETE: Button tapped for \(customLocation.name)")
-                        print("🔴 DELETE: Before - activeSheet: \(String(describing: locationState.activeSheet)), alertItem: \(String(describing: locationState.alertItem))")
-                        locationState.clearSheet()
-                        locationState.setAlert(.deleteCustomLocation(customLocation))
-                        print("🔴 DELETE: After - activeSheet: \(String(describing: locationState.activeSheet)), alertItem: \(String(describing: locationState.alertItem))")
+                        if customLocation.hasCoordinates {
+                            // Edit existing location
+                            locationState.setSheet(.customLocationEditor(customLocation))
+                        } else {
+                            // Set location coordinates first
+                            locationState.setSheet(.customLocationPicker(customLocation.id))
+                        }
                     }
                 )
+            }
+            .onDelete { indexSet in
+                for index in indexSet {
+                    let customLocation = locationState.customLocations[index]
+                    locationState.clearSheet()
+                    locationState.setAlert(.deleteCustomLocation(customLocation))
+                }
             }
             
             Button {
@@ -300,90 +296,46 @@ private struct LocationRow: View {
 /// Row showing a custom location and its setup status
 private struct CustomLocationRow: View {
     let customLocation: CustomLocation
-    let onSetLocation: () -> Void
     let onEdit: () -> Void
-    let onDelete: () -> Void
     
     var body: some View {
-        HStack {
-            Label {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(customLocation.name)
-                        .foregroundStyle(.primary)
-                    
-                    if customLocation.hasCoordinates {
-                        Text(String(localized: "LocationSetupView.LocationSet.Date", bundle: .module).replacingOccurrences(of: "%@", with: customLocation.dateCreated.formatted(date: .abbreviated, time: .omitted)))
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    } else {
-                        Text(String(localized: "LocationSetupView.LocationSet.NotSet", bundle: .module))
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+        Button(action: onEdit) {
+            HStack {
+                Label {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(customLocation.name)
+                            .foregroundStyle(.primary)
+                        
+                        if customLocation.hasCoordinates {
+                            Text(String(localized: "LocationSetupView.LocationSet.Date", bundle: .module).replacingOccurrences(of: "%@", with: customLocation.dateCreated.formatted(date: .abbreviated, time: .omitted)))
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        } else {
+                            Text(String(localized: "LocationSetupView.LocationSet.NotSet", bundle: .module))
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
                     }
+                } icon: {
+                    Image(systemName: customLocation.icon)
+                        .foregroundStyle(.blue)
                 }
-            } icon: {
-                Image(systemName: customLocation.icon)
+                
+                Spacer()
+                
+                // Show appropriate action text
+                Text(customLocation.hasCoordinates ? 
+                     String(localized: "LocationSetupView.Edit.Button", bundle: .module) : 
+                     String(localized: "LocationSetupView.SetLocation.Button", bundle: .module))
+                    .font(.caption)
                     .foregroundStyle(.blue)
-            }
-            .allowsHitTesting(false)
-            
-            Spacer()
-                .allowsHitTesting(false)
-            
-            VStack {
-                HStack(spacing: 12) {
-                    if customLocation.hasCoordinates {
-                        Button(String(localized: "LocationSetupView.Change.Button", bundle: .module)) {
-                            print("🔵 BUTTON: Change button pressed for \(customLocation.name)")
-                            onSetLocation()
-                            print("🔵 BUTTON: onSetLocation() completed for \(customLocation.name)")
-                        }
-                        .font(.caption)
-                        .foregroundStyle(.blue)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(.blue.opacity(0.1), in: RoundedRectangle(cornerRadius: 6))
-                        .contentShape(RoundedRectangle(cornerRadius: 6))
-                    } else {
-                        Button(String(localized: "LocationSetupView.SetLocation.Button", bundle: .module)) {
-                            print("🔵 BUTTON: Set Location button pressed for \(customLocation.name)")
-                            onSetLocation()
-                            print("🔵 BUTTON: onSetLocation() completed for \(customLocation.name)")
-                        }
-                        .font(.caption)
-                        .foregroundStyle(.blue)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(.blue.opacity(0.1), in: RoundedRectangle(cornerRadius: 6))
-                        .contentShape(RoundedRectangle(cornerRadius: 6))
-                    }
-                    
-                    Button(String(localized: "LocationSetupView.Edit.Button", bundle: .module)) {
-                        print("🟠 BUTTON: Edit button pressed for \(customLocation.name)")
-                        onEdit()
-                        print("🟠 BUTTON: onEdit() completed for \(customLocation.name)")
-                    }
-                    .font(.caption)
-                    .foregroundStyle(.orange)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(.orange.opacity(0.1), in: RoundedRectangle(cornerRadius: 6))
-                    .contentShape(RoundedRectangle(cornerRadius: 6))
-                    
-                    Button(String(localized: "LocationSetupView.Delete.Button", bundle: .module)) {
-                        print("🔴 BUTTON: Delete button pressed for \(customLocation.name)")
-                        onDelete()
-                        print("🔴 BUTTON: onDelete() completed for \(customLocation.name)")
-                    }
-                    .font(.caption)
-                    .foregroundStyle(.red)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(.red.opacity(0.1), in: RoundedRectangle(cornerRadius: 6))
-                    .contentShape(RoundedRectangle(cornerRadius: 6))
-                }
+                
+                Image(systemName: "chevron.right")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
             }
         }
+        .buttonStyle(.plain)
     }
 }
 
