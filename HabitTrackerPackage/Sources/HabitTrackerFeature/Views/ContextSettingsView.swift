@@ -1,4 +1,5 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 /// View for managing context settings (time slots, day types, and locations)
 struct ContextSettingsView: View {
@@ -10,6 +11,11 @@ struct ContextSettingsView: View {
     @State private var showingLocationSetup = false
     @State private var savedLocationsCount = 0
     @State private var customLocationsCount = 0
+    @State private var showingExportShare = false
+    @State private var exportedFileURL: URL?
+    @State private var showingFilePicker = false
+    @State private var showingImportResult = false
+    @State private var importResult: ImportResult?
     
     var body: some View {
         NavigationStack {
@@ -88,6 +94,34 @@ struct ContextSettingsView: View {
                 } header: {
                     Text(String(localized: "ContextSettingsView.CurrentStatus", bundle: .module))
                 }
+                
+                Section {
+                    Button {
+                        exportData()
+                    } label: {
+                        SettingsRow(
+                            title: "Export Data",
+                            subtitle: "Export all routines and settings as JSON",
+                            icon: "square.and.arrow.up",
+                            detail: ""
+                        )
+                    }
+                    .buttonStyle(.plain)
+                    
+                    Button {
+                        showingFilePicker = true
+                    } label: {
+                        SettingsRow(
+                            title: "Import Data",
+                            subtitle: "Import routines and settings from JSON file",
+                            icon: "square.and.arrow.down",
+                            detail: ""
+                        )
+                    }
+                    .buttonStyle(.plain)
+                } header: {
+                    Text("Data Management")
+                }
             }
             .navigationTitle(String(localized: "ContextSettingsView.NavigationTitle", bundle: .module))
             
@@ -107,6 +141,27 @@ struct ContextSettingsView: View {
         }
         .sheet(isPresented: $showingLocationSetup) {
             LocationSetupView()
+        }
+        .sheet(isPresented: $showingExportShare) {
+            if let exportedFileURL = exportedFileURL {
+                ShareSheet(items: [exportedFileURL])
+            }
+        }
+        .fileImporter(
+            isPresented: $showingFilePicker,
+            allowedContentTypes: [.json],
+            allowsMultipleSelection: false
+        ) { result in
+            Task {
+                await handleFileImport(result)
+            }
+        }
+        .alert("Import Results", isPresented: $showingImportResult) {
+            Button("OK") { }
+        } message: {
+            if let result = importResult {
+                Text(formatImportResult(result))
+            }
         }
         .task {
             savedLocationsCount = routineService.routineSelector.locationCoordinator.getSavedLocations().count
@@ -132,6 +187,83 @@ struct ContextSettingsView: View {
         } else {
             return String(format: String(localized: "ContextSettingsView.LocationsConfigured", bundle: .module), total, total == 1 ? "" : "s")
         }
+    }
+    
+    private func exportData() {
+        Task {
+            do {
+                let exportService = DataExportService(routineService: routineService)
+                let jsonString = try exportService.exportToJSON()
+                
+                // Create a temporary file
+                let tempDirectory = FileManager.default.temporaryDirectory
+                let filename = exportService.generateExportFilename()
+                let fileURL = tempDirectory.appendingPathComponent(filename)
+                
+                try jsonString.write(to: fileURL, atomically: true, encoding: .utf8)
+                
+                await MainActor.run {
+                    exportedFileURL = fileURL
+                    showingExportShare = true
+                }
+            } catch {
+                // Handle error - could show an alert
+                print("Export failed: \(error)")
+            }
+        }
+    }
+    
+    private func handleFileImport(_ result: Result<[URL], Error>) async {
+        do {
+            let fileURLs = try result.get()
+            guard let fileURL = fileURLs.first else { return }
+            
+            let exportService = DataExportService(routineService: routineService)
+            let result = try exportService.importFromFile(fileURL)
+            
+            await MainActor.run {
+                importResult = result
+                showingImportResult = true
+            }
+        } catch {
+            await MainActor.run {
+                // Create an error result
+                let errorResult = ImportResult()
+                importResult = errorResult
+                showingImportResult = true
+            }
+            print("Import failed: \(error)")
+        }
+    }
+    
+    private func formatImportResult(_ result: ImportResult) -> String {
+        var message = ""
+        
+        if result.hasImportedItems {
+            message += "Successfully imported:\n"
+            if result.routinesImported > 0 {
+                message += "• \(result.routinesImported) routine\(result.routinesImported == 1 ? "" : "s")\n"
+            }
+            if result.customLocationsImported > 0 {
+                message += "• \(result.customLocationsImported) custom location\(result.customLocationsImported == 1 ? "" : "s")\n"
+            }
+            if result.savedLocationsImported > 0 {
+                message += "• \(result.savedLocationsImported) saved location\(result.savedLocationsImported == 1 ? "" : "s")\n"
+            }
+            if result.dayCategoriesImported > 0 {
+                message += "• \(result.dayCategoriesImported) day categor\(result.dayCategoriesImported == 1 ? "y" : "ies")\n"
+            }
+        }
+        
+        if result.totalItemsSkipped > 0 {
+            message += "\nSkipped \(result.totalItemsSkipped) duplicate item\(result.totalItemsSkipped == 1 ? "" : "s")"
+        }
+        
+        if result.exportDate != nil, let version = result.sourceAppVersion {
+            message += "\n\nImported from app version \(version)"
+        }
+        
+        return message.isEmpty ? "No new items to import" : message
     }
 }
 
@@ -173,6 +305,20 @@ private struct SettingsRow: View {
             }
         }
         .padding(.vertical, 2)
+    }
+}
+
+/// ShareSheet wrapper for UIActivityViewController
+struct ShareSheet: UIViewControllerRepresentable {
+    let items: [Any]
+    
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        let controller = UIActivityViewController(activityItems: items, applicationActivities: nil)
+        return controller
+    }
+    
+    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {
+        // No updates needed
     }
 }
 
