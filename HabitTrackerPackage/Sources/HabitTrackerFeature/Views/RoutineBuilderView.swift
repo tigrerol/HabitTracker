@@ -18,7 +18,6 @@ public struct RoutineBuilderView: View {
     @State private var selectedQuestionHabit: Habit?
     @State private var selectedOption: (habitId: UUID, optionId: UUID)?
     @State private var contextRule: RoutineContextRule?
-    @State private var showingContextRuleEditor = false
     @State private var customLocations: [CustomLocation] = []
     @State private var smartSelectionEnabled = true // Enable by default
     @State private var selectedTimeSlots: Set<TimeSlot> = []
@@ -29,7 +28,6 @@ public struct RoutineBuilderView: View {
     enum BuilderStep {
         case naming
         case building
-        case review
     }
     
     private let editingTemplate: RoutineTemplate?
@@ -50,12 +48,6 @@ public struct RoutineBuilderView: View {
                         ))
                 case .building:
                     buildingStepView
-                        .transition(.asymmetric(
-                            insertion: .move(edge: .trailing).combined(with: .opacity),
-                            removal: .move(edge: .leading).combined(with: .opacity)
-                        ))
-                case .review:
-                    reviewStepView
                         .transition(.asymmetric(
                             insertion: .move(edge: .trailing).combined(with: .opacity),
                             removal: .move(edge: .leading).combined(with: .opacity)
@@ -90,7 +82,7 @@ public struct RoutineBuilderView: View {
                     smartSelectionPriority = rule.priority
                 }
                 
-                currentStep = .review // Skip to review for editing
+                currentStep = .building // Go to building for editing
             }
         }
         .task {
@@ -260,9 +252,6 @@ public struct RoutineBuilderView: View {
                         Circle()
                             .fill(.blue)
                             .frame(width: 8, height: 8)
-                        Circle()
-                            .fill(.gray.opacity(0.3))
-                            .frame(width: 8, height: 8)
                     }
                     .accessibilityLabel(String(localized: "Accessibility.Step2.Building", bundle: .module))
                 }
@@ -298,7 +287,8 @@ public struct RoutineBuilderView: View {
                             }
                             .padding(.horizontal)
                             
-                            VStack(spacing: 8) {
+                            // List with drag-and-drop support
+                            List {
                                 ForEach(habits) { habit in
                                     if case .conditional = habit.type {
                                         SelectableQuestionHabitRow(
@@ -408,7 +398,18 @@ public struct RoutineBuilderView: View {
                                         }
                                     }
                                 }
+                                .onMove { source, destination in
+                                    withAnimation(.easeInOut) {
+                                        habits.move(fromOffsets: source, toOffset: destination)
+                                        updateHabitOrder()
+                                    }
+                                }
+                                .listRowBackground(Color.clear)
+                                .listRowSeparator(.hidden)
+                                .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 4, trailing: 0))
                             }
+                            .listStyle(.plain)
+                            .frame(minHeight: CGFloat(habits.count) * 60) // Dynamic height based on content
                             .padding(.horizontal)
                         }
                     }
@@ -748,177 +749,6 @@ public struct RoutineBuilderView: View {
     
     // MARK: - Review Step
     
-    private var reviewStepView: some View {
-        VStack(spacing: 0) {
-            // Summary header
-            VStack(spacing: 16) {
-                HStack {
-                    VStack(alignment: .leading, spacing: 4) {
-                        // Step indicator
-                        HStack(spacing: 4) {
-                            Circle()
-                                .fill(.green)
-                                .frame(width: 8, height: 8)
-                            Circle()
-                                .fill(.green)
-                                .frame(width: 8, height: 8)
-                            Circle()
-                                .fill(.blue)
-                                .frame(width: 8, height: 8)
-                        }
-                        .accessibilityLabel("Step 3 of 3: Review routine")
-                        .padding(.bottom, 4)
-                        
-                        if editingTemplate != nil {
-                            TextField("Routine Name", text: $templateName)
-                                .font(.title2)
-                                .fontWeight(.semibold)
-                                .textFieldStyle(.plain)
-                        } else {
-                            Text(templateName)
-                                .font(.title2)
-                                .fontWeight(.semibold)
-                        }
-                        
-                        Text(String(localized: "RoutineBuilderView.Summary.HabitsCount", bundle: .module).replacingOccurrences(of: "%d", with: "\(habits.count)").replacingOccurrences(of: "%@", with: totalDuration.formattedDuration))
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                    }
-                    
-                    Spacer()
-                    
-                    Circle()
-                        .fill(Color(hex: templateColor) ?? .blue)
-                        .frame(width: 44, height: 44)
-                }
-                
-                    .font(.subheadline)
-                
-                // Smart Selection Configuration
-                Button {
-                    showingContextRuleEditor = true
-                } label: {
-                    HStack {
-                        Label {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(String(localized: "RoutineBuilderView.Summary.SmartSelectionRules", bundle: .module))
-                                    .foregroundStyle(.primary)
-                                
-                                if let rule = contextRule {
-                                    Text(contextRuleSummary(rule))
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
-                                } else {
-                                    Text(String(localized: "RoutineBuilderView.Summary.NotConfigured", bundle: .module))
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
-                                }
-                            }
-                        } icon: {
-                            Image(systemName: "sparkles")
-                                .foregroundStyle(.blue)
-                        }
-                        
-                        Spacer()
-                        
-                        Image(systemName: "chevron.right")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-                .buttonStyle(.plain)
-            }
-            .padding()
-            .background(.regularMaterial)
-            
-            if habits.isEmpty {
-                VStack(spacing: 16) {
-                    Spacer()
-                    
-                    Image(systemName: "list.bullet.rectangle")
-                        .font(.system(size: 60))
-                        .foregroundStyle(.secondary)
-                    
-                    Text(String(localized: "RoutineBuilderView.Summary.NoHabitsAdded", bundle: .module))
-                        .font(.headline)
-                        .foregroundStyle(.secondary)
-                    
-                    Button {
-                        currentStep = .building
-                    } label: {
-                        Text(String(localized: "RoutineBuilderView.Summary.AddHabits.Button", bundle: .module))
-                            .font(.subheadline)
-                            .foregroundStyle(.blue)
-                    }
-                    
-                    Spacer()
-                }
-            } else {
-                List {
-                    ForEach(Array(habits.enumerated()), id: \.element.id) { index, habit in
-                        ExpandableHabitRow(
-                            habit: Binding(
-                                get: { habits[index] },
-                                set: { habits[index] = $0 }
-                            ),
-                            isExpanded: Binding(
-                                get: { expandedHabits.contains(habit.id) },
-                                set: { isExpanded in
-                                    if isExpanded {
-                                        expandedHabits.insert(habit.id)
-                                    } else {
-                                        expandedHabits.remove(habit.id)
-                                    }
-                                }
-                            )
-                        )
-                        .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
-                    }
-                    .onMove { source, destination in
-                        habits.move(fromOffsets: source, toOffset: destination)
-                        updateHabitOrder()
-                    }
-                }
-                .listStyle(.plain)
-                
-            }
-            
-            // Actions
-            VStack(spacing: 12) {
-                HStack(spacing: 12) {
-                    Button {
-                        currentStep = .building
-                    } label: {
-                        Text(String(localized: "RoutineBuilderView.Summary.Edit.Button", bundle: .module))
-                            .font(.headline)
-                            .foregroundStyle(.primary)
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
-                    }
-                    
-                    Button {
-                        saveTemplate()
-                    } label: {
-                        Text(editingTemplate != nil ? "Update Routine" : "Save Routine")
-                            .font(.headline)
-                            .foregroundStyle(.white)
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .fill(Color(hex: templateColor) ?? .blue)
-                            )
-                    }
-                }
-            }
-            .padding()
-            .background(.regularMaterial)
-        }
-        .sheet(isPresented: $showingContextRuleEditor) {
-            ContextRuleEditorView(contextRule: $contextRule)
-        }
-    }
     
     // MARK: - Smart Selection Section
     
