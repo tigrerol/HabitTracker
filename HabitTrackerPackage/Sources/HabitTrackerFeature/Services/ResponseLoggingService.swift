@@ -53,7 +53,9 @@ public final class ResponseLoggingService: Sendable {
         guard !responses.isEmpty else { return 0 }
         
         let skippedCount = responses.filter { $0.wasSkipped }.count
-        return Double(skippedCount) / Double(responses.count)
+        let totalCount = responses.count
+        guard totalCount > 0 else { return 0 }
+        return Double(skippedCount) / Double(totalCount)
     }
     
     /// Get response counts by option for a specific habit

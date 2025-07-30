@@ -143,7 +143,7 @@ public final class ConditionalHabitService {
         let grouped = Dictionary(grouping: habitResponses) { $0.selectedOptionId }
         
         return grouped.map { optionId, responses in
-            let percentage = Double(responses.count) / Double(totalResponses) * 100
+            let percentage = totalResponses > 0 ? Double(responses.count) / Double(totalResponses) * 100 : 0
             return ConditionalOptionStatistics(
                 optionId: optionId,
                 optionText: responses.first?.selectedOptionText ?? "Unknown",

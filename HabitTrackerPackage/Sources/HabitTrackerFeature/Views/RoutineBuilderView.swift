@@ -478,7 +478,7 @@ public struct RoutineBuilderView: View {
                                 .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 4, trailing: 0))
                             }
                             .listStyle(.plain)
-                            .frame(minHeight: CGFloat(habits.count) * 60) // Dynamic height based on content
+                            .frame(minHeight: max(120, CGFloat(max(0, habits.count)) * 60)) // Dynamic height with bounds
                             .padding(.horizontal)
                         }
                     }
