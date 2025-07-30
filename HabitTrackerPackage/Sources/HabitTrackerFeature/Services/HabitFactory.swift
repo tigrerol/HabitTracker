@@ -47,7 +47,7 @@ public enum HabitFactory {
     public static func createHRVHabit(order: Int = 0) -> Habit {
         Habit(
             name: "Measure HRV",
-            type: .appLaunch(bundleId: "com.morpheus.app", appName: "Morpheus"),
+            type: .action(type: .app, identifier: "com.morpheus.app", displayName: "Morpheus"),
             color: Colors.hrv,
             order: order
         )
@@ -57,7 +57,7 @@ public enum HabitFactory {
     public static func createStrengthTrainingHabit(order: Int) -> Habit {
         Habit(
             name: "Strength Training",
-            type: .website(url: URLs.workoutSite, title: "Workout Site"),
+            type: .action(type: .website, identifier: URLs.workoutSite.absoluteString, displayName: "Workout Site"),
             color: Colors.strength,
             order: order
         )
@@ -177,7 +177,7 @@ public enum HabitFactory {
     ) -> Habit {
         Habit(
             name: "Read News",
-            type: .website(url: url, title: title),
+            type: .action(type: .website, identifier: url.absoluteString, displayName: title),
             isOptional: true,
             color: Colors.news,
             order: order

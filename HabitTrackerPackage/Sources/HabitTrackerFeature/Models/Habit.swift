@@ -42,13 +42,23 @@ extension Habit {
         switch type {
         case .task(let subtasks):
             return subtasks.isEmpty ? 60 : TimeInterval(subtasks.count * 45) // 1 minute or 45 seconds per subtask
-        case .timer(_, let duration, let target):
-            // For up timers with targets, use target; otherwise use duration
-            return target ?? duration
-        case .appLaunch:
-            return 300 // 5 minutes default
-        case .website:
-            return 180 // 3 minutes default
+        case .timer(let style, let duration, let target, let steps):
+            // For multiple timers, sum all steps; otherwise use target or duration
+            switch style {
+            case .multiple:
+                return !steps.isEmpty ? steps.reduce(0) { $0 + $1.duration } : duration
+            case .down, .up:
+                return target ?? duration
+            }
+        case .action(let type, _, _):
+            switch type {
+            case .app:
+                return 300 // 5 minutes default for app launch
+            case .website:
+                return 180 // 3 minutes default for website
+            case .shortcut:
+                return 120 // 2 minutes default for shortcut
+            }
         case .counter(let items):
             return TimeInterval(items.count * 30) // 30 seconds per item
         case .measurement:

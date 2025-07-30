@@ -6,13 +6,10 @@ public enum HabitType: Codable, Hashable, Sendable {
     case task(subtasks: [Subtask])
     
     /// Timer-based habit with flexible timing modes
-    case timer(style: TimerStyle, duration: TimeInterval, target: TimeInterval? = nil)
+    case timer(style: TimerStyle, duration: TimeInterval, target: TimeInterval? = nil, steps: [SequenceStep] = [])
     
-    /// Launch external app and wait for confirmation
-    case appLaunch(bundleId: String, appName: String)
-    
-    /// Open website or use Shortcuts
-    case website(url: URL, title: String)
+    /// External action (app launch, website, shortcut)
+    case action(type: ActionType, identifier: String, displayName: String)
     
     /// Counter-based habit (e.g., supplements)
     case counter(items: [String])
@@ -35,6 +32,16 @@ public enum TimerStyle: Codable, Hashable, Sendable {
     case up
     /// Sequence of multiple timers
     case multiple
+}
+
+/// Represents different external action types
+public enum ActionType: Codable, Hashable, Sendable {
+    /// Launch native app using bundle identifier
+    case app
+    /// Open website URL
+    case website  
+    /// Run Shortcuts app shortcut
+    case shortcut
 }
 
 /// Represents a subtask within a checkbox habit
@@ -73,7 +80,7 @@ extension HabitType {
         switch self {
         case .task(let subtasks):
             return subtasks.isEmpty ? "Simple task" : "\(subtasks.count) subtasks"
-        case .timer(let style, let duration, let target):
+        case .timer(let style, let duration, let target, let steps):
             switch style {
             case .down:
                 return "Timer (\(Int(duration/60))min)"
@@ -84,12 +91,22 @@ extension HabitType {
                     return "Count up"
                 }
             case .multiple:
-                return "Multiple timers (\(Int(duration/60))min)"
+                if !steps.isEmpty {
+                    let totalTime = steps.reduce(0) { $0 + $1.duration }
+                    return "\(steps.count) intervals (\(Int(totalTime/60))min)"
+                } else {
+                    return "Multiple timers (\(Int(duration/60))min)"
+                }
             }
-        case .appLaunch(_, let appName):
-            return "Launch \(appName)"
-        case .website(_, let title):
-            return "Open \(title)"
+        case .action(let type, _, let displayName):
+            switch type {
+            case .app:
+                return "Launch \(displayName)"
+            case .website:
+                return "Open \(displayName)"
+            case .shortcut:
+                return "Run \(displayName)"
+            }
         case .counter(let items):
             return "\(items.count) items"
         case .measurement(let unit, let target):
@@ -111,7 +128,7 @@ extension HabitType {
         switch self {
         case .task(let subtasks):
             return subtasks.isEmpty ? "checkmark.square" : "list.bullet.rectangle"
-        case .timer(let style, _, _):
+        case .timer(let style, _, _, _):
             switch style {
             case .down:
                 return "timer"
@@ -120,10 +137,15 @@ extension HabitType {
             case .multiple:
                 return "timer.circle"
             }
-        case .appLaunch:
-            return "app.badge"
-        case .website:
-            return "safari"
+        case .action(let type, _, _):
+            switch type {
+            case .app:
+                return "app.badge"
+            case .website:
+                return "safari"
+            case .shortcut:
+                return "gear.circle"
+            }
         case .counter:
             return "list.bullet"
         case .measurement:
@@ -140,7 +162,7 @@ extension HabitType {
         switch self {
         case .task:
             return "New Task"
-        case .timer(let style, _, _):
+        case .timer(let style, _, _, _):
             switch style {
             case .down:
                 return "New Timer"
@@ -149,10 +171,15 @@ extension HabitType {
             case .multiple:
                 return "Multiple Timers"
             }
-        case .appLaunch:
-            return "New App"
-        case .website:
-            return "New Website"
+        case .action(let type, _, _):
+            switch type {
+            case .app:
+                return "Launch App"
+            case .website:
+                return "Open Website"
+            case .shortcut:
+                return "Run Shortcut"
+            }
         case .counter:
             return "New Counter"
         case .measurement:

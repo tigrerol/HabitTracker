@@ -36,9 +36,7 @@ extension HabitInteractionHandler {
             return true
         case .timer where Self.supportedHabitType == HabitType.self:
             return true
-        case .appLaunch where Self.supportedHabitType == HabitType.self:
-            return true
-        case .website where Self.supportedHabitType == HabitType.self:
+        case .action where Self.supportedHabitType == HabitType.self:
             return true
         case .counter where Self.supportedHabitType == HabitType.self:
             return true
@@ -123,8 +121,8 @@ public struct TimerHabitHandler: HabitInteractionHandler {
         isCompleted: Bool
     ) -> AnyView {
         switch habit.type {
-        case .timer(let style, let duration, let target):
-            return AnyView(TimerHabitView(habit: habit, style: style, duration: duration, target: target, onComplete: onComplete, isCompleted: isCompleted))
+        case .timer(let style, let duration, let target, let steps):
+            return AnyView(TimerHabitView(habit: habit, style: style, duration: duration, target: target, steps: steps, onComplete: onComplete, isCompleted: isCompleted))
         default:
             return AnyView(Text("Invalid habit type for TimerHabitHandler"))
         }
@@ -138,14 +136,24 @@ public struct TimerHabitHandler: HabitInteractionHandler {
     }
     
     public func estimatedDuration(for habit: Habit) -> TimeInterval {
-        guard case .timer(_, let duration, let target) = habit.type else { return 300 }
-        return target ?? duration
+        guard case .timer(let style, let duration, let target, let steps) = habit.type else { return 300 }
+        
+        switch style {
+        case .down, .up:
+            return target ?? duration
+        case .multiple:
+            if !steps.isEmpty {
+                return steps.reduce(0) { $0 + $1.duration }
+            } else {
+                return duration
+            }
+        }
     }
 }
 
 
-/// Handler for app launch habits
-public struct AppLaunchHabitHandler: HabitInteractionHandler {
+/// Handler for external action habits (app launch, website, shortcut)
+public struct ActionHabitHandler: HabitInteractionHandler {
     public static let supportedHabitType: HabitType.Type = HabitType.self
     
     @MainActor
@@ -155,54 +163,33 @@ public struct AppLaunchHabitHandler: HabitInteractionHandler {
         isCompleted: Bool
     ) -> AnyView {
         switch habit.type {
-        case .appLaunch(let bundleId, let appName):
-            return AnyView(AppLaunchHabitView(habit: habit, bundleId: bundleId, appName: appName, onComplete: onComplete))
+        case .action(let type, let identifier, let displayName):
+            return AnyView(ActionHabitView(habit: habit, actionType: type, identifier: identifier, displayName: displayName, onComplete: onComplete))
         default:
-            return AnyView(Text("Invalid habit type for AppLaunchHabitHandler"))
+            return AnyView(Text("Invalid habit type for ActionHabitHandler"))
         }
     }
     
     public func canHandle(habit: Habit) -> Bool {
-        if case .appLaunch = habit.type {
+        if case .action = habit.type {
             return true
         }
         return false
     }
     
     public func estimatedDuration(for habit: Habit) -> TimeInterval {
-        return 300 // 5 minutes default for app launch
+        guard case .action(let type, _, _) = habit.type else { return 300 }
+        switch type {
+        case .app:
+            return 300 // 5 minutes default for app launch
+        case .website:
+            return 180 // 3 minutes default for website
+        case .shortcut:
+            return 120 // 2 minutes default for shortcut
+        }
     }
 }
 
-/// Handler for website habits
-public struct WebsiteHabitHandler: HabitInteractionHandler {
-    public static let supportedHabitType: HabitType.Type = HabitType.self
-    
-    @MainActor
-    public func createInteractionView(
-        habit: Habit,
-        onComplete: @escaping (UUID, TimeInterval?, String?) -> Void,
-        isCompleted: Bool
-    ) -> AnyView {
-        switch habit.type {
-        case .website(let url, let title):
-            return AnyView(WebsiteHabitView(habit: habit, url: url, title: title, onComplete: onComplete, isCompleted: isCompleted))
-        default:
-            return AnyView(Text("Invalid habit type for WebsiteHabitHandler"))
-        }
-    }
-    
-    public func canHandle(habit: Habit) -> Bool {
-        if case .website = habit.type {
-            return true
-        }
-        return false
-    }
-    
-    public func estimatedDuration(for habit: Habit) -> TimeInterval {
-        return 180 // 3 minutes default for website
-    }
-}
 
 /// Handler for counter habits
 public struct CounterHabitHandler: HabitInteractionHandler {

@@ -27,10 +27,11 @@
 "HabitEditorView.Timer.Preset.20m" = "20m";
 "HabitEditorView.Timer.Preset.30m" = "30m";
 
-/* HabitEditorView - Rest Timer Settings */
-"HabitEditorView.RestTimer.SetTarget.Toggle" = "Set target duration";
-"HabitEditorView.RestTimer.Target.Label" = "Target";
-"HabitEditorView.RestTimer.Preset.90s" = "90s";
+/* HabitEditorView - Multiple Timer Settings */
+"HabitEditorView.MultipleTimer.TimerIntervals" = "Timer Intervals";
+"HabitEditorView.MultipleTimer.TimerName.Placeholder" = "Timer name";
+"HabitEditorView.MultipleTimer.Duration.Placeholder" = "Duration";
+"HabitEditorView.MultipleTimer.AddTimer.Label" = "Add Timer";
 
 /* HabitEditorView - App Launch Settings */
 "HabitEditorView.AppLaunch.DisplayName.Placeholder" = "Display Name";
@@ -46,6 +47,25 @@
 /* HabitEditorView - Website Settings */
 "HabitEditorView.Website.Title.Placeholder" = "Title";
 "HabitEditorView.Website.URL.Placeholder" = "URL";
+
+/* HabitEditorView - External Action Settings */
+"HabitEditorView.Action.DisplayName.Placeholder" = "Display Name";
+"HabitEditorView.Action.Type.Label" = "Action Type";
+"HabitEditorView.Action.Type.Picker.Label" = "Action Type";
+"HabitEditorView.Action.App.Label" = "App";
+"HabitEditorView.Action.Website.Label" = "Website";
+"HabitEditorView.Action.Shortcut.Label" = "Shortcut";
+"HabitEditorView.Action.Method.Label" = "Launch Method";
+"HabitEditorView.Action.Method.Picker.Label" = "Launch Method";
+"HabitEditorView.Action.URLScheme.Label" = "URL Scheme";
+"HabitEditorView.Action.ShortcutName.Placeholder" = "Shortcut Name";
+"HabitEditorView.Action.ShortcutName.Instructions" = "Enter the exact name of your shortcut";
+"HabitEditorView.Action.URLScheme.Placeholder" = "URL Scheme";
+"HabitEditorView.Action.URLScheme.Examples" = "Examples: instagram://, spotify://, todoist://";
+"HabitEditorView.Action.Website.URL.Placeholder" = "Website URL";
+"HabitEditorView.Action.Website.Instructions" = "Enter the full URL including https://";
+"HabitEditorView.Action.Shortcut.Name.Placeholder" = "Shortcut Name";
+"HabitEditorView.Action.Shortcut.Instructions" = "Enter the exact name of your shortcut";
 
 /* HabitEditorView - Measurement Settings */
 "HabitEditorView.Measurement.Unit.Placeholder" = "Unit (kg, lbs, bpm, etc.)";
@@ -74,7 +94,7 @@
 /* Habit Type Titles */
 "HabitType.Task.Title" = "Task Settings";
 "HabitType.Timer.Title" = "Timer Settings";
-"HabitType.RestTimer.Title" = "Rest Timer";
+"HabitType.Action.Title" = "External Action";
 "HabitType.AppLaunch.Title" = "App Launch";
 "HabitType.Website.Title" = "Website";
 "HabitType.Counter.Title" = "Counter Items";
@@ -125,9 +145,7 @@
 "HabitType.Task.Name" = "Task";
 "HabitType.Task.Description" = "Simple or multi-step";
 "HabitType.Timer.Name" = "Timer";
-"HabitType.Timer.Description" = "Timed activity";
-"HabitType.RestTimer.Name" = "Rest Timer";
-"HabitType.RestTimer.Description" = "Track rest time";
+"HabitType.Timer.Description" = "Flexible timing - count down, up, or multiple";
 "HabitType.AppShortcut.Name" = "App/Shortcut";
 "HabitType.AppShortcut.Description" = "Launch app";
 "HabitType.Website.Name" = "Website";
@@ -213,14 +231,21 @@
 "HabitInteractionView.Website.ReturnWhenFinished" = "Return here when finished with %@";
 "HabitInteractionView.Website.TapToOpen" = "Tap to open %@";
 "HabitInteractionView.Website.Open" = "Open %@";
+"HabitInteractionView.Action.App.TapToLaunch" = "Tap to launch %@";
+"HabitInteractionView.Action.App.ReturnWhenFinished" = "Return here when finished";
+"HabitInteractionView.Action.App.Launch" = "Launch %@";
+"HabitInteractionView.Action.Website.TapToOpen" = "Tap to open %@";
+"HabitInteractionView.Action.Website.ReturnWhenFinished" = "Return here when finished with %@";
+"HabitInteractionView.Action.Website.Open" = "Open %@";
+"HabitInteractionView.Action.Shortcut.TapToRun" = "Tap to run %@";
+"HabitInteractionView.Action.Shortcut.ReturnWhenFinished" = "Return here when finished";
+"HabitInteractionView.Action.Shortcut.Run" = "Run %@";
+"HabitInteractionView.Action.ImDone" = "I'm Done";
 "HabitInteractionView.Counter.CompletedItems" = "%1$d of %2$d completed";
 "HabitInteractionView.Counter.NoItemsCompleted" = "No items completed";
 "HabitInteractionView.Counter.CompletedList" = "Completed: %@";
 "HabitInteractionView.Complete.Button" = "Complete";
 "HabitInteractionView.Optional.Label" = "Optional";
-"HabitInteractionView.RestTimer.Target" = "Target: %@";
-"HabitInteractionView.RestTimer.StartRest" = "Start Rest";
-"HabitInteractionView.RestTimer.EndRest" = "End Rest";
 "HabitInteractionView.Measurement.Enter" = "Enter %@";
 "HabitInteractionView.Measurement.Record" = "Record";
 "HabitInteractionView.Sequence.StepProgress" = "Step %1$d of %2$d";
@@ -347,12 +372,18 @@
 "HabitQuickAddView.DefaultName.TimedActivity" = "Timed Activity";
 "HabitQuickAddView.DefaultName.RestPeriod" = "Rest Period";
 "HabitQuickAddView.DefaultName.MultipleTimers" = "Multiple Timers";
+"HabitQuickAddView.DefaultName.LaunchApp" = "Launch App";
+"HabitQuickAddView.DefaultName.OpenWebsite" = "Open Website";
 "HabitQuickAddView.DefaultName.RunShortcut" = "Run Shortcut";
 "HabitQuickAddView.DefaultName.VisitWebsite" = "Visit Website";
 "HabitQuickAddView.DefaultName.TrackItems" = "Track Items";
 "HabitQuickAddView.DefaultName.RecordMeasurement" = "Record Measurement";
 "HabitQuickAddView.DefaultName.GuidedActivity" = "Guided Activity";
 "HabitQuickAddView.DefaultName.Question" = "Question";
+
+/* HabitType Names for RoutineBuilderView */
+"HabitType.Action.Name" = "External Action";
+"HabitType.Action.Description" = "Launch app, open website, or run shortcut";
 
 /* HabitTypePickerView Strings */
 "HabitTypePickerView.NavigationTitle" = "Choose Habit Type";
@@ -363,6 +394,9 @@
 "HabitTypePickerView.TaskWithSubtasks.Description" = "Break down into steps";
 "HabitTypePickerView.Timer.Title" = "Timer";
 "HabitTypePickerView.Timer.Description" = "Flexible timing - count down, up, or multiple";
+"HabitTypePickerView.ExternalAction.Title" = "External Action";
+"HabitTypePickerView.ExternalAction.Description" = "Launch app, open website, or run shortcut";
+"HabitTypePickerView.Action.DefaultName" = "External Action";
 "HabitTypePickerView.RunShortcut.Title" = "Run Shortcut";
 "HabitTypePickerView.RunShortcut.Description" = "Execute a Shortcuts shortcut or open app via URL";
 "HabitTypePickerView.OpenWebsite.Title" = "Open Website";
@@ -438,6 +472,7 @@
 "ConditionalHabitEditorView.NewTimer.DefaultName" = "New Timer";
 "ConditionalHabitEditorView.NewCounter.DefaultName" = "New Counter";
 "ConditionalHabitEditorView.NewMeasurement.DefaultName" = "New Measurement";
+"ConditionalHabitEditorView.NewAction.DefaultName" = "New Action";
 "ConditionalHabitEditorView.NewApp.DefaultName" = "New App";
 "ConditionalHabitEditorView.NewWebsite.DefaultName" = "New Website";
 "ConditionalHabitEditorView.NewSequence.DefaultName" = "New Sequence";
@@ -449,6 +484,7 @@
 "HabitTypeCategory.Timer.DisplayName" = "Timer";
 "HabitTypeCategory.Counter.DisplayName" = "Counter";
 "HabitTypeCategory.Measurement.DisplayName" = "Measurement";
+"HabitTypeCategory.Action.DisplayName" = "External Action";
 "HabitTypeCategory.AppLaunch.DisplayName" = "App Launch";
 "HabitTypeCategory.Website.DisplayName" = "Website/Shortcut";
 "HabitTypeCategory.GuidedSequence.DisplayName" = "Guided Sequence";

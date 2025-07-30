@@ -30,11 +30,8 @@ public struct HabitInteractionView: View {
             case .timer:
                 AnyView(TimerHabitHandler().createInteractionView(habit: habit, onComplete: self.onComplete, isCompleted: isCompleted))
                 
-            case .appLaunch:
-                AnyView(AppLaunchHabitHandler().createInteractionView(habit: habit, onComplete: self.onComplete, isCompleted: isCompleted))
-                
-            case .website:
-                AnyView(WebsiteHabitHandler().createInteractionView(habit: habit, onComplete: self.onComplete, isCompleted: isCompleted))
+            case .action:
+                AnyView(ActionHabitHandler().createInteractionView(habit: habit, onComplete: self.onComplete, isCompleted: isCompleted))
                 
             case .counter:
                 AnyView(CounterHabitHandler().createInteractionView(habit: habit, onComplete: self.onComplete, isCompleted: isCompleted))
@@ -150,6 +147,7 @@ struct TimerHabitView: View {
     let style: TimerStyle
     let duration: TimeInterval
     let target: TimeInterval?
+    let steps: [SequenceStep]
     let onComplete: (UUID, TimeInterval?, String?) -> Void
     let isCompleted: Bool
     
@@ -159,11 +157,16 @@ struct TimerHabitView: View {
     @State private var isPaused = false
     @State private var timer: Timer?
     
-    init(habit: Habit, style: TimerStyle, duration: TimeInterval, target: TimeInterval? = nil, onComplete: @escaping (UUID, TimeInterval?, String?) -> Void, isCompleted: Bool) {
+    // For multiple timer style
+    @State private var currentStepIndex = 0
+    @State private var totalElapsed: TimeInterval = 0
+    
+    init(habit: Habit, style: TimerStyle, duration: TimeInterval, target: TimeInterval? = nil, steps: [SequenceStep] = [], onComplete: @escaping (UUID, TimeInterval?, String?) -> Void, isCompleted: Bool) {
         self.habit = habit
         self.style = style
         self.duration = duration
         self.target = target
+        self.steps = steps
         self.onComplete = onComplete
         self.isCompleted = isCompleted
         
@@ -174,11 +177,18 @@ struct TimerHabitView: View {
         case .up:
             self._timeRemaining = State(initialValue: 0)
         case .multiple:
-            self._timeRemaining = State(initialValue: duration)
+            // For multiple timers, start with first step duration
+            let firstStepDuration = steps.first?.duration ?? duration
+            self._timeRemaining = State(initialValue: firstStepDuration)
         }
     }
     
     // Computed properties for display
+    private var currentStep: SequenceStep? {
+        guard style == .multiple, currentStepIndex < steps.count else { return nil }
+        return steps[currentStepIndex]
+    }
+    
     private var displayTime: TimeInterval {
         switch style {
         case .down, .multiple:
@@ -199,12 +209,30 @@ struct TimerHabitView: View {
                 return 0 // No progress for open-ended count up
             }
         case .multiple:
-            return duration > 0 ? max(0, min(1, 1.0 - (timeRemaining / duration))) : 0
+            if let step = currentStep {
+                return step.duration > 0 ? max(0, min(1, 1.0 - (timeRemaining / step.duration))) : 0
+            } else {
+                return 1.0 // All steps completed
+            }
         }
     }
     
     var body: some View {
         VStack(spacing: 24) {
+            // Step info for multiple timers
+            if style == .multiple, let step = currentStep {
+                VStack(spacing: 8) {
+                    Text("\(currentStepIndex + 1) of \(steps.count)")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    
+                    Text(step.name)
+                        .font(.title2)
+                        .fontWeight(.semibold)
+                        .multilineTextAlignment(.center)
+                }
+            }
+            
             // Timer display
             VStack(spacing: 8) {
                 Text(displayTime.formattedMinutesSeconds)
@@ -284,7 +312,7 @@ struct TimerHabitView: View {
             // Manual completion
             if timeRemaining > 0 {
                 Button {
-                    let elapsed = defaultDuration - timeRemaining
+                    let elapsed = style == .up ? timeElapsed : (duration - timeRemaining)
                     onComplete(habit.id, elapsed, nil)
                 } label: {
                     Text(String(localized: "HabitInteractionView.Timer.MarkCompleteEarly", bundle: .module))
@@ -335,8 +363,10 @@ struct TimerHabitView: View {
         
         let completedDuration: TimeInterval
         switch style {
-        case .down, .multiple:
+        case .down:
             completedDuration = duration - timeRemaining
+        case .multiple:
+            completedDuration = totalElapsed
         case .up:
             completedDuration = timeElapsed
         }
@@ -348,12 +378,30 @@ struct TimerHabitView: View {
         timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
             Task { @MainActor in
                 switch style {
-                case .down, .multiple:
+                case .down:
                     if timeRemaining > 0 {
                         timeRemaining -= 1
                     } else {
                         timer?.invalidate()
                         onComplete(habit.id, duration, nil)
+                    }
+                case .multiple:
+                    if timeRemaining > 0 {
+                        timeRemaining -= 1
+                        totalElapsed += 1
+                    } else {
+                        // Move to next step
+                        currentStepIndex += 1
+                        if currentStepIndex < steps.count {
+                            // Start next timer step
+                            timeRemaining = steps[currentStepIndex].duration
+                            totalElapsed += 1
+                        } else {
+                            // All steps completed
+                            timer?.invalidate()
+                            let totalDuration = steps.reduce(0) { $0 + $1.duration }
+                            onComplete(habit.id, totalDuration, "All intervals completed")
+                        }
                     }
                 case .up:
                     timeElapsed += 1
@@ -530,6 +578,141 @@ struct WebsiteHabitView: View {
         startTime = Date()
         #if canImport(UIKit)
         UIApplication.shared.open(url)
+        #endif
+    }
+}
+
+/// External action habit interaction (app launch, website, shortcut)
+struct ActionHabitView: View {
+    let habit: Habit
+    let actionType: ActionType
+    let identifier: String
+    let displayName: String
+    let onComplete: (UUID, TimeInterval?, String?) -> Void
+    
+    @State private var hasPerformedAction = false
+    @State private var startTime: Date?
+    
+    private var iconName: String {
+        switch actionType {
+        case .app:
+            return "app.badge"
+        case .website:
+            return "safari"
+        case .shortcut:
+            return "gear.circle"
+        }
+    }
+    
+    private var primaryActionText: String {
+        switch actionType {
+        case .app:
+            return String(localized: "HabitInteractionView.Action.App.TapToLaunch", bundle: .module).replacingOccurrences(of: "%@", with: displayName)
+        case .website:
+            return String(localized: "HabitInteractionView.Action.Website.TapToOpen", bundle: .module).replacingOccurrences(of: "%@", with: displayName)
+        case .shortcut:
+            return String(localized: "HabitInteractionView.Action.Shortcut.TapToRun", bundle: .module).replacingOccurrences(of: "%@", with: displayName)
+        }
+    }
+    
+    private var completionText: String {
+        switch actionType {
+        case .app:
+            return String(localized: "HabitInteractionView.Action.App.ReturnWhenFinished", bundle: .module)
+        case .website:
+            return String(localized: "HabitInteractionView.Action.Website.ReturnWhenFinished", bundle: .module).replacingOccurrences(of: "%@", with: displayName)
+        case .shortcut:
+            return String(localized: "HabitInteractionView.Action.Shortcut.ReturnWhenFinished", bundle: .module)
+        }
+    }
+    
+    private var buttonText: String {
+        switch actionType {
+        case .app:
+            return String(localized: "HabitInteractionView.Action.App.Launch", bundle: .module).replacingOccurrences(of: "%@", with: displayName)
+        case .website:
+            return String(localized: "HabitInteractionView.Action.Website.Open", bundle: .module).replacingOccurrences(of: "%@", with: displayName)
+        case .shortcut:
+            return String(localized: "HabitInteractionView.Action.Shortcut.Run", bundle: .module).replacingOccurrences(of: "%@", with: displayName)
+        }
+    }
+    
+    var body: some View {
+        VStack(spacing: 24) {
+            VStack(spacing: 12) {
+                Image(systemName: iconName)
+                    .font(.system(size: 60))
+                    .foregroundStyle(habit.swiftUIColor)
+                
+                if hasPerformedAction {
+                    Text(completionText)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                } else {
+                    Text(primaryActionText)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+            }
+            
+            if !hasPerformedAction {
+                Button {
+                    performAction()
+                } label: {
+                    Text(buttonText)
+                        .font(.headline)
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(habit.swiftUIColor, in: RoundedRectangle(cornerRadius: 12))
+                }
+            } else {
+                Button {
+                    let duration = startTime.map { Date().timeIntervalSince($0) }
+                    onComplete(habit.id, duration, nil)
+                } label: {
+                    Text(String(localized: "HabitInteractionView.Action.ImDone", bundle: .module))
+                        .font(.headline)
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(habit.swiftUIColor, in: RoundedRectangle(cornerRadius: 12))
+                }
+            }
+        }
+    }
+    
+    private func performAction() {
+        hasPerformedAction = true
+        startTime = Date()
+        
+        let urlString: String
+        
+        switch actionType {
+        case .app:
+            // App actions always use URL schemes directly
+            urlString = identifier
+        case .website:
+            urlString = identifier
+        case .shortcut:
+            // Format as shortcuts URL scheme
+            let encodedShortcutName = identifier.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? identifier
+            urlString = "shortcuts://run-shortcut?name=\(encodedShortcutName)"
+        }
+        
+        guard let url = URL(string: urlString) else {
+            print("Failed to create URL from: \(urlString)")
+            return
+        }
+        
+        #if canImport(UIKit)
+        UIApplication.shared.open(url) { success in
+            if !success {
+                print("Failed to open URL: \(urlString)")
+            }
+        }
         #endif
     }
 }
@@ -729,101 +912,6 @@ struct SubtasksHabitView: View {
     }
 }
 
-/// Rest timer habit interaction (counts up)
-struct RestTimerHabitView: View {
-    let habit: Habit
-    let targetDuration: TimeInterval?
-    let onComplete: (UUID, TimeInterval?, String?) -> Void
-    let isCompleted: Bool
-    
-    @State private var elapsedTime: TimeInterval = 0
-    @State private var isRunning = false
-    @State private var timer: Timer?
-    
-    init(habit: Habit, targetDuration: TimeInterval?, onComplete: @escaping (UUID, TimeInterval?, String?) -> Void, isCompleted: Bool) {
-        self.habit = habit
-        self.targetDuration = targetDuration
-        self.onComplete = onComplete
-        self.isCompleted = isCompleted
-    }
-    
-    var body: some View {
-        VStack(spacing: 24) {
-            // Timer display
-            VStack(spacing: 8) {
-                Text(elapsedTime.formattedMinutesSeconds)
-                    .font(.system(size: 48, weight: .bold, design: .monospaced))
-                    .foregroundStyle(habit.swiftUIColor)
-                
-                if let target = targetDuration {
-                    ProgressView(value: target > 0 ? max(0, min(1, elapsedTime / target)) : 0)
-                        .tint(habit.swiftUIColor)
-                        .scaleEffect(y: 3)
-                    
-                    Text(String(localized: "HabitInteractionView.RestTimer.Target", bundle: .module).replacingOccurrences(of: "%@", with: target.formattedMinutesSeconds))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-            }
-            
-            // Controls
-            HStack(spacing: 12) {
-                if !isRunning {
-                    Button {
-                        startTimer()
-                    } label: {
-                        HStack {
-                            Image(systemName: "play.fill")
-                            Text(String(localized: "HabitInteractionView.RestTimer.StartRest", bundle: .module))
-                        }
-                        .font(.headline)
-                        .foregroundStyle(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(habit.swiftUIColor, in: RoundedRectangle(cornerRadius: 12))
-                    }
-                } else {
-                    Button {
-                        stopTimer()
-                    } label: {
-                        HStack {
-                            Image(systemName: "stop.fill")
-                            Text(String(localized: "HabitInteractionView.RestTimer.EndRest", bundle: .module))
-                        }
-                        .font(.headline)
-                        .foregroundStyle(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(habit.swiftUIColor, in: RoundedRectangle(cornerRadius: 12))
-                    }
-                }
-            }
-        }
-        .onDisappear {
-            timer?.invalidate()
-        }
-    }
-    
-    private func startTimer() {
-        isRunning = true
-        timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
-            Task { @MainActor in
-                elapsedTime += 1
-                
-                // Auto-complete at target if set
-                if let target = targetDuration, elapsedTime >= target {
-                    stopTimer()
-                }
-            }
-        }
-    }
-    
-    private func stopTimer() {
-        timer?.invalidate()
-        isRunning = false
-        onComplete(habit.id, elapsedTime, targetDuration != nil ? "Target \(elapsedTime >= targetDuration! ? "reached" : "not reached")" : nil)
-    }
-}
 
 /// Measurement input habit
 struct MeasurementHabitView: View {

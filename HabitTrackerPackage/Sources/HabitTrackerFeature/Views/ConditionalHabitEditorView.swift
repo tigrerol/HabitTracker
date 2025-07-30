@@ -759,16 +759,9 @@ struct HabitPickerView: View {
                 onSelect(habit)
                 dismiss()
             }
-        case .appLaunch:
+        case .action:
             HabitEditorView(
-                habit: Habit(name: String(localized: "ConditionalHabitEditorView.NewApp.DefaultName", bundle: .module), type: .appLaunch(bundleId: "", appName: ""))
-            ) { habit in
-                onSelect(habit)
-                dismiss()
-            }
-        case .website:
-            HabitEditorView(
-                habit: Habit(name: String(localized: "ConditionalHabitEditorView.NewWebsite.DefaultName", bundle: .module), type: .website(url: URL(string: "https://example.com")!, title: ""))
+                habit: Habit(name: String(localized: "ConditionalHabitEditorView.NewAction.DefaultName", bundle: .module), type: .action(type: .app, identifier: "", displayName: ""))
             ) { habit in
                 onSelect(habit)
                 dismiss()
@@ -798,8 +791,7 @@ enum HabitTypeCategory: CaseIterable, Identifiable {
     case timer
     case counter
     case measurement
-    case appLaunch
-    case website
+    case action
     case guidedSequence
     case conditional
     
@@ -811,8 +803,7 @@ enum HabitTypeCategory: CaseIterable, Identifiable {
         case .timer: return String(localized: "HabitTypeCategory.Timer.DisplayName", bundle: .module)
         case .counter: return String(localized: "HabitTypeCategory.Counter.DisplayName", bundle: .module)
         case .measurement: return String(localized: "HabitTypeCategory.Measurement.DisplayName", bundle: .module)
-        case .appLaunch: return String(localized: "HabitTypeCategory.AppLaunch.DisplayName", bundle: .module)
-        case .website: return String(localized: "HabitTypeCategory.Website.DisplayName", bundle: .module)
+        case .action: return String(localized: "HabitTypeCategory.Action.DisplayName", bundle: .module)
         case .guidedSequence: return String(localized: "HabitTypeCategory.GuidedSequence.DisplayName", bundle: .module)
         case .conditional: return String(localized: "HabitTypeCategory.Question.DisplayName", bundle: .module)
         }
@@ -824,8 +815,7 @@ enum HabitTypeCategory: CaseIterable, Identifiable {
         case .timer: return "timer"
         case .counter: return "list.bullet"
         case .measurement: return "chart.line.uptrend.xyaxis"
-        case .appLaunch: return "app.badge"
-        case .website: return "safari"
+        case .action: return "app.badge"
         case .guidedSequence: return "list.number"
         case .conditional: return "questionmark.circle"
         }

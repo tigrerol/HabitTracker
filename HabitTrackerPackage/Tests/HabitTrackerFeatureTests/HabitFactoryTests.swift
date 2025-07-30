@@ -108,19 +108,14 @@ struct HabitFactoryTests {
         // Check that we have different habit types
         let hasTask = allHabits.contains { $0.type.isTask }
         let hasTimer = allHabits.contains { $0.type.isTimer }
-        let hasAppLaunch = allHabits.contains { 
-            if case .appLaunch = $0.type { return true }
-            return false
-        }
-        let hasWebsite = allHabits.contains {
-            if case .website = $0.type { return true }
+        let hasAction = allHabits.contains { 
+            if case .action = $0.type { return true }
             return false
         }
         
         #expect(hasTask == true)
         #expect(hasTimer == true)
-        #expect(hasAppLaunch == true)
-        #expect(hasWebsite == true)
+        #expect(hasAction == true)
         
         // Check timer durations are reasonable
         let timerHabits = allHabits.filter { $0.type.isTimer }

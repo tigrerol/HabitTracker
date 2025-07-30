@@ -14,22 +14,15 @@ public struct HabitEditorView: View {
     @State private var timerStyle: TimerStyle = .down
     @State private var timerDuration: TimeInterval = 300
     @State private var timerTarget: TimeInterval? = nil
-    @State private var appBundleId: String = ""
-    @State private var appName: String = ""
-    @State private var websiteURL: String = ""
-    @State private var websiteTitle: String = ""
+    @State private var timerSteps: [SequenceStep] = []
+    @State private var actionType: ActionType = .app
+    @State private var actionIdentifier: String = ""
+    @State private var actionDisplayName: String = ""
     @State private var counterItems: [String] = []
     @State private var measurementUnit: String = ""
     @State private var measurementTarget: Double? = nil
     @State private var subtasks: [Subtask] = []
     @State private var sequenceSteps: [SequenceStep] = []
-    @State private var launchMethod: LaunchMethod = .shortcut
-    
-    // Launch method enum
-    private enum LaunchMethod {
-        case shortcut
-        case urlScheme
-    }
     
     let onSave: (Habit) -> Void
     
@@ -44,18 +37,15 @@ public struct HabitEditorView: View {
         
         // Initialize type-specific state
         switch habit.type {
-        case .timer(let style, let duration, let target):
+        case .timer(let style, let duration, let target, let steps):
             self._timerStyle = State(initialValue: style)
             self._timerDuration = State(initialValue: duration)
             self._timerTarget = State(initialValue: target)
-        case .appLaunch(let bundleId, let name):
-            self._appBundleId = State(initialValue: bundleId)
-            self._appName = State(initialValue: name)
-            // Determine launch method based on bundleId format
-            self._launchMethod = State(initialValue: bundleId.contains("://") ? .urlScheme : .shortcut)
-        case .website(let url, let title):
-            self._websiteURL = State(initialValue: url.absoluteString)
-            self._websiteTitle = State(initialValue: title)
+            self._timerSteps = State(initialValue: steps)
+        case .action(let type, let identifier, let displayName):
+            self._actionType = State(initialValue: type)
+            self._actionIdentifier = State(initialValue: identifier)
+            self._actionDisplayName = State(initialValue: displayName)
         case .counter(let items):
             self._counterItems = State(initialValue: items)
         case .measurement(let unit, let target):
@@ -177,11 +167,8 @@ public struct HabitEditorView: View {
                 let _ = print("typeSpecificSection: showing unified timer settings")
                 timerSettings
                 
-            case .appLaunch:
-                appLaunchSettings
-                
-            case .website:
-                websiteSettings
+            case .action:
+                actionSettings
                 
             case .counter:
                 counterItemsEditor
@@ -222,10 +209,8 @@ public struct HabitEditorView: View {
             return String(localized: "HabitType.Task.Title", bundle: .module)
         case .timer:
             return String(localized: "HabitType.Timer.Title", bundle: .module)
-        case .appLaunch:
-            return String(localized: "HabitType.AppLaunch.Title", bundle: .module)
-        case .website:
-            return String(localized: "HabitType.Website.Title", bundle: .module)
+        case .action:
+            return String(localized: "HabitType.Action.Title", bundle: .module)
         case .counter:
             return String(localized: "HabitType.Counter.Title", bundle: .module)
         case .measurement:
@@ -246,12 +231,17 @@ public struct HabitEditorView: View {
     private var timerSettings: some View {
         VStack(alignment: .leading, spacing: 12) {
             timerStylePicker
-            timerDurationDisplay
-            timerInputFields
-            if timerStyle == .up {
-                timerTargetSettings
+            
+            if timerStyle == .multiple {
+                timerStepsEditor
+            } else {
+                timerDurationDisplay
+                timerInputFields
+                if timerStyle == .up {
+                    timerTargetSettings
+                }
+                timerPresetButtons
             }
-            timerPresetButtons
         }
     }
     
@@ -383,60 +373,65 @@ public struct HabitEditorView: View {
     }
     
     
-    // App launch settings
-    private var appLaunchSettings: some View {
+    // External action settings
+    private var actionSettings: some View {
         VStack(alignment: .leading, spacing: 12) {
-            TextField(String(localized: "HabitEditorView.AppLaunch.DisplayName.Placeholder", bundle: .module), text: $appName)
+            TextField(String(localized: "HabitEditorView.Action.DisplayName.Placeholder", bundle: .module), text: $actionDisplayName)
                 .textFieldStyle(.roundedBorder)
             
             VStack(alignment: .leading, spacing: 8) {
-                Text(String(localized: "HabitEditorView.AppLaunch.LaunchMethod.Label", bundle: .module))
+                Text(String(localized: "HabitEditorView.Action.Type.Label", bundle: .module))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 
-                Picker(String(localized: "HabitEditorView.AppLaunch.LaunchMethod.Picker.Label", bundle: .module), selection: $launchMethod) {
-                    Text(String(localized: "HabitEditorView.AppLaunch.Shortcut.Label", bundle: .module)).tag(LaunchMethod.shortcut)
-                    Text(String(localized: "HabitEditorView.AppLaunch.URLScheme.Label", bundle: .module)).tag(LaunchMethod.urlScheme)
+                Picker(String(localized: "HabitEditorView.Action.Type.Picker.Label", bundle: .module), selection: $actionType) {
+                    Text(String(localized: "HabitEditorView.Action.App.Label", bundle: .module)).tag(ActionType.app)
+                    Text(String(localized: "HabitEditorView.Action.Website.Label", bundle: .module)).tag(ActionType.website)
+                    Text(String(localized: "HabitEditorView.Action.Shortcut.Label", bundle: .module)).tag(ActionType.shortcut)
                 }
                 .pickerStyle(.segmented)
                 
-                if launchMethod == .shortcut {
+                switch actionType {
+                case .app:
                     VStack(alignment: .leading, spacing: 4) {
-                        TextField(String(localized: "HabitEditorView.AppLaunch.ShortcutName.Placeholder", bundle: .module), text: $appBundleId)
-                            .textFieldStyle(.roundedBorder)
-                        
-                        Text(String(localized: "HabitEditorView.AppLaunch.ShortcutName.Instructions", bundle: .module))
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                    }
-                } else {
-                    VStack(alignment: .leading, spacing: 4) {
-                        TextField(String(localized: "HabitEditorView.AppLaunch.URLScheme.Placeholder", bundle: .module), text: $appBundleId)
+                        TextField(String(localized: "HabitEditorView.Action.URLScheme.Placeholder", bundle: .module), text: $actionIdentifier)
                             #if canImport(UIKit)
                             .textInputAutocapitalization(.never)
                             #endif
                             .autocorrectionDisabled()
                             .textFieldStyle(.roundedBorder)
                         
-                        Text(String(localized: "HabitEditorView.AppLaunch.URLScheme.Examples", bundle: .module))
+                        Text(String(localized: "HabitEditorView.Action.URLScheme.Examples", bundle: .module))
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                    
+                case .website:
+                    VStack(alignment: .leading, spacing: 4) {
+                        TextField(String(localized: "HabitEditorView.Action.Website.URL.Placeholder", bundle: .module), text: $actionIdentifier)
+                            #if canImport(UIKit)
+                            .textInputAutocapitalization(.never)
+                            .keyboardType(.URL)
+                            #endif
+                            .autocorrectionDisabled()
+                            .textFieldStyle(.roundedBorder)
+                        
+                        Text(String(localized: "HabitEditorView.Action.Website.Instructions", bundle: .module))
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                    
+                case .shortcut:
+                    VStack(alignment: .leading, spacing: 4) {
+                        TextField(String(localized: "HabitEditorView.Action.Shortcut.Name.Placeholder", bundle: .module), text: $actionIdentifier)
+                            .textFieldStyle(.roundedBorder)
+                        
+                        Text(String(localized: "HabitEditorView.Action.Shortcut.Instructions", bundle: .module))
                             .font(.caption2)
                             .foregroundStyle(.secondary)
                     }
                 }
             }
-        }
-    }
-    
-    // Website settings
-    private var websiteSettings: some View {
-        VStack {
-            TextField(String(localized: "HabitEditorView.Website.Title.Placeholder", bundle: .module), text: $websiteTitle)
-            TextField(String(localized: "HabitEditorView.Website.URL.Placeholder", bundle: .module), text: $websiteURL)
-                #if canImport(UIKit)
-                .textInputAutocapitalization(.never)
-                .keyboardType(.URL)
-                #endif
-                .autocorrectionDisabled()
         }
     }
     
@@ -541,6 +536,81 @@ public struct HabitEditorView: View {
         }
     }
     
+    // Timer steps editor for multiple timer style
+    @ViewBuilder
+    private var timerStepsEditor: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(String(localized: "HabitEditorView.MultipleTimer.TimerIntervals", bundle: .module))
+                .font(.headline)
+            
+            ForEach(timerSteps) { step in
+                timerStepEditor(step: step)
+            }
+            addTimerStepButton
+        }
+    }
+    
+    private func timerStepEditor(step: SequenceStep) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                TextField(String(localized: "HabitEditorView.MultipleTimer.TimerName.Placeholder", bundle: .module), text: Binding(
+                    get: { step.name },
+                    set: { newName in
+                        if let index = timerSteps.firstIndex(where: { $0.id == step.id }) {
+                            timerSteps[index].name = newName
+                        }
+                    }
+                ))
+                
+                timerStepDurationInput(step: step)
+                timerStepDeleteButton(step: step)
+            }
+        }
+        .padding(.vertical, 4)
+    }
+    
+    private func timerStepDurationInput(step: SequenceStep) -> some View {
+        HStack(spacing: 4) {
+            TextField(String(localized: "HabitEditorView.MultipleTimer.Duration.Placeholder", bundle: .module), value: Binding(
+                get: { Int(step.duration) },
+                set: { newValue in
+                    if let index = timerSteps.firstIndex(where: { $0.id == step.id }) {
+                        timerSteps[index].duration = TimeInterval(max(1, newValue))
+                    }
+                }
+            ), format: .number)
+            .textFieldStyle(.roundedBorder)
+            .frame(width: 60)
+            .multilineTextAlignment(.center)
+            
+            Text("sec")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+    }
+    
+    private func timerStepDeleteButton(step: SequenceStep) -> some View {
+        Button {
+            withAnimation {
+                timerSteps.removeAll { $0.id == step.id }
+            }
+        } label: {
+            Image(systemName: "minus.circle.fill")
+                .foregroundStyle(.red)
+        }
+    }
+    
+    private var addTimerStepButton: some View {
+        Button {
+            withAnimation {
+                timerSteps.append(SequenceStep(name: "Timer \(timerSteps.count + 1)", duration: 30))
+            }
+        } label: {
+            Label(String(localized: "HabitEditorView.MultipleTimer.AddTimer.Label", bundle: .module), systemImage: "plus.circle.fill")
+                .font(.subheadline)
+        }
+    }
+
     // Sequence editor
     @ViewBuilder
     private var sequenceEditor: some View {
@@ -649,13 +719,9 @@ public struct HabitEditorView: View {
             }
             updatedHabit.type = .task(subtasks: subtasks)
         case .timer:
-            updatedHabit.type = .timer(style: timerStyle, duration: timerDuration, target: timerTarget)
-        case .appLaunch:
-            updatedHabit.type = .appLaunch(bundleId: appBundleId, appName: appName)
-        case .website:
-            if let url = URL(string: websiteURL) {
-                updatedHabit.type = .website(url: url, title: websiteTitle)
-            }
+            updatedHabit.type = .timer(style: timerStyle, duration: timerDuration, target: timerTarget, steps: timerSteps)
+        case .action:
+            updatedHabit.type = .action(type: actionType, identifier: actionIdentifier, displayName: actionDisplayName)
         case .counter:
             updatedHabit.type = .counter(items: counterItems.filter { !$0.isEmpty })
         case .measurement:

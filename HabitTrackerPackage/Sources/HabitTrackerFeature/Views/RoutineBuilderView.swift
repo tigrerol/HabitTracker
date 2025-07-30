@@ -789,22 +789,10 @@ public struct RoutineBuilderView: View {
                 color: .blue
             ),
             HabitTypeOption(
-                name: String(localized: "HabitType.RestTimer.Name", bundle: .module),
-                description: String(localized: "HabitType.RestTimer.Description", bundle: .module),
-                type: .timer(style: .up, duration: 120, target: 120),
-                color: .blue
-            ),
-            HabitTypeOption(
-                name: String(localized: "HabitType.AppShortcut.Name", bundle: .module),
-                description: String(localized: "HabitType.AppShortcut.Description", bundle: .module),
-                type: .appLaunch(bundleId: "", appName: ""),
+                name: String(localized: "HabitType.Action.Name", bundle: .module),
+                description: String(localized: "HabitType.Action.Description", bundle: .module),
+                type: .action(type: .app, identifier: "", displayName: ""),
                 color: .red
-            ),
-            HabitTypeOption(
-                name: String(localized: "HabitType.Website.Name", bundle: .module),
-                description: String(localized: "HabitType.Website.Description", bundle: .module),
-                type: .website(url: URL(string: "https://example.com")!, title: ""),
-                color: .orange
             ),
             HabitTypeOption(
                 name: String(localized: "HabitType.Counter.Name", bundle: .module),
@@ -817,12 +805,6 @@ public struct RoutineBuilderView: View {
                 description: String(localized: "HabitType.Measurement.Description", bundle: .module),
                 type: .measurement(unit: "value", targetValue: nil),
                 color: .purple
-            ),
-            HabitTypeOption(
-                name: String(localized: "HabitType.Sequence.Name", bundle: .module),
-                description: String(localized: "HabitType.Sequence.Description", bundle: .module),
-                type: .guidedSequence(steps: []),
-                color: .cyan
             ),
             HabitTypeOption(
                 name: "Question",
@@ -848,16 +830,21 @@ public struct RoutineBuilderView: View {
         switch type {
         case .task:
             return "New Task"
-        case .timer(let style, _, _):
+        case .timer(let style, _, _, _):
             switch style {
             case .down: return "Timed Activity"
             case .up: return "Rest Period"
             case .multiple: return "Multiple Timers"
             }
-        case .appLaunch:
-            return "Run App"
-        case .website:
-            return "Visit Website"
+        case .action(let type, _, _):
+            switch type {
+            case .app:
+                return "Launch App"
+            case .website:
+                return "Open Website"
+            case .shortcut:
+                return "Run Shortcut"
+            }
         case .counter:
             return "Track Items"
         case .measurement:
@@ -875,10 +862,8 @@ public struct RoutineBuilderView: View {
             return "#34C759" // Green
         case .timer:
             return "#007AFF" // Blue
-        case .appLaunch:
+        case .action:
             return "#FF3B30" // Red
-        case .website:
-            return "#FF9500" // Orange
         case .counter:
             return "#FFD60A" // Yellow
         case .measurement:

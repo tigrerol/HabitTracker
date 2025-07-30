@@ -126,7 +126,7 @@ struct HabitQuickAddView: View {
                 .filter { !["run", "open", "launch", "shortcut", "the", "my", "a", "an"].contains($0.lowercased()) }
             
             if let shortcutName = words.first {
-                return .appLaunch(bundleId: shortcutName, appName: shortcutName.capitalized)
+                return .action(type: .shortcut, identifier: shortcutName, displayName: shortcutName.capitalized)
             }
         }
         
@@ -136,13 +136,13 @@ struct HabitQuickAddView: View {
             if let schemeRange = text.range(of: "://") {
                 let urlScheme = String(text[..<schemeRange.upperBound])
                 let appName = urlScheme.replacingOccurrences(of: "://", with: "").capitalized
-                return .appLaunch(bundleId: urlScheme, appName: appName)
+                return .action(type: .app, identifier: urlScheme, displayName: appName)
             }
         }
         
         // Website detection
         if lowercased.contains("website") || lowercased.contains("http") || lowercased.contains("www") {
-            return .website(url: URL(string: String(localized: "HabitTypePickerView.ExampleURL", bundle: .module))!, title: String(localized: "HabitQuickAddView.Website.Title", bundle: .module))
+            return .action(type: .website, identifier: String(localized: "HabitTypePickerView.ExampleURL", bundle: .module), displayName: String(localized: "HabitQuickAddView.Website.Title", bundle: .module))
         }
         
         // Counter detection
@@ -235,7 +235,7 @@ struct HabitQuickAddView: View {
             
             // Add variations
             switch type {
-            case .timer(_, let duration, _):
+            case .timer(_, let duration, _, _):
                 if duration != 300 {
                     suggestions.append((String(format: String(localized: "HabitQuickAddView.Suggestion.5min", bundle: .module), cleanName), .timer(style: .down, duration: 300)))
                 }
@@ -339,10 +339,8 @@ struct HabitQuickAddView: View {
             return "#34C759" // Green
         case .timer:
             return "#007AFF" // Blue
-        case .appLaunch:
+        case .action:
             return "#FF3B30" // Red
-        case .website:
-            return "#FF9500" // Orange
         case .counter:
             return "#FFD60A" // Yellow
         case .measurement:
@@ -358,7 +356,7 @@ struct HabitQuickAddView: View {
         switch type {
         case .task:
             return String(localized: "HabitQuickAddView.DefaultName.NewTask", bundle: .module)
-        case .timer(let style, _, _):
+        case .timer(let style, _, _, _):
             switch style {
             case .down:
                 return String(localized: "HabitQuickAddView.DefaultName.TimedActivity", bundle: .module)
@@ -367,10 +365,15 @@ struct HabitQuickAddView: View {
             case .multiple:
                 return String(localized: "HabitQuickAddView.DefaultName.MultipleTimers", bundle: .module)
             }
-        case .appLaunch:
-            return String(localized: "HabitQuickAddView.DefaultName.RunShortcut", bundle: .module)
-        case .website:
-            return String(localized: "HabitQuickAddView.DefaultName.VisitWebsite", bundle: .module)
+        case .action(let type, _, _):
+            switch type {
+            case .app:
+                return String(localized: "HabitQuickAddView.DefaultName.LaunchApp", bundle: .module)
+            case .website:
+                return String(localized: "HabitQuickAddView.DefaultName.OpenWebsite", bundle: .module)
+            case .shortcut:
+                return String(localized: "HabitQuickAddView.DefaultName.RunShortcut", bundle: .module)
+            }
         case .counter:
             return String(localized: "HabitQuickAddView.DefaultName.TrackItems", bundle: .module)
         case .measurement:
@@ -418,22 +421,12 @@ private struct HabitTypePickerView: View {
                 
                 Section {
                     TypeOptionRow(
-                        icon: "shortcuts",
-                        title: String(localized: "HabitTypePickerView.RunShortcut.Title", bundle: .module),
-                        description: String(localized: "HabitTypePickerView.RunShortcut.Description", bundle: .module),
+                        icon: "app.badge",
+                        title: String(localized: "HabitTypePickerView.ExternalAction.Title", bundle: .module),
+                        description: String(localized: "HabitTypePickerView.ExternalAction.Description", bundle: .module),
                         color: .red
                     ) {
-                        onSelect(.appLaunch(bundleId: "", appName: String(localized: "HabitTypePickerView.Shortcut.AppName", bundle: .module)))
-                        dismiss()
-                    }
-                    
-                    TypeOptionRow(
-                        icon: "safari",
-                        title: String(localized: "HabitTypePickerView.OpenWebsite.Title", bundle: .module),
-                        description: String(localized: "HabitTypePickerView.OpenWebsite.Description", bundle: .module),
-                        color: .orange
-                    ) {
-                        onSelect(.website(url: URL(string: String(localized: "HabitTypePickerView.ExampleURL", bundle: .module))!, title: String(localized: "HabitQuickAddView.Website.Title", bundle: .module)))
+                        onSelect(.action(type: .app, identifier: "", displayName: String(localized: "HabitTypePickerView.Action.DefaultName", bundle: .module)))
                         dismiss()
                     }
                 }
