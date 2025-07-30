@@ -16,6 +16,7 @@ struct ContextSettingsView: View {
     @State private var showingFilePicker = false
     @State private var showingImportResult = false
     @State private var importResult: ImportResult?
+    @State private var showingSnippetLibrary = false
     
     var body: some View {
         NavigationStack {
@@ -95,6 +96,20 @@ struct ContextSettingsView: View {
                     Text(String(localized: "ContextSettingsView.CurrentStatus", bundle: .module))
                 }
                 
+                Section("Habit Snippets") {
+                    Button {
+                        showingSnippetLibrary = true
+                    } label: {
+                        SettingsRow(
+                            title: "Snippet Library",
+                            subtitle: "Manage your saved habit collections",
+                            icon: "square.stack.3d.up",
+                            detail: "\(routineService.snippetService.snippets.count) snippet\(routineService.snippetService.snippets.count == 1 ? "" : "s")"
+                        )
+                    }
+                    .buttonStyle(.plain)
+                }
+                
                 Section {
                     Button {
                         exportData()
@@ -141,6 +156,9 @@ struct ContextSettingsView: View {
         }
         .sheet(isPresented: $showingLocationSetup) {
             LocationSetupView()
+        }
+        .sheet(isPresented: $showingSnippetLibrary) {
+            SnippetLibraryView()
         }
         .sheet(isPresented: $showingExportShare) {
             if let exportedFileURL = exportedFileURL {

@@ -24,6 +24,10 @@ public struct RoutineBuilderView: View {
     @State private var selectedDayCategories: Set<String> = []
     @State private var selectedLocationIds: Set<String> = []
     @State private var smartSelectionPriority: Int = 1
+    @State private var selectedHabitsForSnippet: Set<UUID> = []
+    @State private var showingSaveSnippetSheet = false
+    @State private var isSelectingForSnippet = false
+    @State private var showingSnippetBrowser = false
     
     enum BuilderStep {
         case naming
@@ -278,6 +282,17 @@ public struct RoutineBuilderView: View {
                                 
                                 Spacer()
                                 
+                                if !isSelectingForSnippet {
+                                    Button {
+                                        isSelectingForSnippet.toggle()
+                                        selectedHabitsForSnippet.removeAll()
+                                    } label: {
+                                        Label("Save snippet", systemImage: "square.stack.3d.up")
+                                            .font(.caption)
+                                            .foregroundStyle(.blue)
+                                    }
+                                }
+                                
                                 Text(habits.count == 1 ? String(localized: "RoutineBuilderView.Building.HabitCount", bundle: .module).replacingOccurrences(of: "%lld", with: "\(habits.count)") : String(localized: "RoutineBuilderView.Building.HabitsCount.Plural", bundle: .module).replacingOccurrences(of: "%lld", with: "\(habits.count)"))
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
@@ -383,6 +398,26 @@ public struct RoutineBuilderView: View {
                                                 }
                                             }
                                         )
+                                        .overlay(alignment: .topLeading) {
+                                            if isSelectingForSnippet {
+                                                Button {
+                                                    if selectedHabitsForSnippet.contains(habit.id) {
+                                                        selectedHabitsForSnippet.remove(habit.id)
+                                                    } else {
+                                                        selectedHabitsForSnippet.insert(habit.id)
+                                                    }
+                                                } label: {
+                                                    Image(systemName: selectedHabitsForSnippet.contains(habit.id) ? "checkmark.circle.fill" : "circle")
+                                                        .foregroundStyle(selectedHabitsForSnippet.contains(habit.id) ? .blue : .secondary)
+                                                        .font(.title3)
+                                                        .background(Color(.systemBackground), in: Circle())
+                                                }
+                                                .frame(width: 44, height: 44)
+                                                .contentShape(Rectangle())
+                                                .buttonStyle(.plain)
+                                                .allowsHitTesting(true)
+                                            }
+                                        }
                                     } else {
                                         HabitRowView(habit: habit) {
                                             print("🔍 RoutineBuilderView: Edit closure called for habit: \(habit.name)")
@@ -394,6 +429,26 @@ public struct RoutineBuilderView: View {
                                         } onDelete: {
                                             withAnimation(.easeInOut) {
                                                 habits.removeAll { $0.id == habit.id }
+                                            }
+                                        }
+                                        .overlay(alignment: .topLeading) {
+                                            if isSelectingForSnippet {
+                                                Button {
+                                                    if selectedHabitsForSnippet.contains(habit.id) {
+                                                        selectedHabitsForSnippet.remove(habit.id)
+                                                    } else {
+                                                        selectedHabitsForSnippet.insert(habit.id)
+                                                    }
+                                                } label: {
+                                                    Image(systemName: selectedHabitsForSnippet.contains(habit.id) ? "checkmark.circle.fill" : "circle")
+                                                        .foregroundStyle(selectedHabitsForSnippet.contains(habit.id) ? .blue : .secondary)
+                                                        .font(.title3)
+                                                        .background(Color(.systemBackground), in: Circle())
+                                                }
+                                                .frame(width: 44, height: 44)
+                                                .contentShape(Rectangle())
+                                                .buttonStyle(.plain)
+                                                .allowsHitTesting(true)
                                             }
                                         }
                                     }
@@ -414,6 +469,21 @@ public struct RoutineBuilderView: View {
                         }
                     }
                     
+                    // Create snippet button when habits are selected for snippet
+                    if isSelectingForSnippet && !selectedHabitsForSnippet.isEmpty {
+                        Button {
+                            showingSaveSnippetSheet = true
+                        } label: {
+                            Text("Create Snippet (\(selectedHabitsForSnippet.count) habits)")
+                                .font(.headline)
+                                .foregroundStyle(.white)
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                                .background(.blue, in: RoundedRectangle(cornerRadius: 12))
+                        }
+                        .padding(.horizontal)
+                    }
+                    
                     // Add Option section (when question is selected)
                     if let selectedQuestion = selectedQuestionHabit {
                         addOptionSection(for: selectedQuestion)
@@ -423,6 +493,9 @@ public struct RoutineBuilderView: View {
                     if let selectedOption = selectedOption {
                         addHabitToOptionSection(for: selectedOption)
                     } else {
+                        // Snippet browser section
+                        snippetBrowserSection
+                        
                         suggestedHabitsSection
                             .padding(.top, habits.isEmpty ? 20 : 0)
                     }
@@ -553,6 +626,62 @@ public struct RoutineBuilderView: View {
                     editingOptionData = nil
                 }
             )
+        }
+        .sheet(isPresented: $showingSaveSnippetSheet) {
+            let selectedHabits = habits.filter { selectedHabitsForSnippet.contains($0.id) }
+            SaveSnippetSheet(selectedHabits: selectedHabits) {
+                isSelectingForSnippet = false
+                selectedHabitsForSnippet.removeAll()
+            }
+        }
+        .sheet(isPresented: $showingSnippetBrowser) {
+            SnippetBrowserView { selectedHabits in
+                withAnimation(.easeInOut) {
+                    habits.append(contentsOf: selectedHabits)
+                }
+            }
+        }
+    }
+    
+    private var snippetBrowserSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("Habit Snippets")
+                    .font(.headline)
+                    .fontWeight(.semibold)
+                Spacer()
+                Button("Browse All") {
+                    showingSnippetBrowser = true
+                }
+                .font(.caption)
+                .foregroundStyle(.blue)
+            }
+            .padding(.horizontal)
+            
+            // Show recent snippets or "Create your first snippet" prompt
+            if routineService.snippetService.snippets.isEmpty {
+                Text("No snippets yet. Select habits and tap 'Save snippet' to create reusable collections.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .italic()
+                    .padding(.horizontal)
+            } else {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 12) {
+                        ForEach(Array(routineService.snippetService.getAllSnippets().prefix(3))) { snippet in
+                            SnippetCard(snippet: snippet) {
+                                // Add snippet habits to current routine
+                                withAnimation(.easeInOut) {
+                                    habits.append(contentsOf: snippet.habits)
+                                }
+                            }
+                            .frame(width: 120)
+                        }
+                    }
+                    .padding(.horizontal, 1)
+                }
+                .padding(.horizontal)
+            }
         }
     }
     

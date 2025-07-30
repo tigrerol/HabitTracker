@@ -17,6 +17,9 @@ public final class RoutineService {
     /// Routine selector for context-aware selection
     public let routineSelector = RoutineSelector()
     
+    /// Habit snippet service for managing reusable habit collections
+    @MainActor public let snippetService = HabitSnippetService()
+    
     private let persistenceService: any PersistenceServiceProtocol
     
     /// Initialize with dependency injection
