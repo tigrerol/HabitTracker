@@ -12,6 +12,8 @@ public struct RoutineBuilderView: View {
     @State private var currentStep: BuilderStep = .naming
     @State private var editingHabit: Habit?
     @State private var editingHabitIndex: Int?
+    @State private var newHabitBeingCreated: Habit?
+    @State private var newOptionHabitBeingCreated: (habit: Habit, optionId: UUID, habitId: UUID)?
     @State private var editingSubHabit: (habitIndex: Int, optionId: UUID, subHabitId: UUID)?
     @State private var editingOptionData: (habitId: UUID, option: ConditionalOption)?
     @State private var expandedHabits: Set<UUID> = []
@@ -576,10 +578,21 @@ public struct RoutineBuilderView: View {
             .background(.regularMaterial)
         }
         .sheet(isPresented: Binding(
-            get: { editingHabitIndex != nil },
-            set: { if !$0 { editingHabitIndex = nil; editingHabit = nil } }
+            get: { editingHabitIndex != nil || newHabitBeingCreated != nil || newOptionHabitBeingCreated != nil },
+            set: { if !$0 { 
+                editingHabitIndex = nil; 
+                editingHabit = nil
+                newHabitBeingCreated = nil // Clear new habit on cancel
+                newOptionHabitBeingCreated = nil // Clear new option habit on cancel
+            } }
         )) {
-            if let index = editingHabitIndex, index < habits.count {
+            if let newHabit = newHabitBeingCreated {
+                let _ = print("🔍 RoutineBuilderView: Sheet presenting new habit creation")
+                newHabitEditorView(for: newHabit)
+            } else if let newOptionHabit = newOptionHabitBeingCreated {
+                let _ = print("🔍 RoutineBuilderView: Sheet presenting new option habit creation")
+                newOptionHabitEditorView(for: newOptionHabit.habit, optionId: newOptionHabit.optionId, habitId: newOptionHabit.habitId)
+            } else if let index = editingHabitIndex, index < habits.count {
                 let _ = print("🔍 RoutineBuilderView: Sheet presenting using index \(index) for habits.count \(habits.count)")
                 habitEditorView(for: $habits[index])
             } else {
@@ -593,6 +606,8 @@ public struct RoutineBuilderView: View {
                     Button(String(localized: "RoutineBuilderView.Error.Close.Button", bundle: .module)) {
                         editingHabitIndex = nil
                         editingHabit = nil
+                        newHabitBeingCreated = nil
+                        newOptionHabitBeingCreated = nil
                     }
                 }
                 .padding()
@@ -729,11 +744,9 @@ public struct RoutineBuilderView: View {
                     Button {
                         withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
                             let newHabit = createHabitFromType(habitType.type)
-                            habits.append(newHabit)
                             
-                            // Set editing state immediately after adding to array
-                            editingHabitIndex = habits.count - 1
-                            editingHabit = newHabit
+                            // Set new habit creation state instead of adding to array immediately
+                            newHabitBeingCreated = newHabit
                         }
                     } label: {
                         HStack(spacing: 12) {
@@ -1427,6 +1440,59 @@ public struct RoutineBuilderView: View {
     }
     
     @ViewBuilder
+    private func newHabitEditorView(for newHabit: Habit) -> some View {
+        let _ = print("🔍 RoutineBuilderView: Creating new habit editor for \(newHabit.name)")
+        switch newHabit.type {
+        case .conditional:
+            ConditionalHabitEditorView(
+                existingHabit: newHabit,
+                habitLibrary: getAllAvailableHabits(),
+                existingConditionalDepth: 0
+            ) { updatedHabit in
+                print("🔍 RoutineBuilderView: New ConditionalHabitEditorView onSave - adding to habits array")
+                withAnimation(.easeInOut) {
+                    habits.append(updatedHabit)
+                    updateHabitOrder()
+                }
+                newHabitBeingCreated = nil // Clear creation state
+            }
+        default:
+            HabitEditorView(habit: newHabit) { updatedHabit in
+                print("🔍 RoutineBuilderView: New HabitEditorView onSave - adding to habits array")
+                print("🔍 RoutineBuilderView: New habit type: \(updatedHabit.type)")
+                withAnimation(.easeInOut) {
+                    habits.append(updatedHabit)
+                    updateHabitOrder()
+                }
+                newHabitBeingCreated = nil // Clear creation state
+            }
+        }
+    }
+    
+    @ViewBuilder
+    private func newOptionHabitEditorView(for newHabit: Habit, optionId: UUID, habitId: UUID) -> some View {
+        let _ = print("🔍 RoutineBuilderView: Creating new option habit editor for \(newHabit.name)")
+        switch newHabit.type {
+        case .conditional:
+            ConditionalHabitEditorView(
+                existingHabit: newHabit,
+                habitLibrary: getAllAvailableHabits(),
+                existingConditionalDepth: 1
+            ) { updatedHabit in
+                print("🔍 RoutineBuilderView: New option ConditionalHabitEditorView onSave - adding to option")
+                addHabitToOption(updatedHabit, optionId: optionId, habitId: habitId)
+                newOptionHabitBeingCreated = nil // Clear creation state
+            }
+        default:
+            HabitEditorView(habit: newHabit) { updatedHabit in
+                print("🔍 RoutineBuilderView: New option HabitEditorView onSave - adding to option")
+                addHabitToOption(updatedHabit, optionId: optionId, habitId: habitId)
+                newOptionHabitBeingCreated = nil // Clear creation state
+            }
+        }
+    }
+    
+    @ViewBuilder
     private func habitEditorView(for habitBinding: Binding<Habit>) -> some View {
         let habit = habitBinding.wrappedValue
         let _ = print("🔍 RoutineBuilderView: habitEditorView - Creating editor for habit '\(habit.name)' using direct binding")
@@ -1650,7 +1716,9 @@ public struct RoutineBuilderView: View {
                     Button {
                         withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
                             let newHabit = createHabitFromType(habitType.type)
-                            addHabitToSelectedOption(newHabit)
+                            if let selectedOption = selectedOption {
+                                newOptionHabitBeingCreated = (habit: newHabit, optionId: selectedOption.optionId, habitId: selectedOption.habitId)
+                            }
                         }
                     } label: {
                         HStack(spacing: 12) {
@@ -1687,11 +1755,10 @@ public struct RoutineBuilderView: View {
         }
     }
     
-    private func addHabitToSelectedOption(_ newHabit: Habit) {
-        guard let selection = selectedOption,
-              let habitIndex = habits.firstIndex(where: { $0.id == selection.habitId }),
+    private func addHabitToOption(_ newHabit: Habit, optionId: UUID, habitId: UUID) {
+        guard let habitIndex = habits.firstIndex(where: { $0.id == habitId }),
               case .conditional(let info) = habits[habitIndex].type,
-              let optionIndex = info.options.firstIndex(where: { $0.id == selection.optionId }) else {
+              let optionIndex = info.options.firstIndex(where: { $0.id == optionId }) else {
             return
         }
         
@@ -1710,6 +1777,12 @@ public struct RoutineBuilderView: View {
         var updatedHabit = habits[habitIndex]
         updatedHabit.type = .conditional(updatedInfo)
         habits[habitIndex] = updatedHabit
+    }
+    
+    // Legacy function for backwards compatibility - now unused
+    private func addHabitToSelectedOption(_ newHabit: Habit) {
+        guard let selection = selectedOption else { return }
+        addHabitToOption(newHabit, optionId: selection.optionId, habitId: selection.habitId)
     }
 }
 
