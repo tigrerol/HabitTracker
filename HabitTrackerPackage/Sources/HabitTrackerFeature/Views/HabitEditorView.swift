@@ -8,7 +8,6 @@ public struct HabitEditorView: View {
     @State private var habit: Habit
     @State private var habitName: String
     @State private var habitColor: String
-    @State private var isOptional: Bool
     @State private var notes: String
     
     // Type-specific state
@@ -39,7 +38,6 @@ public struct HabitEditorView: View {
         self._habit = State(initialValue: habit)
         self._habitName = State(initialValue: habit.name)
         self._habitColor = State(initialValue: habit.color)
-        self._isOptional = State(initialValue: habit.isOptional)
         self._notes = State(initialValue: habit.notes ?? "")
         self.onSave = onSave
         
@@ -94,7 +92,6 @@ public struct HabitEditorView: View {
                     TextField(String(localized: "HabitEditorView.BasicInformation.HabitName.Placeholder", bundle: .module), text: $habitName)
                         .textFieldStyle(.roundedBorder)
                     
-                    Toggle(String(localized: "HabitEditorView.BasicInformation.OptionalHabit.Label", bundle: .module), isOn: $isOptional)
                     
                     // Color picker
                     VStack(alignment: .leading, spacing: 8) {
@@ -734,7 +731,7 @@ public struct HabitEditorView: View {
         var updatedHabit = habit
         updatedHabit.name = habitName
         updatedHabit.color = habitColor
-        updatedHabit.isOptional = isOptional
+        updatedHabit.isOptional = false
         updatedHabit.notes = notes.isEmpty ? nil : notes
         
         // Update type with new values
