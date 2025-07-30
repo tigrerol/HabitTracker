@@ -149,14 +149,14 @@ struct HabitQuickAddView: View {
         if lowercased.contains(":") || lowercased.contains(",") && lowercased.contains("supplement") {
             let items = extractListItems(from: text)
             if !items.isEmpty {
-                return .counter(items: items)
+                return .tracking(.counter(items: items))
             }
         }
         
         // Measurement detection
         if lowercased.contains("measure") || lowercased.contains("weight") || lowercased.contains("kg") || lowercased.contains("lbs") {
             let unit = extractUnit(from: text) ?? "value"
-            return .measurement(unit: unit, targetValue: nil)
+            return .tracking(.measurement(unit: unit, targetValue: nil))
         }
         
         // Default to simple task
@@ -341,10 +341,13 @@ struct HabitQuickAddView: View {
             return "#007AFF" // Blue
         case .action:
             return "#FF3B30" // Red
-        case .counter:
-            return "#FFD60A" // Yellow
-        case .measurement:
-            return "#BF5AF2" // Purple
+        case .tracking(let trackingType):
+            switch trackingType {
+            case .counter:
+                return "#FFD60A" // Yellow
+            case .measurement:
+                return "#BF5AF2" // Purple
+            }
         case .guidedSequence:
             return "#64D2FF" // Light Blue
         case .conditional:
@@ -374,10 +377,13 @@ struct HabitQuickAddView: View {
             case .shortcut:
                 return String(localized: "HabitQuickAddView.DefaultName.RunShortcut", bundle: .module)
             }
-        case .counter:
-            return String(localized: "HabitQuickAddView.DefaultName.TrackItems", bundle: .module)
-        case .measurement:
-            return String(localized: "HabitQuickAddView.DefaultName.RecordMeasurement", bundle: .module)
+        case .tracking(let trackingType):
+            switch trackingType {
+            case .counter:
+                return String(localized: "HabitQuickAddView.DefaultName.TrackItems", bundle: .module)
+            case .measurement:
+                return String(localized: "HabitQuickAddView.DefaultName.RecordMeasurement", bundle: .module)
+            }
         case .guidedSequence:
             return String(localized: "HabitQuickAddView.DefaultName.GuidedActivity", bundle: .module)
         case .conditional:
@@ -434,21 +440,11 @@ private struct HabitTypePickerView: View {
                 Section {
                     TypeOptionRow(
                         icon: "list.bullet",
-                        title: String(localized: "HabitTypePickerView.Counter.Title", bundle: .module),
-                        description: String(localized: "HabitTypePickerView.Counter.Description", bundle: .module),
-                        color: .yellow
+                        title: String(localized: "HabitTypePickerView.Tracking.Title", bundle: .module),
+                        description: String(localized: "HabitTypePickerView.Tracking.Description", bundle: .module),
+                        color: .orange
                     ) {
-                        onSelect(.counter(items: [String(localized: "HabitTypePickerView.CounterItem1", bundle: .module), String(localized: "HabitTypePickerView.CounterItem2", bundle: .module)]))
-                        dismiss()
-                    }
-                    
-                    TypeOptionRow(
-                        icon: "chart.line.uptrend.xyaxis",
-                        title: String(localized: "HabitTypePickerView.Measurement.Title", bundle: .module),
-                        description: String(localized: "HabitTypePickerView.Measurement.Description", bundle: .module),
-                        color: .purple
-                    ) {
-                        onSelect(.measurement(unit: String(localized: "HabitTypePickerView.MeasurementUnit", bundle: .module), targetValue: nil))
+                        onSelect(.tracking(.counter(items: [String(localized: "HabitTypePickerView.CounterItem1", bundle: .module), String(localized: "HabitTypePickerView.CounterItem2", bundle: .module)])))
                         dismiss()
                     }
                     

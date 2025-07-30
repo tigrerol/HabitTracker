@@ -795,16 +795,10 @@ public struct RoutineBuilderView: View {
                 color: .red
             ),
             HabitTypeOption(
-                name: String(localized: "HabitType.Counter.Name", bundle: .module),
-                description: String(localized: "HabitType.Counter.Description", bundle: .module),
-                type: .counter(items: ["Item 1"]),
-                color: .yellow
-            ),
-            HabitTypeOption(
-                name: String(localized: "HabitType.Measurement.Name", bundle: .module),
-                description: String(localized: "HabitType.Measurement.Description", bundle: .module),
-                type: .measurement(unit: "value", targetValue: nil),
-                color: .purple
+                name: String(localized: "HabitType.Tracking.Name", bundle: .module),
+                description: String(localized: "HabitType.Tracking.Description", bundle: .module),
+                type: .tracking(.counter(items: ["Item 1"])),
+                color: .orange
             ),
             HabitTypeOption(
                 name: "Question",
@@ -845,10 +839,13 @@ public struct RoutineBuilderView: View {
             case .shortcut:
                 return "Run Shortcut"
             }
-        case .counter:
-            return "Track Items"
-        case .measurement:
-            return "Record Measurement"
+        case .tracking(let trackingType):
+            switch trackingType {
+            case .counter:
+                return "Track Items"
+            case .measurement:
+                return "Record Measurement"
+            }
         case .guidedSequence:
             return "Guided Activity"
         case .conditional:
@@ -864,10 +861,13 @@ public struct RoutineBuilderView: View {
             return "#007AFF" // Blue
         case .action:
             return "#FF3B30" // Red
-        case .counter:
-            return "#FFD60A" // Yellow
-        case .measurement:
-            return "#BF5AF2" // Purple
+        case .tracking(let trackingType):
+            switch trackingType {
+            case .counter:
+                return "#FFD60A" // Yellow
+            case .measurement:
+                return "#BF5AF2" // Purple
+            }
         case .guidedSequence:
             return "#64D2FF" // Light Blue
         case .conditional:

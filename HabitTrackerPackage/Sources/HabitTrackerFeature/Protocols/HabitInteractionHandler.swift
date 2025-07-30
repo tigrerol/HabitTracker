@@ -38,9 +38,7 @@ extension HabitInteractionHandler {
             return true
         case .action where Self.supportedHabitType == HabitType.self:
             return true
-        case .counter where Self.supportedHabitType == HabitType.self:
-            return true
-        case .measurement where Self.supportedHabitType == HabitType.self:
+        case .tracking where Self.supportedHabitType == HabitType.self:
             return true
         case .guidedSequence where Self.supportedHabitType == HabitType.self:
             return true
@@ -191,8 +189,8 @@ public struct ActionHabitHandler: HabitInteractionHandler {
 }
 
 
-/// Handler for counter habits
-public struct CounterHabitHandler: HabitInteractionHandler {
+/// Handler for tracking habits (counter and measurement)
+public struct TrackingHabitHandler: HabitInteractionHandler {
     public static let supportedHabitType: HabitType.Type = HabitType.self
     
     @MainActor
@@ -202,58 +200,44 @@ public struct CounterHabitHandler: HabitInteractionHandler {
         isCompleted: Bool
     ) -> AnyView {
         switch habit.type {
+        case .tracking(let trackingType):
+            switch trackingType {
+            case .counter(let items):
+                return AnyView(AccessibleCounterHabitView(
+                    habit: habit,
+                    items: items,
+                    onComplete: onComplete,
+                    isCompleted: isCompleted
+                ))
+            case .measurement(let unit, let targetValue):
+                return AnyView(MeasurementHabitView(
+                    habit: habit,
+                    unit: unit,
+                    targetValue: targetValue,
+                    onComplete: onComplete,
+                    isCompleted: isCompleted
+                ))
+            }
+        default:
+            return AnyView(Text("Invalid habit type for TrackingHabitHandler"))
+        }
+    }
+    
+    public func canHandle(habit: Habit) -> Bool {
+        if case .tracking = habit.type {
+            return true
+        }
+        return false
+    }
+    
+    public func estimatedDuration(for habit: Habit) -> TimeInterval {
+        guard case .tracking(let trackingType) = habit.type else { return 60 }
+        switch trackingType {
         case .counter(let items):
-            return AnyView(AccessibleCounterHabitView(
-                habit: habit,
-                items: items,
-                onComplete: onComplete,
-                isCompleted: isCompleted
-            ))
-        default:
-            return AnyView(Text("Invalid habit type for CounterHabitHandler"))
+            return TimeInterval(items.count * 30) // 30 seconds per item
+        case .measurement:
+            return 60 // 1 minute to measure and record
         }
-    }
-    
-    public func canHandle(habit: Habit) -> Bool {
-        if case .counter = habit.type {
-            return true
-        }
-        return false
-    }
-    
-    public func estimatedDuration(for habit: Habit) -> TimeInterval {
-        guard case .counter(let items) = habit.type else { return 60 }
-        return TimeInterval(items.count * 30) // 30 seconds per item
-    }
-}
-
-/// Handler for measurement habits
-public struct MeasurementHabitHandler: HabitInteractionHandler {
-    public static let supportedHabitType: HabitType.Type = HabitType.self
-    
-    @MainActor
-    public func createInteractionView(
-        habit: Habit,
-        onComplete: @escaping (UUID, TimeInterval?, String?) -> Void,
-        isCompleted: Bool
-    ) -> AnyView {
-        switch habit.type {
-        case .measurement(let unit, let targetValue):
-            return AnyView(MeasurementHabitView(habit: habit, unit: unit, targetValue: targetValue, onComplete: onComplete, isCompleted: isCompleted))
-        default:
-            return AnyView(Text("Invalid habit type for MeasurementHabitHandler"))
-        }
-    }
-    
-    public func canHandle(habit: Habit) -> Bool {
-        if case .measurement = habit.type {
-            return true
-        }
-        return false
-    }
-    
-    public func estimatedDuration(for habit: Habit) -> TimeInterval {
-        return 60 // 1 minute to measure and record
     }
 }
 

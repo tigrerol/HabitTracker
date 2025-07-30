@@ -384,6 +384,9 @@
 /* HabitType Names for RoutineBuilderView */
 "HabitType.Action.Name" = "External Action";
 "HabitType.Action.Description" = "Launch app, open website, or run shortcut";
+"HabitType.Tracking.Name" = "Tracking";
+"HabitType.Tracking.Description" = "Track items or record measurements";
+"HabitType.Tracking.Title" = "Tracking";
 
 /* HabitTypePickerView Strings */
 "HabitTypePickerView.NavigationTitle" = "Choose Habit Type";
@@ -409,6 +412,10 @@
 "HabitTypePickerView.GuidedSequence.Description" = "Step-by-step instructions";
 "HabitTypePickerView.Question.Title" = "Question";
 "HabitTypePickerView.Question.Description" = "Branch based on answer";
+"HabitTypePickerView.Tracking.Title" = "Tracking";
+"HabitTypePickerView.Tracking.Description" = "Track items or record measurements";
+"HabitTypeCategory.Tracking.DisplayName" = "Tracking";
+"ConditionalHabitEditorView.NewTracking.DefaultName" = "New Tracking";
 "HabitTypePickerView.Shortcut.AppName" = "Shortcut";
 "HabitTypePickerView.ExampleURL" = "https://example.com";
 "HabitTypePickerView.Counter.Title" = "Counter";

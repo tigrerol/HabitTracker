@@ -80,7 +80,7 @@ public enum HabitFactory {
     ) -> Habit {
         Habit(
             name: "Supplements",
-            type: .counter(items: items),
+            type: .tracking(.counter(items: items)),
             color: Colors.supplements,
             order: order
         )

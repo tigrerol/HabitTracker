@@ -112,10 +112,15 @@ struct HabitFactoryTests {
             if case .action = $0.type { return true }
             return false
         }
+        let hasTracking = allHabits.contains { 
+            if case .tracking = $0.type { return true }
+            return false
+        }
         
         #expect(hasTask == true)
         #expect(hasTimer == true)
         #expect(hasAction == true)
+        #expect(hasTracking == true)
         
         // Check timer durations are reasonable
         let timerHabits = allHabits.filter { $0.type.isTimer }

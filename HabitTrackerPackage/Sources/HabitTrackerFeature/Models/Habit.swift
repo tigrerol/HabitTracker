@@ -59,10 +59,13 @@ extension Habit {
             case .shortcut:
                 return 120 // 2 minutes default for shortcut
             }
-        case .counter(let items):
-            return TimeInterval(items.count * 30) // 30 seconds per item
-        case .measurement:
-            return 60 // 1 minute to measure and record
+        case .tracking(let trackingType):
+            switch trackingType {
+            case .counter(let items):
+                return TimeInterval(items.count * 30) // 30 seconds per item
+            case .measurement:
+                return 60 // 1 minute to measure and record
+            }
         case .guidedSequence(let steps):
             return steps.reduce(0) { $0 + $1.duration }
         case .conditional:

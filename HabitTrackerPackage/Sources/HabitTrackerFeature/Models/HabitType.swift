@@ -11,11 +11,8 @@ public enum HabitType: Codable, Hashable, Sendable {
     /// External action (app launch, website, shortcut)
     case action(type: ActionType, identifier: String, displayName: String)
     
-    /// Counter-based habit (e.g., supplements)
-    case counter(items: [String])
-    
-    /// Measurement input (e.g., weight, HRV score)
-    case measurement(unit: String, targetValue: Double?)
+    /// Tracking-based habit (measurements, counters, supplements)
+    case tracking(TrackingType)
     
     /// Guided sequence with steps
     case guidedSequence(steps: [SequenceStep])
@@ -42,6 +39,14 @@ public enum ActionType: Codable, Hashable, Sendable {
     case website  
     /// Run Shortcuts app shortcut
     case shortcut
+}
+
+/// Represents different tracking types
+public enum TrackingType: Codable, Hashable, Sendable {
+    /// Count multiple items (e.g., supplements, vitamins)
+    case counter(items: [String])
+    /// Single measurement with unit (e.g., weight, HRV score)
+    case measurement(unit: String, targetValue: Double?)
 }
 
 /// Represents a subtask within a checkbox habit
@@ -107,13 +112,16 @@ extension HabitType {
             case .shortcut:
                 return "Run \(displayName)"
             }
-        case .counter(let items):
-            return "\(items.count) items"
-        case .measurement(let unit, let target):
-            if let target {
-                return "Measure \(unit) (target: \(target))"
-            } else {
-                return "Measure \(unit)"
+        case .tracking(let trackingType):
+            switch trackingType {
+            case .counter(let items):
+                return "\(items.count) items"
+            case .measurement(let unit, let target):
+                if let target {
+                    return "Measure \(unit) (target: \(target))"
+                } else {
+                    return "Measure \(unit)"
+                }
             }
         case .guidedSequence(let steps):
             let totalTime = steps.reduce(0) { $0 + $1.duration }
@@ -146,10 +154,13 @@ extension HabitType {
             case .shortcut:
                 return "gear.circle"
             }
-        case .counter:
-            return "list.bullet"
-        case .measurement:
-            return "chart.line.uptrend.xyaxis"
+        case .tracking(let trackingType):
+            switch trackingType {
+            case .counter:
+                return "list.bullet"
+            case .measurement:
+                return "chart.line.uptrend.xyaxis"
+            }
         case .guidedSequence:
             return "list.number"
         case .conditional:
@@ -180,10 +191,13 @@ extension HabitType {
             case .shortcut:
                 return "Run Shortcut"
             }
-        case .counter:
-            return "New Counter"
-        case .measurement:
-            return "New Measurement"
+        case .tracking(let trackingType):
+            switch trackingType {
+            case .counter:
+                return "New Counter"
+            case .measurement:
+                return "New Measurement"
+            }
         case .guidedSequence:
             return "New Sequence"
         case .conditional:

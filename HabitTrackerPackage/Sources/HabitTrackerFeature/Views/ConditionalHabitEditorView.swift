@@ -298,7 +298,7 @@ private struct OptionCard: View {
                             addQuickHabit(.task(subtasks: []))
                         }
                         QuickHabitButton(title: String(localized: "ConditionalHabitEditorView.Counter.QuickButton", bundle: .module), icon: "list.bullet") {
-                            addQuickHabit(.counter(items: [String(localized: "ConditionalHabitEditorView.CounterItem.Default", bundle: .module)]))
+                            addQuickHabit(.tracking(.counter(items: [String(localized: "ConditionalHabitEditorView.CounterItem.Default", bundle: .module)])))
                         }
                     }
                 }
@@ -745,16 +745,9 @@ struct HabitPickerView: View {
                 onSelect(habit)
                 dismiss()
             }
-        case .counter:
+        case .tracking:
             HabitEditorView(
-                habit: Habit(name: String(localized: "ConditionalHabitEditorView.NewCounter.DefaultName", bundle: .module), type: .counter(items: [String(localized: "ConditionalHabitEditorView.CounterItem.Default", bundle: .module)]))
-            ) { habit in
-                onSelect(habit)
-                dismiss()
-            }
-        case .measurement:
-            HabitEditorView(
-                habit: Habit(name: String(localized: "ConditionalHabitEditorView.NewMeasurement.DefaultName", bundle: .module), type: .measurement(unit: "kg", targetValue: nil))
+                habit: Habit(name: String(localized: "ConditionalHabitEditorView.NewTracking.DefaultName", bundle: .module), type: .tracking(.counter(items: [String(localized: "ConditionalHabitEditorView.CounterItem.Default", bundle: .module)])))
             ) { habit in
                 onSelect(habit)
                 dismiss()
@@ -789,8 +782,7 @@ struct HabitPickerView: View {
 enum HabitTypeCategory: CaseIterable, Identifiable {
     case task
     case timer
-    case counter
-    case measurement
+    case tracking
     case action
     case guidedSequence
     case conditional
@@ -801,8 +793,7 @@ enum HabitTypeCategory: CaseIterable, Identifiable {
         switch self {
         case .task: return String(localized: "HabitTypeCategory.Task.DisplayName", bundle: .module)
         case .timer: return String(localized: "HabitTypeCategory.Timer.DisplayName", bundle: .module)
-        case .counter: return String(localized: "HabitTypeCategory.Counter.DisplayName", bundle: .module)
-        case .measurement: return String(localized: "HabitTypeCategory.Measurement.DisplayName", bundle: .module)
+        case .tracking: return String(localized: "HabitTypeCategory.Tracking.DisplayName", bundle: .module)
         case .action: return String(localized: "HabitTypeCategory.Action.DisplayName", bundle: .module)
         case .guidedSequence: return String(localized: "HabitTypeCategory.GuidedSequence.DisplayName", bundle: .module)
         case .conditional: return String(localized: "HabitTypeCategory.Question.DisplayName", bundle: .module)
@@ -813,8 +804,7 @@ enum HabitTypeCategory: CaseIterable, Identifiable {
         switch self {
         case .task: return "checkmark.square"
         case .timer: return "timer"
-        case .counter: return "list.bullet"
-        case .measurement: return "chart.line.uptrend.xyaxis"
+        case .tracking: return "list.bullet"
         case .action: return "app.badge"
         case .guidedSequence: return "list.number"
         case .conditional: return "questionmark.circle"

@@ -33,11 +33,8 @@ public struct HabitInteractionView: View {
             case .action:
                 AnyView(ActionHabitHandler().createInteractionView(habit: habit, onComplete: self.onComplete, isCompleted: isCompleted))
                 
-            case .counter:
-                AnyView(CounterHabitHandler().createInteractionView(habit: habit, onComplete: self.onComplete, isCompleted: isCompleted))
-                
-            case .measurement:
-                AnyView(MeasurementHabitHandler().createInteractionView(habit: habit, onComplete: self.onComplete, isCompleted: isCompleted))
+            case .tracking:
+                AnyView(TrackingHabitHandler().createInteractionView(habit: habit, onComplete: self.onComplete, isCompleted: isCompleted))
                 
             case .guidedSequence:
                 AnyView(GuidedSequenceHabitHandler().createInteractionView(habit: habit, onComplete: self.onComplete, isCompleted: isCompleted))
@@ -1169,7 +1166,7 @@ struct GuidedSequenceHabitView: View {
         )
         
         HabitInteractionView(
-            habit: Habit(name: "Test Counter", type: .counter(items: ["Item 1", "Item 2", "Item 3"])),
+            habit: Habit(name: "Test Counter", type: .tracking(.counter(items: ["Item 1", "Item 2", "Item 3"]))),
             onComplete: { habitId, duration, notes in },
             isCompleted: false
         )

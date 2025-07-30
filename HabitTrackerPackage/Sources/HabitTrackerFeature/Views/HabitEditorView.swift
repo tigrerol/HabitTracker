@@ -18,9 +18,15 @@ public struct HabitEditorView: View {
     @State private var actionType: ActionType = .app
     @State private var actionIdentifier: String = ""
     @State private var actionDisplayName: String = ""
+    @State private var trackingStyle: TrackingStyle = .counter
     @State private var counterItems: [String] = []
     @State private var measurementUnit: String = ""
     @State private var measurementTarget: Double? = nil
+    
+    enum TrackingStyle: String, CaseIterable {
+        case counter = "Counter"
+        case measurement = "Measurement"
+    }
     @State private var subtasks: [Subtask] = []
     @State private var sequenceSteps: [SequenceStep] = []
     
@@ -46,11 +52,16 @@ public struct HabitEditorView: View {
             self._actionType = State(initialValue: type)
             self._actionIdentifier = State(initialValue: identifier)
             self._actionDisplayName = State(initialValue: displayName)
-        case .counter(let items):
-            self._counterItems = State(initialValue: items)
-        case .measurement(let unit, let target):
-            self._measurementUnit = State(initialValue: unit)
-            self._measurementTarget = State(initialValue: target)
+        case .tracking(let trackingType):
+            switch trackingType {
+            case .counter(let items):
+                self._trackingStyle = State(initialValue: .counter)
+                self._counterItems = State(initialValue: items)
+            case .measurement(let unit, let target):
+                self._trackingStyle = State(initialValue: .measurement)
+                self._measurementUnit = State(initialValue: unit)
+                self._measurementTarget = State(initialValue: target)
+            }
         case .task(let tasks):
             print("🔍 HabitEditorView: init - task with \(tasks.count) subtasks")
             for (index, task) in tasks.enumerated() {
@@ -170,11 +181,8 @@ public struct HabitEditorView: View {
             case .action:
                 actionSettings
                 
-            case .counter:
-                counterItemsEditor
-                
-            case .measurement:
-                measurementSettings
+            case .tracking:
+                trackingSettings
                 
             case .guidedSequence:
                 sequenceEditor
@@ -211,10 +219,8 @@ public struct HabitEditorView: View {
             return String(localized: "HabitType.Timer.Title", bundle: .module)
         case .action:
             return String(localized: "HabitType.Action.Title", bundle: .module)
-        case .counter:
-            return String(localized: "HabitType.Counter.Title", bundle: .module)
-        case .measurement:
-            return String(localized: "HabitType.Measurement.Title", bundle: .module)
+        case .tracking:
+            return String(localized: "HabitType.Tracking.Title", bundle: .module)
         case .guidedSequence:
             return String(localized: "HabitType.Sequence.Title", bundle: .module)
         case .conditional:
@@ -513,6 +519,24 @@ public struct HabitEditorView: View {
         }
     }
     
+    // Tracking settings with style picker
+    private var trackingSettings: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Picker("Tracking Style", selection: $trackingStyle) {
+                ForEach(TrackingStyle.allCases, id: \.self) { style in
+                    Text(style.rawValue).tag(style)
+                }
+            }
+            .pickerStyle(.segmented)
+            
+            switch trackingStyle {
+            case .counter:
+                counterItemsEditor
+            case .measurement:
+                measurementSettings
+            }
+        }
+    }
     
     // Counter items editor
     private var counterItemsEditor: some View {
@@ -722,10 +746,13 @@ public struct HabitEditorView: View {
             updatedHabit.type = .timer(style: timerStyle, duration: timerDuration, target: timerTarget, steps: timerSteps)
         case .action:
             updatedHabit.type = .action(type: actionType, identifier: actionIdentifier, displayName: actionDisplayName)
-        case .counter:
-            updatedHabit.type = .counter(items: counterItems.filter { !$0.isEmpty })
-        case .measurement:
-            updatedHabit.type = .measurement(unit: measurementUnit, targetValue: measurementTarget)
+        case .tracking:
+            switch trackingStyle {
+            case .counter:
+                updatedHabit.type = .tracking(.counter(items: counterItems.filter { !$0.isEmpty }))
+            case .measurement:
+                updatedHabit.type = .tracking(.measurement(unit: measurementUnit, targetValue: measurementTarget))
+            }
         case .guidedSequence:
             updatedHabit.type = .guidedSequence(steps: sequenceSteps)
         case .conditional:
