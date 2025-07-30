@@ -21,6 +21,11 @@ public struct RoutineBuilderView: View {
     @State private var contextRule: RoutineContextRule?
     @State private var showingContextRuleEditor = false
     @State private var customLocations: [CustomLocation] = []
+    @State private var smartSelectionEnabled = true // Enable by default
+    @State private var selectedTimeSlots: Set<TimeSlot> = []
+    @State private var selectedDayCategories: Set<String> = []
+    @State private var selectedLocationIds: Set<String> = []
+    @State private var smartSelectionPriority: Int = 1
     
     enum BuilderStep {
         case naming
@@ -77,6 +82,16 @@ public struct RoutineBuilderView: View {
                 habits = template.habits
                 isDefault = template.isDefault
                 contextRule = template.contextRule
+                
+                // Initialize smart selection state from existing context rule
+                if let rule = template.contextRule {
+                    smartSelectionEnabled = true
+                    selectedTimeSlots = Set(rule.timeSlots)
+                    selectedDayCategories = Set(rule.dayCategoryIds)
+                    selectedLocationIds = Set(rule.locationIds)
+                    smartSelectionPriority = rule.priority
+                }
+                
                 currentStep = .review // Skip to review for editing
             }
         }
@@ -88,7 +103,8 @@ public struct RoutineBuilderView: View {
     // MARK: - Naming Step
     
     private var namingStepView: some View {
-        VStack(spacing: 32) {
+        VStack(spacing: 0) {
+            // Fixed header
             VStack(spacing: 16) {
                 // Step indicator
                 HStack(spacing: 4) {
@@ -115,87 +131,102 @@ public struct RoutineBuilderView: View {
                     .multilineTextAlignment(.center)
             }
             .padding(.top, 40)
+            .padding(.bottom, 20)
+            .background(.regularMaterial)
             
-            VStack(spacing: 24) {
-                TextField(String(localized: "RoutineBuilderView.Naming.RoutineName.Placeholder", bundle: .module), text: $templateName)
-                    .textFieldStyle(.roundedBorder)
-                    .font(.title3)
-                
-                // Quick name suggestions
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 12) {
-                        ForEach([String(localized: "RoutineSuggestion.WeekdayMorning", bundle: .module), String(localized: "RoutineSuggestion.Weekend", bundle: .module), String(localized: "RoutineSuggestion.QuickStart", bundle: .module), String(localized: "RoutineSuggestion.FullRoutine", bundle: .module), String(localized: "RoutineSuggestion.Travel", bundle: .module)], id: \.self) { suggestion in
-                            Button {
-                                withAnimation(.easeInOut) {
-                                    templateName = suggestion
-                                }
-                            } label: {
-                                Text(suggestion)
-                                    .font(.subheadline)
-                                    .padding(.horizontal, 16)
-                                    .padding(.vertical, 8)
-                                    .background(.regularMaterial, in: Capsule())
-                            }
-                            .buttonStyle(.plain)
-                        }
-                    }
-                }
-                
-                // Color picker
-                VStack(alignment: .leading, spacing: 8) {
-                    Text(String(localized: "RoutineBuilderView.Naming.Color.Label", bundle: .module))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+            // Scrollable content
+            ScrollView {
+                VStack(spacing: 24) {
+                    TextField(String(localized: "RoutineBuilderView.Naming.RoutineName.Placeholder", bundle: .module), text: $templateName)
+                        .textFieldStyle(.roundedBorder)
+                        .font(.title3)
                     
-                    HStack(spacing: 12) {
-                        ForEach(Array(zip(["#34C759", "#007AFF", "#FF9500", "#FF3B30", "#AF52DE", "#5AC8FA"], [String(localized: "Color.Green", bundle: .module), String(localized: "Color.Blue", bundle: .module), String(localized: "Color.Orange", bundle: .module), String(localized: "Color.Red", bundle: .module), String(localized: "Color.Purple", bundle: .module), String(localized: "Color.LightBlue", bundle: .module)])), id: \.0) { color, colorName in
-                            Button {
-                                withAnimation(.easeInOut) {
-                                    templateColor = color
-                                }
-                            } label: {
-                                Circle()
-                                    .fill(Color(hex: color) ?? .blue)
-                                    .frame(width: 36, height: 36)
-                                    .overlay {
-                                        if templateColor == color {
-                                            Image(systemName: "checkmark")
-                                                .font(.caption)
-                                                .fontWeight(.bold)
-                                                .foregroundStyle(.white)
-                                        }
+                    // Quick name suggestions
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 12) {
+                            ForEach([String(localized: "RoutineSuggestion.WeekdayMorning", bundle: .module), String(localized: "RoutineSuggestion.Weekend", bundle: .module), String(localized: "RoutineSuggestion.QuickStart", bundle: .module), String(localized: "RoutineSuggestion.FullRoutine", bundle: .module), String(localized: "RoutineSuggestion.Travel", bundle: .module)], id: \.self) { suggestion in
+                                Button {
+                                    withAnimation(.easeInOut) {
+                                        templateName = suggestion
                                     }
+                                } label: {
+                                    Text(suggestion)
+                                        .font(.subheadline)
+                                        .padding(.horizontal, 16)
+                                        .padding(.vertical, 8)
+                                        .background(.regularMaterial, in: Capsule())
+                                }
+                                .buttonStyle(.plain)
                             }
-                            .accessibilityLabel(String(localized: "Accessibility.ColorButton", bundle: .module).replacingOccurrences(of: "%@", with: colorName))
-                            .accessibilityValue(templateColor == color ? String(localized: "Color.Selected", bundle: .module) : String(localized: "Color.NotSelected", bundle: .module))
-                            .accessibilityAddTraits(templateColor == color ? .isSelected : [])
                         }
                     }
+                    
+                    // Color picker
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(String(localized: "RoutineBuilderView.Naming.Color.Label", bundle: .module))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        
+                        HStack(spacing: 12) {
+                            ForEach(Array(zip(["#34C759", "#007AFF", "#FF9500", "#FF3B30", "#AF52DE", "#5AC8FA"], [String(localized: "Color.Green", bundle: .module), String(localized: "Color.Blue", bundle: .module), String(localized: "Color.Orange", bundle: .module), String(localized: "Color.Red", bundle: .module), String(localized: "Color.Purple", bundle: .module), String(localized: "Color.LightBlue", bundle: .module)])), id: \.0) { color, colorName in
+                                Button {
+                                    withAnimation(.easeInOut) {
+                                        templateColor = color
+                                    }
+                                } label: {
+                                    Circle()
+                                        .fill(Color(hex: color) ?? .blue)
+                                        .frame(width: 36, height: 36)
+                                        .overlay {
+                                            if templateColor == color {
+                                                Image(systemName: "checkmark")
+                                                    .font(.caption)
+                                                    .fontWeight(.bold)
+                                                    .foregroundStyle(.white)
+                                            }
+                                        }
+                                }
+                                .accessibilityLabel(String(localized: "Accessibility.ColorButton", bundle: .module).replacingOccurrences(of: "%@", with: colorName))
+                                .accessibilityValue(templateColor == color ? String(localized: "Color.Selected", bundle: .module) : String(localized: "Color.NotSelected", bundle: .module))
+                                .accessibilityAddTraits(templateColor == color ? .isSelected : [])
+                            }
+                        }
+                    }
+                    
+                    // Smart Selection Section
+                    smartSelectionSection
+                    
+                    // Extra padding for safe area
+                    Spacer()
+                        .frame(height: 100)
                 }
+                .padding(.horizontal)
             }
             
-            Spacer()
-            
-            Button {
-                withAnimation(.easeInOut(duration: 0.3)) {
-                    currentStep = .building
+            // Fixed bottom button
+            VStack {
+                Button {
+                    withAnimation(.easeInOut(duration: 0.3)) {
+                        currentStep = .building
+                    }
+                } label: {
+                    Text(String(localized: "RoutineBuilderView.Naming.Next.Button", bundle: .module))
+                        .font(.headline)
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(templateName.isEmpty ? Color.gray : Color(hex: templateColor) ?? .blue)
+                        )
+                        .scaleEffect(templateName.isEmpty ? 0.95 : 1.0)
                 }
-            } label: {
-                Text(String(localized: "RoutineBuilderView.Naming.Next.Button", bundle: .module))
-                    .font(.headline)
-                    .foregroundStyle(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(templateName.isEmpty ? Color.gray : Color(hex: templateColor) ?? .blue)
-                    )
-                    .scaleEffect(templateName.isEmpty ? 0.95 : 1.0)
+                .disabled(templateName.isEmpty)
+                .animation(.easeInOut(duration: 0.2), value: templateName.isEmpty)
             }
-            .disabled(templateName.isEmpty)
-            .animation(.easeInOut(duration: 0.2), value: templateName.isEmpty)
+            .padding()
+            .background(.regularMaterial)
         }
-        .padding()
     }
     
     // MARK: - Building Step
@@ -418,26 +449,37 @@ public struct RoutineBuilderView: View {
                         }
                     }
                     
-                    Button {
-                        if habits.isEmpty {
-                            // Skip to review with empty routine
-                            currentStep = .review
-                        } else {
-                            // Continue to review
-                            withAnimation(.easeInOut) {
-                                currentStep = .review
-                            }
+                    if editingTemplate != nil {
+                        // Single update button for editing mode
+                        Button {
+                            saveTemplate()
+                        } label: {
+                            Text("Update Routine")
+                                .font(.headline)
+                                .foregroundStyle(.white)
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                                .background(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .fill(Color(hex: templateColor) ?? .blue)
+                                )
                         }
-                    } label: {
-                        Text(habits.isEmpty ? String(localized: "RoutineBuilderView.Building.Skip.Button", bundle: .module) : String(localized: "RoutineBuilderView.Building.Review.Button", bundle: .module))
-                            .font(.headline)
-                            .foregroundStyle(.white)
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .fill(Color(hex: templateColor) ?? .blue)
-                            )
+                    } else {
+                        // Single save button for new routine creation
+                        Button {
+                            // Direct save - no review step needed
+                            saveTemplate()
+                        } label: {
+                            Text(habits.isEmpty ? "Save Empty Routine" : "Save Routine")
+                                .font(.headline)
+                                .foregroundStyle(.white)
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                                .background(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .fill(Color(hex: templateColor) ?? .blue)
+                                )
+                        }
                     }
                 }
             }
@@ -539,6 +581,11 @@ public struct RoutineBuilderView: View {
                         withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
                             let newHabit = createHabitFromType(habitType.type)
                             habits.append(newHabit)
+                            
+                            // Immediately open the edit screen for the newly created habit
+                            let newIndex = habits.count - 1
+                            editingHabitIndex = newIndex
+                            editingHabit = newHabit
                         }
                     } label: {
                         HStack(spacing: 12) {
@@ -876,6 +923,223 @@ public struct RoutineBuilderView: View {
         }
     }
     
+    // MARK: - Smart Selection Section
+    
+    private var smartSelectionSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            // Header with toggle
+            HStack {
+                Label {
+                    Text("Smart Selection")
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                } icon: {
+                    Image(systemName: "sparkles")
+                        .foregroundStyle(.blue)
+                }
+                
+                Spacer()
+                
+                Toggle("", isOn: $smartSelectionEnabled)
+                    .toggleStyle(.switch)
+            }
+            
+            if smartSelectionEnabled {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("When should this routine be suggested?")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    
+                    // Time Slots
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Time of Day")
+                            .font(.caption)
+                            .fontWeight(.medium)
+                            .foregroundStyle(.secondary)
+                        
+                        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
+                            ForEach(TimeSlot.allCases, id: \.self) { slot in
+                                Button {
+                                    withAnimation(.easeInOut) {
+                                        if selectedTimeSlots.contains(slot) {
+                                            selectedTimeSlots.remove(slot)
+                                        } else {
+                                            selectedTimeSlots.insert(slot)
+                                        }
+                                    }
+                                } label: {
+                                    HStack(spacing: 6) {
+                                        Image(systemName: slot.icon)
+                                            .font(.caption)
+                                            .frame(width: 16)
+                                        
+                                        Text(slot.displayName)
+                                            .font(.caption)
+                                        
+                                        Spacer()
+                                        
+                                        if selectedTimeSlots.contains(slot) {
+                                            Image(systemName: "checkmark")
+                                                .font(.caption2)
+                                                .foregroundStyle(.blue)
+                                        }
+                                    }
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 6)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 6)
+                                            .fill(selectedTimeSlots.contains(slot) ? Color.blue.opacity(0.1) : Color.gray.opacity(0.1))
+                                            .stroke(selectedTimeSlots.contains(slot) ? Color.blue : Color.clear, lineWidth: 1)
+                                    )
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                    }
+                    
+                    // Day Categories
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Day Type")
+                            .font(.caption)
+                            .fontWeight(.medium)
+                            .foregroundStyle(.secondary)
+                        
+                        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
+                            ForEach(DayCategoryManager.shared.getAllCategories(), id: \.id) { category in
+                                Button {
+                                    withAnimation(.easeInOut) {
+                                        if selectedDayCategories.contains(category.id) {
+                                            selectedDayCategories.remove(category.id)
+                                        } else {
+                                            selectedDayCategories.insert(category.id)
+                                        }
+                                    }
+                                } label: {
+                                    HStack(spacing: 6) {
+                                        Image(systemName: category.icon)
+                                            .font(.caption)
+                                            .frame(width: 16)
+                                            .foregroundStyle(category.color)
+                                        
+                                        Text(category.displayName)
+                                            .font(.caption)
+                                        
+                                        Spacer()
+                                        
+                                        if selectedDayCategories.contains(category.id) {
+                                            Image(systemName: "checkmark")
+                                                .font(.caption2)
+                                                .foregroundStyle(.blue)
+                                        }
+                                    }
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 6)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 6)
+                                            .fill(selectedDayCategories.contains(category.id) ? Color.blue.opacity(0.1) : Color.gray.opacity(0.1))
+                                            .stroke(selectedDayCategories.contains(category.id) ? Color.blue : Color.clear, lineWidth: 1)
+                                    )
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                    }
+                    
+                    // Locations
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Location")
+                            .font(.caption)
+                            .fontWeight(.medium)
+                            .foregroundStyle(.secondary)
+                        
+                        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
+                            // Built-in locations
+                            ForEach([LocationType.home, LocationType.office], id: \.self) { locationType in
+                                Button {
+                                    withAnimation(.easeInOut) {
+                                        let locationId = locationType.rawValue
+                                        if selectedLocationIds.contains(locationId) {
+                                            selectedLocationIds.remove(locationId)
+                                        } else {
+                                            selectedLocationIds.insert(locationId)
+                                        }
+                                    }
+                                } label: {
+                                    HStack(spacing: 6) {
+                                        Image(systemName: locationType.icon)
+                                            .font(.caption)
+                                            .frame(width: 16)
+                                        
+                                        Text(locationType.displayName)
+                                            .font(.caption)
+                                        
+                                        Spacer()
+                                        
+                                        if selectedLocationIds.contains(locationType.rawValue) {
+                                            Image(systemName: "checkmark")
+                                                .font(.caption2)
+                                                .foregroundStyle(.blue)
+                                        }
+                                    }
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 6)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 6)
+                                            .fill(selectedLocationIds.contains(locationType.rawValue) ? Color.blue.opacity(0.1) : Color.gray.opacity(0.1))
+                                            .stroke(selectedLocationIds.contains(locationType.rawValue) ? Color.blue : Color.clear, lineWidth: 1)
+                                    )
+                                }
+                                .buttonStyle(.plain)
+                            }
+                            
+                            // Custom locations
+                            ForEach(customLocations, id: \.id) { location in
+                                Button {
+                                    withAnimation(.easeInOut) {
+                                        let locationId = location.id.uuidString
+                                        if selectedLocationIds.contains(locationId) {
+                                            selectedLocationIds.remove(locationId)
+                                        } else {
+                                            selectedLocationIds.insert(locationId)
+                                        }
+                                    }
+                                } label: {
+                                    HStack(spacing: 6) {
+                                        Image(systemName: location.icon)
+                                            .font(.caption)
+                                            .frame(width: 16)
+                                        
+                                        Text(location.name)
+                                            .font(.caption)
+                                        
+                                        Spacer()
+                                        
+                                        if selectedLocationIds.contains(location.id.uuidString) {
+                                            Image(systemName: "checkmark")
+                                                .font(.caption2)
+                                                .foregroundStyle(.blue)
+                                        }
+                                    }
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 6)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 6)
+                                            .fill(selectedLocationIds.contains(location.id.uuidString) ? Color.blue.opacity(0.1) : Color.gray.opacity(0.1))
+                                            .stroke(selectedLocationIds.contains(location.id.uuidString) ? Color.blue : Color.clear, lineWidth: 1)
+                                    )
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                    }
+                }
+                .padding(.top, 8)
+            }
+        }
+        .padding()
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+    }
+    
     // MARK: - Helpers
     
     private var totalDuration: TimeInterval {
@@ -1010,6 +1274,19 @@ public struct RoutineBuilderView: View {
     private func saveTemplate() {
         updateHabitOrder()
         
+        // Create context rule from smart selection state
+        let finalContextRule: RoutineContextRule? = {
+            if smartSelectionEnabled && (!selectedTimeSlots.isEmpty || !selectedDayCategories.isEmpty || !selectedLocationIds.isEmpty) {
+                return RoutineContextRule(
+                    timeSlots: selectedTimeSlots,
+                    dayCategoryIds: selectedDayCategories,
+                    locationIds: selectedLocationIds,
+                    priority: smartSelectionPriority
+                )
+            }
+            return nil
+        }()
+        
         if let existingTemplate = editingTemplate {
             // Update existing template
             var updatedTemplate = existingTemplate
@@ -1017,7 +1294,7 @@ public struct RoutineBuilderView: View {
             updatedTemplate.habits = habits
             updatedTemplate.color = templateColor
             updatedTemplate.isDefault = isDefault
-            updatedTemplate.contextRule = contextRule
+            updatedTemplate.contextRule = finalContextRule
             
             routineService.updateTemplate(updatedTemplate)
         } else {
@@ -1027,7 +1304,7 @@ public struct RoutineBuilderView: View {
                 habits: habits,
                 color: templateColor,
                 isDefault: isDefault,
-                contextRule: contextRule
+                contextRule: finalContextRule
             )
             
             routineService.addTemplate(template)
