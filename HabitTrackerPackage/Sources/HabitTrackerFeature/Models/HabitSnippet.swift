@@ -17,9 +17,12 @@ public struct HabitSnippet: Codable, Identifiable, Hashable, Sendable {
     
     /// Total estimated duration of all habits in this snippet
     public var estimatedDuration: TimeInterval {
-        return habits.reduce(0) { total, habit in
-            total + habit.estimatedDuration
+        let total = habits.reduce(0) { accum, habit in
+            let duration = habit.estimatedDuration
+            guard duration.isFinite, !duration.isNaN else { return accum }
+            return accum + duration
         }
+        return max(0, total)
     }
     
     /// Icon representing this snippet (use first habit's icon or default)

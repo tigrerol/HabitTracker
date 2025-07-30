@@ -135,7 +135,7 @@ public struct MainActorServiceDebugInterface {
         }
         
         let totalDuration = (CFAbsoluteTimeGetCurrent() - startTime) * 1000
-        let averageDuration = operations.map(\.duration).reduce(0, +) / Double(operations.count)
+        let averageDuration = operations.isEmpty ? 0.0 : operations.map(\.duration).reduce(0, +) / Double(operations.count)
         
         ActorDebugService.shared.logActorOperation(
             actorType: "MainActor",
@@ -199,7 +199,7 @@ public struct MainActorServiceDebugInterface {
         
         let totalDuration = (CFAbsoluteTimeGetCurrent() - startTime) * 1000
         let totalAccesses = observerMetrics.map(\.accessCount).reduce(0, +)
-        let averageAccessDuration = observerMetrics.map(\.duration).reduce(0, +) / Double(observerMetrics.count)
+        let averageAccessDuration = observerMetrics.isEmpty ? 0.0 : observerMetrics.map(\.duration).reduce(0, +) / Double(observerMetrics.count)
         
         ActorDebugService.shared.logActorOperation(
             actorType: "RoutineService",

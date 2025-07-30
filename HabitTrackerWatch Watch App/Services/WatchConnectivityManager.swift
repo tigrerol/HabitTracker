@@ -145,6 +145,10 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate {
     
     nonisolated func session(_ session: WCSession, didReceiveApplicationContext applicationContext: [String : Any]) {
         Task { @MainActor in
+            guard !applicationContext.isEmpty else {
+                print("Received empty application context from iOS - ignoring")
+                return
+            }
             print("Received application context from iOS: \(applicationContext)")
         }
     }

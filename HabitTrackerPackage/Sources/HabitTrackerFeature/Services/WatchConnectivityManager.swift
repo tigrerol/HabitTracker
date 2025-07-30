@@ -164,6 +164,10 @@ public final class WatchConnectivityManager: NSObject, Sendable, WCSessionDelega
     
     public nonisolated func session(_ session: WCSession, didReceiveApplicationContext applicationContext: [String : Any]) {
         // Handle incoming application context from Watch (if any)
+        guard !applicationContext.isEmpty else {
+            print("Received empty application context from Watch - ignoring")
+            return
+        }
         print("Received application context from Watch: \(applicationContext)")
     }
     
