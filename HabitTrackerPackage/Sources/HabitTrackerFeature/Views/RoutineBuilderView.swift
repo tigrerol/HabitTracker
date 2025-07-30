@@ -785,13 +785,13 @@ public struct RoutineBuilderView: View {
             HabitTypeOption(
                 name: String(localized: "HabitType.Timer.Name", bundle: .module),
                 description: String(localized: "HabitType.Timer.Description", bundle: .module),
-                type: .timer(defaultDuration: 300),
+                type: .timer(style: .down, duration: 300),
                 color: .blue
             ),
             HabitTypeOption(
                 name: String(localized: "HabitType.RestTimer.Name", bundle: .module),
                 description: String(localized: "HabitType.RestTimer.Description", bundle: .module),
-                type: .restTimer(targetDuration: 120),
+                type: .timer(style: .up, duration: 120, target: 120),
                 color: .blue
             ),
             HabitTypeOption(
@@ -848,10 +848,12 @@ public struct RoutineBuilderView: View {
         switch type {
         case .task:
             return "New Task"
-        case .timer:
-            return "Timed Activity"
-        case .restTimer:
-            return "Rest Period"
+        case .timer(let style, _, _):
+            switch style {
+            case .down: return "Timed Activity"
+            case .up: return "Rest Period"
+            case .multiple: return "Multiple Timers"
+            }
         case .appLaunch:
             return "Run App"
         case .website:
@@ -871,7 +873,7 @@ public struct RoutineBuilderView: View {
         switch type {
         case .task:
             return "#34C759" // Green
-        case .timer, .restTimer:
+        case .timer:
             return "#007AFF" // Blue
         case .appLaunch:
             return "#FF3B30" // Red

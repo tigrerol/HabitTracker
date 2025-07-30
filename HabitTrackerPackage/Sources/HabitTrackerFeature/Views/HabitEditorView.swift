@@ -11,8 +11,9 @@ public struct HabitEditorView: View {
     @State private var notes: String
     
     // Type-specific state
+    @State private var timerStyle: TimerStyle = .down
     @State private var timerDuration: TimeInterval = 300
-    @State private var restTimerTarget: TimeInterval? = nil
+    @State private var timerTarget: TimeInterval? = nil
     @State private var appBundleId: String = ""
     @State private var appName: String = ""
     @State private var websiteURL: String = ""
@@ -43,10 +44,10 @@ public struct HabitEditorView: View {
         
         // Initialize type-specific state
         switch habit.type {
-        case .timer(let duration):
+        case .timer(let style, let duration, let target):
+            self._timerStyle = State(initialValue: style)
             self._timerDuration = State(initialValue: duration)
-        case .restTimer(let target):
-            self._restTimerTarget = State(initialValue: target)
+            self._timerTarget = State(initialValue: target)
         case .appLaunch(let bundleId, let name):
             self._appBundleId = State(initialValue: bundleId)
             self._appName = State(initialValue: name)
@@ -173,11 +174,8 @@ public struct HabitEditorView: View {
                 subtasksEditor
                 
             case .timer:
-                let _ = print("typeSpecificSection: showing timer")
+                let _ = print("typeSpecificSection: showing unified timer settings")
                 timerSettings
-                
-            case .restTimer:
-                restTimerSettings
                 
             case .appLaunch:
                 appLaunchSettings
@@ -224,8 +222,6 @@ public struct HabitEditorView: View {
             return String(localized: "HabitType.Task.Title", bundle: .module)
         case .timer:
             return String(localized: "HabitType.Timer.Title", bundle: .module)
-        case .restTimer:
-            return String(localized: "HabitType.RestTimer.Title", bundle: .module)
         case .appLaunch:
             return String(localized: "HabitType.AppLaunch.Title", bundle: .module)
         case .website:
@@ -249,9 +245,48 @@ public struct HabitEditorView: View {
     // Timer settings
     private var timerSettings: some View {
         VStack(alignment: .leading, spacing: 12) {
+            timerStylePicker
             timerDurationDisplay
             timerInputFields
+            if timerStyle == .up {
+                timerTargetSettings
+            }
             timerPresetButtons
+        }
+    }
+    
+    private var timerStylePicker: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Timer Style")
+                .font(.headline)
+            
+            Picker("Timer Style", selection: $timerStyle) {
+                Text("Count Down").tag(TimerStyle.down)
+                Text("Count Up").tag(TimerStyle.up)
+                Text("Multiple").tag(TimerStyle.multiple)
+            }
+            .pickerStyle(.segmented)
+        }
+    }
+    
+    private var timerTargetSettings: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Toggle("Target Duration", isOn: Binding(
+                get: { timerTarget != nil },
+                set: { enabled in
+                    timerTarget = enabled ? timerDuration : nil
+                }
+            ))
+            
+            if let target = timerTarget {
+                HStack {
+                    Text("Target")
+                    Spacer()
+                    Text(target.formattedDuration)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+            }
         }
     }
     
@@ -347,126 +382,6 @@ public struct HabitEditorView: View {
         }
     }
     
-    // Rest timer settings
-    private var restTimerSettings: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            restTimerToggle
-            if restTimerTarget != nil {
-                restTimerConfiguration
-            }
-        }
-    }
-    
-    private var restTimerToggle: some View {
-        Toggle(String(localized: "HabitEditorView.RestTimer.SetTarget.Toggle", bundle: .module), isOn: Binding(
-            get: { restTimerTarget != nil },
-            set: { enabled in
-                restTimerTarget = enabled ? 120 : nil
-            }
-        ))
-    }
-    
-    private var restTimerConfiguration: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            if let target = restTimerTarget {
-                restTimerDurationDisplay(target: target)
-                restTimerInputFields(target: target)
-                restTimerPresetButtons
-            }
-        }
-    }
-    
-    private func restTimerDurationDisplay(target: TimeInterval) -> some View {
-        HStack {
-            Text(String(localized: "HabitEditorView.RestTimer.Target.Label", bundle: .module))
-            Spacer()
-            Text(target.formattedDuration)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-        }
-    }
-    
-    private func restTimerInputFields(target: TimeInterval) -> some View {
-        HStack(spacing: 12) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(String(localized: "HabitEditorView.Timer.Minutes.Label", bundle: .module))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                
-                TextField("0", value: Binding(
-                    get: { Int(target) / 60 },
-                    set: { newMinutes in
-                        let seconds = Int(target) % 60
-                        restTimerTarget = TimeInterval(max(0, newMinutes) * 60 + seconds)
-                    }
-                ), format: .number)
-                #if canImport(UIKit)
-                .keyboardType(.numberPad)
-                #endif
-                .textFieldStyle(.roundedBorder)
-                .frame(width: 80)
-            }
-            
-            VStack(alignment: .leading, spacing: 4) {
-                Text(String(localized: "HabitEditorView.Timer.Seconds.Label", bundle: .module))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                
-                TextField("0", value: Binding(
-                    get: { Int(target) % 60 },
-                    set: { newSeconds in
-                        let minutes = Int(target) / 60
-                        restTimerTarget = TimeInterval(minutes * 60 + max(0, min(59, newSeconds)))
-                    }
-                ), format: .number)
-                #if canImport(UIKit)
-                .keyboardType(.numberPad)
-                #endif
-                .textFieldStyle(.roundedBorder)
-                .frame(width: 80)
-            }
-            
-            Spacer()
-        }
-    }
-    
-    private var restTimerPresetButtons: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(String(localized: "HabitEditorView.Timer.QuickPresets.Title", bundle: .module))
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
-                    ForEach([
-                        (30, "30s"), (60, "1m"), (90, "90s"),
-                        (120, "2m"), (180, "3m"), (300, "5m")
-                    ], id: \.0) { duration, label in
-                        Button {
-                            withAnimation(.easeInOut(duration: 0.2)) {
-                                restTimerTarget = TimeInterval(duration)
-                            }
-                        } label: {
-                            Text(label)
-                                .font(.caption)
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 6)
-                                .background(
-                                    restTimerTarget == TimeInterval(duration) ? 
-                                    Color.blue.opacity(0.2) : Color.gray.opacity(0.3),
-                                    in: Capsule()
-                                )
-                                .foregroundStyle(
-                                    restTimerTarget == TimeInterval(duration) ? .blue : .primary
-                                )
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
-                .padding(.horizontal, 1)
-            }
-        }
-    }
     
     // App launch settings
     private var appLaunchSettings: some View {
@@ -734,9 +649,7 @@ public struct HabitEditorView: View {
             }
             updatedHabit.type = .task(subtasks: subtasks)
         case .timer:
-            updatedHabit.type = .timer(defaultDuration: timerDuration)
-        case .restTimer:
-            updatedHabit.type = .restTimer(targetDuration: restTimerTarget)
+            updatedHabit.type = .timer(style: timerStyle, duration: timerDuration, target: timerTarget)
         case .appLaunch:
             updatedHabit.type = .appLaunch(bundleId: appBundleId, appName: appName)
         case .website:
@@ -764,7 +677,7 @@ public struct HabitEditorView: View {
     HabitEditorView(
         habit: Habit(
             name: "Morning Stretch",
-            type: .timer(defaultDuration: 600),
+            type: .timer(style: .down, duration: 600),
             color: "#007AFF"
         )
     ) { _ in }

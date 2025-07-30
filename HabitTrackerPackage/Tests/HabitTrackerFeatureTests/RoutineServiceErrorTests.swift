@@ -172,7 +172,7 @@ struct RoutineSessionErrorTests {
     @MainActor func testRoutineSessionInvalidHabitIndex() {
         let habits = [
             Habit(name: "Habit 1", type: .task(subtasks: []), order: 0),
-            Habit(name: "Habit 2", type: .timer(defaultDuration: 300), order: 1)
+            Habit(name: "Habit 2", type: .timer(style: .down, duration: 300), order: 1)
         ]
         let template = RoutineTemplate(name: "Test Template", habits: habits)
         let session = RoutineSession(template: template)
@@ -192,7 +192,7 @@ struct RoutineSessionErrorTests {
     @Test("RoutineSession handles habit completion errors")
     @MainActor func testRoutineSessionHabitCompletionError() {
         let habits = [
-            Habit(name: "Timer Habit", type: .timer(defaultDuration: 300), order: 0)
+            Habit(name: "Timer Habit", type: .timer(style: .down, duration: 300), order: 0)
         ]
         let template = RoutineTemplate(name: "Test Template", habits: habits)
         let session = RoutineSession(template: template)
@@ -215,7 +215,7 @@ struct RoutineSessionErrorTests {
     @MainActor func testRoutineSessionInvalidReordering() {
         let habits = [
             Habit(name: "Habit 1", type: .task(subtasks: []), order: 0),
-            Habit(name: "Habit 2", type: .timer(defaultDuration: 300), order: 1)
+            Habit(name: "Habit 2", type: .timer(style: .down, duration: 300), order: 1)
         ]
         let template = RoutineTemplate(name: "Test Template", habits: habits)
         let session = RoutineSession(template: template)

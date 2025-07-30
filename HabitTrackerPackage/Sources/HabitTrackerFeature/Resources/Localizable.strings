@@ -346,6 +346,7 @@
 "HabitQuickAddView.DefaultName.TaskWithSteps" = "Task with Steps";
 "HabitQuickAddView.DefaultName.TimedActivity" = "Timed Activity";
 "HabitQuickAddView.DefaultName.RestPeriod" = "Rest Period";
+"HabitQuickAddView.DefaultName.MultipleTimers" = "Multiple Timers";
 "HabitQuickAddView.DefaultName.RunShortcut" = "Run Shortcut";
 "HabitQuickAddView.DefaultName.VisitWebsite" = "Visit Website";
 "HabitQuickAddView.DefaultName.TrackItems" = "Track Items";
@@ -361,9 +362,7 @@
 "HabitTypePickerView.TaskWithSubtasks.Title" = "Task with Subtasks";
 "HabitTypePickerView.TaskWithSubtasks.Description" = "Break down into steps";
 "HabitTypePickerView.Timer.Title" = "Timer";
-"HabitTypePickerView.Timer.Description" = "Count down from set time";
-"HabitTypePickerView.RestTimer.Title" = "Rest Timer";
-"HabitTypePickerView.RestTimer.Description" = "Count up to track rest";
+"HabitTypePickerView.Timer.Description" = "Flexible timing - count down, up, or multiple";
 "HabitTypePickerView.RunShortcut.Title" = "Run Shortcut";
 "HabitTypePickerView.RunShortcut.Description" = "Execute a Shortcuts shortcut or open app via URL";
 "HabitTypePickerView.OpenWebsite.Title" = "Open Website";

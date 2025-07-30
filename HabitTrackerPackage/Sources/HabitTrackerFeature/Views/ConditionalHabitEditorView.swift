@@ -292,7 +292,7 @@ private struct OptionCard: View {
                     
                     HStack(spacing: 12) {
                         QuickHabitButton(title: String(localized: "ConditionalHabitEditorView.Timer.QuickButton", bundle: .module), icon: "timer") {
-                            addQuickHabit(.timer(defaultDuration: 300))
+                            addQuickHabit(.timer(style: .down, duration: 300))
                         }
                         QuickHabitButton(title: String(localized: "ConditionalHabitEditorView.Task.QuickButton", bundle: .module), icon: "checkmark.square") {
                             addQuickHabit(.task(subtasks: []))
@@ -738,7 +738,7 @@ struct HabitPickerView: View {
                 dismiss()
             }
         case .timer:
-            let timerHabit = Habit(name: String(localized: "ConditionalHabitEditorView.NewTimer.DefaultName", bundle: .module), type: .timer(defaultDuration: 300))
+            let timerHabit = Habit(name: String(localized: "ConditionalHabitEditorView.NewTimer.DefaultName", bundle: .module), type: .timer(style: .down, duration: 300))
             let _ = print("🔍 HabitPickerView: Creating timer habit - name: '\(timerHabit.name)', type: \(timerHabit.type)")
             HabitEditorView(habit: timerHabit) { habit in
                 print("🔍 HabitPickerView: Timer habit saved - name: '\(habit.name)', type: \(habit.type)")

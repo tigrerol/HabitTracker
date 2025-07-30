@@ -125,7 +125,7 @@ struct HabitFactoryTests {
         // Check timer durations are reasonable
         let timerHabits = allHabits.filter { $0.type.isTimer }
         for habit in timerHabits {
-            if case .timer(let duration) = habit.type {
+            if case .timer(_, let duration, _) = habit.type {
                 #expect(duration > 0)
                 #expect(duration <= 3600) // Max 1 hour
             }
@@ -168,7 +168,7 @@ struct HabitTypeExtensionTests {
     @Test("HabitType isTask works correctly")
     func testIsTask() {
         #expect(HabitType.task(subtasks: []).isTask == true)
-        #expect(HabitType.timer(defaultDuration: 300).isTask == false)
+        #expect(HabitType.timer(style: .down, duration: 300).isTask == false)
         
         let info = ConditionalHabitInfo(question: "Test?", options: [])
         #expect(HabitType.conditional(info).isTask == false)
@@ -176,7 +176,7 @@ struct HabitTypeExtensionTests {
     
     @Test("HabitType isTimer works correctly")
     func testIsTimer() {
-        #expect(HabitType.timer(defaultDuration: 300).isTimer == true)
+        #expect(HabitType.timer(style: .down, duration: 300).isTimer == true)
         #expect(HabitType.task(subtasks: []).isTimer == false)
         
         let info = ConditionalHabitInfo(question: "Test?", options: [])
@@ -188,13 +188,13 @@ struct HabitTypeExtensionTests {
         let info = ConditionalHabitInfo(question: "Test?", options: [])
         #expect(HabitType.conditional(info).isConditional == true)
         #expect(HabitType.task(subtasks: []).isConditional == false)
-        #expect(HabitType.timer(defaultDuration: 300).isConditional == false)
+        #expect(HabitType.timer(style: .down, duration: 300).isConditional == false)
     }
     
     @Test("HabitType descriptions are appropriate")
     func testDescriptions() {
         #expect(HabitType.task(subtasks: []).description == "Task")
-        #expect(HabitType.timer(defaultDuration: 300).description == "Timer (5:00)")
+        #expect(HabitType.timer(style: .down, duration: 300).description == "Timer (5min)")
         
         let option = ConditionalOption(text: "Option 1", habits: [])
         let info = ConditionalHabitInfo(question: "Test?", options: [option])
@@ -204,7 +204,7 @@ struct HabitTypeExtensionTests {
     @Test("HabitType iconNames are appropriate")
     func testIconNames() {
         #expect(HabitType.task(subtasks: []).iconName == "checkmark.square")
-        #expect(HabitType.timer(defaultDuration: 300).iconName == "timer")
+        #expect(HabitType.timer(style: .down, duration: 300).iconName == "timer")
         
         let info = ConditionalHabitInfo(question: "Test?", options: [])
         #expect(HabitType.conditional(info).iconName == "questionmark.circle")

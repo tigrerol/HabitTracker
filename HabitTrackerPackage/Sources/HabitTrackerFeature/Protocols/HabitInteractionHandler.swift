@@ -36,8 +36,6 @@ extension HabitInteractionHandler {
             return true
         case .timer where Self.supportedHabitType == HabitType.self:
             return true
-        case .restTimer where Self.supportedHabitType == HabitType.self:
-            return true
         case .appLaunch where Self.supportedHabitType == HabitType.self:
             return true
         case .website where Self.supportedHabitType == HabitType.self:
@@ -125,8 +123,8 @@ public struct TimerHabitHandler: HabitInteractionHandler {
         isCompleted: Bool
     ) -> AnyView {
         switch habit.type {
-        case .timer(let defaultDuration):
-            return AnyView(TimerHabitView(habit: habit, defaultDuration: defaultDuration, onComplete: onComplete, isCompleted: isCompleted))
+        case .timer(let style, let duration, let target):
+            return AnyView(TimerHabitView(habit: habit, style: style, duration: duration, target: target, onComplete: onComplete, isCompleted: isCompleted))
         default:
             return AnyView(Text("Invalid habit type for TimerHabitHandler"))
         }
@@ -140,41 +138,11 @@ public struct TimerHabitHandler: HabitInteractionHandler {
     }
     
     public func estimatedDuration(for habit: Habit) -> TimeInterval {
-        guard case .timer(let duration) = habit.type else { return 300 }
-        return duration
+        guard case .timer(_, let duration, let target) = habit.type else { return 300 }
+        return target ?? duration
     }
 }
 
-/// Handler for rest timer habits
-public struct RestTimerHabitHandler: HabitInteractionHandler {
-    public static let supportedHabitType: HabitType.Type = HabitType.self
-    
-    @MainActor
-    public func createInteractionView(
-        habit: Habit,
-        onComplete: @escaping (UUID, TimeInterval?, String?) -> Void,
-        isCompleted: Bool
-    ) -> AnyView {
-        switch habit.type {
-        case .restTimer(let targetDuration):
-            return AnyView(RestTimerHabitView(habit: habit, targetDuration: targetDuration, onComplete: onComplete, isCompleted: isCompleted))
-        default:
-            return AnyView(Text("Invalid habit type for RestTimerHabitHandler"))
-        }
-    }
-    
-    public func canHandle(habit: Habit) -> Bool {
-        if case .restTimer = habit.type {
-            return true
-        }
-        return false
-    }
-    
-    public func estimatedDuration(for habit: Habit) -> TimeInterval {
-        guard case .restTimer(let target) = habit.type else { return 180 }
-        return target ?? 180 // Use target or default 3 minutes
-    }
-}
 
 /// Handler for app launch habits
 public struct AppLaunchHabitHandler: HabitInteractionHandler {

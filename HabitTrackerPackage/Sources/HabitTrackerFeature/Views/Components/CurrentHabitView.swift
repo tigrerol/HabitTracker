@@ -46,7 +46,7 @@ struct CurrentHabitView: View {
         habit: Habit(
             id: UUID(),
             name: "Meditation",
-            type: .timer(defaultDuration: 300),
+            type: .timer(style: .down, duration: 300),
             color: "#007AFF",
             order: 1
         ),

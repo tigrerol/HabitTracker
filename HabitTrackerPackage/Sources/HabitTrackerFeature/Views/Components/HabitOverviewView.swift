@@ -54,7 +54,7 @@ struct HabitOverviewView: View {
             isCompleted: false,
             currentHabit: Habit(id: UUID(), name: "Current", type: .task(subtasks: []), color: "#007AFF", order: 2),
             activeHabits: [
-                Habit(id: UUID(), name: "Meditation", type: .timer(defaultDuration: 300), color: "#007AFF", order: 1),
+                Habit(id: UUID(), name: "Meditation", type: .timer(style: .down, duration: 300), color: "#007AFF", order: 1),
                 Habit(id: UUID(), name: "Exercise", type: .task(subtasks: []), color: "#FF3B30", order: 2),
                 Habit(id: UUID(), name: "Journal", type: .task(subtasks: []), color: "#34C759", order: 3)
             ],

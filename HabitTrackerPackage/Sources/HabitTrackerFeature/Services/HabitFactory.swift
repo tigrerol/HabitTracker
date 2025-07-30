@@ -94,7 +94,7 @@ public enum HabitFactory {
     ) -> Habit {
         Habit(
             name: name,
-            type: .timer(defaultDuration: duration),
+            type: .timer(style: .down, duration: duration),
             color: Colors.stretching,
             order: order
         )
@@ -147,7 +147,7 @@ public enum HabitFactory {
     ) -> Habit {
         Habit(
             name: "Focus Time",
-            type: .timer(defaultDuration: duration),
+            type: .timer(style: .down, duration: duration),
             color: Colors.focus,
             order: order
         )

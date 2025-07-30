@@ -5,12 +5,8 @@ public enum HabitType: Codable, Hashable, Sendable {
     /// Task completion with optional subtasks
     case task(subtasks: [Subtask])
     
-    /// Timer-based habit with custom duration
-    case timer(defaultDuration: TimeInterval)
-    
-    
-    /// Rest timer that counts up
-    case restTimer(targetDuration: TimeInterval?)
+    /// Timer-based habit with flexible timing modes
+    case timer(style: TimerStyle, duration: TimeInterval, target: TimeInterval? = nil)
     
     /// Launch external app and wait for confirmation
     case appLaunch(bundleId: String, appName: String)
@@ -29,6 +25,16 @@ public enum HabitType: Codable, Hashable, Sendable {
     
     /// Conditional habit with branching logic
     case conditional(ConditionalHabitInfo)
+}
+
+/// Represents different timer styles
+public enum TimerStyle: Codable, Hashable, Sendable {
+    /// Countdown timer (traditional)
+    case down
+    /// Count-up timer (rest/open-ended activities)
+    case up
+    /// Sequence of multiple timers
+    case multiple
 }
 
 /// Represents a subtask within a checkbox habit
@@ -67,13 +73,18 @@ extension HabitType {
         switch self {
         case .task(let subtasks):
             return subtasks.isEmpty ? "Simple task" : "\(subtasks.count) subtasks"
-        case .timer(let duration):
-            return "Timer (\(Int(duration/60))min)"
-        case .restTimer(let target):
-            if let target {
-                return "Rest timer (\(Int(target/60))min)"
-            } else {
-                return "Rest timer"
+        case .timer(let style, let duration, let target):
+            switch style {
+            case .down:
+                return "Timer (\(Int(duration/60))min)"
+            case .up:
+                if let target {
+                    return "Count up (\(Int(target/60))min target)"
+                } else {
+                    return "Count up"
+                }
+            case .multiple:
+                return "Multiple timers (\(Int(duration/60))min)"
             }
         case .appLaunch(_, let appName):
             return "Launch \(appName)"
@@ -100,10 +111,15 @@ extension HabitType {
         switch self {
         case .task(let subtasks):
             return subtasks.isEmpty ? "checkmark.square" : "list.bullet.rectangle"
-        case .timer:
-            return "timer"
-        case .restTimer:
-            return "pause.circle"
+        case .timer(let style, _, _):
+            switch style {
+            case .down:
+                return "timer"
+            case .up:
+                return "pause.circle"
+            case .multiple:
+                return "timer.circle"
+            }
         case .appLaunch:
             return "app.badge"
         case .website:
@@ -124,10 +140,15 @@ extension HabitType {
         switch self {
         case .task:
             return "New Task"
-        case .timer:
-            return "New Timer"
-        case .restTimer:
-            return "Rest Timer"
+        case .timer(let style, _, _):
+            switch style {
+            case .down:
+                return "New Timer"
+            case .up:
+                return "Count Up"
+            case .multiple:
+                return "Multiple Timers"
+            }
         case .appLaunch:
             return "New App"
         case .website:
@@ -156,7 +177,7 @@ extension HabitType {
     /// Whether this is a timer-type habit
     public var isTimer: Bool {
         switch self {
-        case .timer, .restTimer:
+        case .timer:
             return true
         default:
             return false

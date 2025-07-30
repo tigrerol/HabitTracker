@@ -30,9 +30,6 @@ public struct HabitInteractionView: View {
             case .timer:
                 AnyView(TimerHabitHandler().createInteractionView(habit: habit, onComplete: self.onComplete, isCompleted: isCompleted))
                 
-            case .restTimer:
-                AnyView(RestTimerHabitHandler().createInteractionView(habit: habit, onComplete: self.onComplete, isCompleted: isCompleted))
-                
             case .appLaunch:
                 AnyView(AppLaunchHabitHandler().createInteractionView(habit: habit, onComplete: self.onComplete, isCompleted: isCompleted))
                 
@@ -150,34 +147,79 @@ struct CheckboxHabitView: View {
 /// Timer-based habit interaction
 struct TimerHabitView: View {
     let habit: Habit
-    let defaultDuration: TimeInterval
+    let style: TimerStyle
+    let duration: TimeInterval
+    let target: TimeInterval?
     let onComplete: (UUID, TimeInterval?, String?) -> Void
     let isCompleted: Bool
     
     @State private var timeRemaining: TimeInterval
+    @State private var timeElapsed: TimeInterval = 0
     @State private var isRunning = false
     @State private var isPaused = false
     @State private var timer: Timer?
     
-    init(habit: Habit, defaultDuration: TimeInterval, onComplete: @escaping (UUID, TimeInterval?, String?) -> Void, isCompleted: Bool) {
+    init(habit: Habit, style: TimerStyle, duration: TimeInterval, target: TimeInterval? = nil, onComplete: @escaping (UUID, TimeInterval?, String?) -> Void, isCompleted: Bool) {
         self.habit = habit
-        self.defaultDuration = defaultDuration
+        self.style = style
+        self.duration = duration
+        self.target = target
         self.onComplete = onComplete
         self.isCompleted = isCompleted
-        self._timeRemaining = State(initialValue: defaultDuration)
+        
+        // Initialize timer state based on style
+        switch style {
+        case .down:
+            self._timeRemaining = State(initialValue: duration)
+        case .up:
+            self._timeRemaining = State(initialValue: 0)
+        case .multiple:
+            self._timeRemaining = State(initialValue: duration)
+        }
+    }
+    
+    // Computed properties for display
+    private var displayTime: TimeInterval {
+        switch style {
+        case .down, .multiple:
+            return timeRemaining
+        case .up:
+            return timeElapsed
+        }
+    }
+    
+    private var progressValue: Double {
+        switch style {
+        case .down:
+            return duration > 0 ? max(0, min(1, 1.0 - (timeRemaining / duration))) : 0
+        case .up:
+            if let target = target {
+                return target > 0 ? max(0, min(1, timeElapsed / target)) : 0
+            } else {
+                return 0 // No progress for open-ended count up
+            }
+        case .multiple:
+            return duration > 0 ? max(0, min(1, 1.0 - (timeRemaining / duration))) : 0
+        }
     }
     
     var body: some View {
         VStack(spacing: 24) {
             // Timer display
             VStack(spacing: 8) {
-                Text(timeRemaining.formattedMinutesSeconds)
+                Text(displayTime.formattedMinutesSeconds)
                     .font(.system(size: 48, weight: .bold, design: .monospaced))
                     .foregroundStyle(habit.swiftUIColor)
                 
-                ProgressView(value: defaultDuration > 0 ? max(0, min(1, 1.0 - (timeRemaining / defaultDuration))) : 0)
+                ProgressView(value: progressValue)
                     .tint(habit.swiftUIColor)
                     .scaleEffect(y: 3)
+                
+                if let target = target, style == .up {
+                    Text("Target: \(target.formattedMinutesSeconds)")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
             }
             
             // Timer controls with quick actions
@@ -290,18 +332,38 @@ struct TimerHabitView: View {
     
     private func stopTimer() {
         timer?.invalidate()
-        let elapsed = defaultDuration - timeRemaining
-        onComplete(habit.id, elapsed, String(localized: "HabitInteractionView.Timer.StoppedEarly", bundle: .module))
+        
+        let completedDuration: TimeInterval
+        switch style {
+        case .down, .multiple:
+            completedDuration = duration - timeRemaining
+        case .up:
+            completedDuration = timeElapsed
+        }
+        
+        onComplete(habit.id, completedDuration, String(localized: "HabitInteractionView.Timer.StoppedEarly", bundle: .module))
     }
     
     private func createTimer() {
         timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
             Task { @MainActor in
-                if timeRemaining > 0 {
-                    timeRemaining -= 1
-                } else {
-                    timer?.invalidate()
-                    onComplete(habit.id, defaultDuration, nil)
+                switch style {
+                case .down, .multiple:
+                    if timeRemaining > 0 {
+                        timeRemaining -= 1
+                    } else {
+                        timer?.invalidate()
+                        onComplete(habit.id, duration, nil)
+                    }
+                case .up:
+                    timeElapsed += 1
+                    timeRemaining = timeElapsed // For display consistency
+                    
+                    // Check if we've reached the target (if set)
+                    if let target = target, timeElapsed >= target {
+                        timer?.invalidate()
+                        onComplete(habit.id, timeElapsed, nil)
+                    }
                 }
             }
         }
@@ -1013,7 +1075,7 @@ struct GuidedSequenceHabitView: View {
 #Preview {
     VStack(spacing: 40) {
         HabitInteractionView(
-            habit: Habit(name: "Test Timer", type: .timer(defaultDuration: 300)),
+            habit: Habit(name: "Test Timer", type: .timer(style: .down, duration: 300)),
             onComplete: { habitId, duration, notes in },
             isCompleted: false
         )

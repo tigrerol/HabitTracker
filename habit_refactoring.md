@@ -204,3 +204,108 @@ The task type consolidation has been completed with all goals achieved:
 7. **Critical Bug Fixed**: Resolved habit disappearing issue caused by gesture conflicts
 
 The foundation is now ready for continuing with the remaining habit type consolidations.
+
+---
+
+# Phase 2: Timer Type Consolidation
+
+## Overview
+Consolidating timer types from 2 to 1 with flexible timing modes: up (count up), down (count down), and multiple (sequence of timers).
+
+## Goal
+Eliminate confusion between "Timer" and "Rest Timer" by providing a unified timer experience with three distinct modes based on user needs.
+
+## Current Timer Types Being Merged
+- `.timer(defaultDuration: TimeInterval)` - Countdown timer
+- `.restTimer(targetDuration: TimeInterval?)` - Count-up timer with optional target
+
+## New Consolidated Type
+- `.timer(style: TimerStyle, duration: TimeInterval, target: TimeInterval? = nil)`
+
+```swift
+public enum TimerStyle: Codable, Hashable, Sendable {
+    case down      // Countdown timer (traditional)
+    case up        // Count-up timer (rest/open-ended activities) 
+    case multiple  // Sequence of multiple timers
+}
+```
+
+## Design Philosophy
+- **Unified Interface**: One timer type, three presentation modes
+- **Progressive Disclosure**: Default to countdown, offer up/multiple when needed
+- **Clear Mental Model**: "Timer" covers all time-based activities
+- **Flexible Targeting**: Optional targets work for both up and down modes
+
+## Implementation Plan
+
+### ✅ Step 1: Documentation
+- Added Phase 2 to refactoring log
+
+### ✅ Step 2: Core Model Updates
+- ✅ Updated `HabitType.swift` enum to use unified timer type
+- ✅ Added `TimerStyle` enum with three modes (down, up, multiple)
+- ✅ Updated computed properties (description, iconName, quickName)
+- ✅ Updated `Habit.swift` estimatedDuration calculation
+
+### ✅ Step 3: UI Updates  
+- ✅ Updated `HabitInteractionView.swift` to remove restTimer case
+- ✅ Updated `HabitEditorView.swift` with unified timer settings and style picker
+- ✅ Updated `HabitQuickAddView.swift` with unified timer creation
+- ✅ Updated all preview and sample data across UI components
+- ✅ Removed separate rest timer UI sections
+
+### ✅ Step 4: Service Updates
+- ✅ Updated `HabitFactory.swift` templates to use new timer structure
+- ✅ Updated `HabitInteractionHandler.swift` - consolidated TimerHabitHandler, removed RestTimerHabitHandler
+- ✅ Updated all service layer references to new timer format
+
+### ✅ Step 5: Localization
+- ✅ Updated timer description: "Flexible timing - count down, up, or multiple"
+- ✅ Added "MultipleTimers" default name key
+- ✅ Removed obsolete RestTimer-specific keys
+
+### ✅ Step 6: Testing & Verification
+- ✅ Updated all test files for new timer structure
+- ✅ Updated preview data in UI components
+- ✅ Systematically found and updated all `.timer(defaultDuration:)` and `.restTimer` references
+
+### ✅ Step 7: Final Cleanup
+- ✅ Removed RestTimerHabitView struct from HabitInteractionView.swift (lines 732-826)
+- ✅ Removed all RestTimer localization keys from Localizable.strings
+- ✅ Verified no remaining RestTimer references in source code
+- ✅ Confirmed Rest Timer no longer appears in UI
+
+## Phase 2 Results ✅
+The timer type consolidation has been completed successfully:
+
+1. **Reduced Cognitive Load**: "Timer" vs "Rest Timer" → Single "Timer" concept with style selection
+2. **Expanded Functionality**: Ready for multiple timer sequences (foundation laid)
+3. **Clearer Interface**: Style picker makes timing mode explicit (Count Down, Count Up, Multiple)
+4. **Unified Codebase**: Removed duplicate timer handlers and UI components
+5. **Better Scalability**: Easy to add new timer styles (e.g., interval, pomodoro) in the future
+
+### Files Modified ✅
+- **Core Models**: `HabitType.swift`, `Habit.swift`
+- **Services**: `HabitFactory.swift`, `HabitInteractionHandler.swift`
+- **UI Components**: `HabitEditorView.swift`, `HabitInteractionView.swift`, `HabitQuickAddView.swift`, `RoutineBuilderView.swift`
+- **Preview Data**: `HabitOverviewView.swift`, `CurrentHabitView.swift`, `ConditionalHabitEditorView.swift`, `ConditionalHabitInteractionView.swift`
+- **Tests**: All test files updated to use new timer structure
+- **Localization**: `Localizable.strings` - updated descriptions and added new keys
+
+### Technical Achievements ✅
+- **Enum Consolidation**: `.timer(defaultDuration:)` + `.restTimer(targetDuration:)` → `.timer(style:duration:target:)`
+- **Handler Consolidation**: `TimerHabitHandler` + `RestTimerHabitHandler` → Unified `TimerHabitHandler`
+- **UI Simplification**: Removed duplicate timer settings UI, added unified style picker
+- **Progressive Disclosure**: Timer target only shows for count-up style
+
+---
+
+# Next Consolidation Opportunities
+
+With both Task and Timer consolidations complete, the remaining habit types are:
+
+1. **External Actions**: `.appLaunch` + `.website` → Could become `.action(type: ActionType)`
+2. **Data Tracking**: `.counter` + `.measurement` → Could become `.tracking(type: TrackingType)`
+3. **Complex Types**: `.guidedSequence` and `.conditional` (likely remain separate)
+
+The codebase now has **7 habit types** (down from 9), with a clear pattern for future consolidations.

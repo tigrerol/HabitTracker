@@ -42,10 +42,9 @@ extension Habit {
         switch type {
         case .task(let subtasks):
             return subtasks.isEmpty ? 60 : TimeInterval(subtasks.count * 45) // 1 minute or 45 seconds per subtask
-        case .timer(let duration):
-            return duration
-        case .restTimer(let target):
-            return target ?? 180 // Use target or default 3 minutes
+        case .timer(_, let duration, let target):
+            // For up timers with targets, use target; otherwise use duration
+            return target ?? duration
         case .appLaunch:
             return 300 // 5 minutes default
         case .website:

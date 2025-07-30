@@ -108,14 +108,14 @@ struct HabitQuickAddView: View {
         // Timer detection
         if lowercased.contains("min") || lowercased.contains("minute") || lowercased.contains("timer") {
             if let duration = extractDuration(from: text) {
-                return .timer(defaultDuration: duration)
+                return .timer(style: .down, duration: duration)
             }
         }
         
-        // Rest timer detection
+        // Rest timer detection (convert to count-up timer)
         if lowercased.contains("rest") || lowercased.contains("break") || lowercased.contains("pause") {
-            let duration = extractDuration(from: text)
-            return .restTimer(targetDuration: duration)
+            let duration = extractDuration(from: text) ?? 300 // Default 5 minutes
+            return .timer(style: .up, duration: duration, target: duration)
         }
         
         // Shortcuts detection
@@ -235,12 +235,12 @@ struct HabitQuickAddView: View {
             
             // Add variations
             switch type {
-            case .timer(let duration):
+            case .timer(_, let duration, _):
                 if duration != 300 {
-                    suggestions.append((String(format: String(localized: "HabitQuickAddView.Suggestion.5min", bundle: .module), cleanName), .timer(defaultDuration: 300)))
+                    suggestions.append((String(format: String(localized: "HabitQuickAddView.Suggestion.5min", bundle: .module), cleanName), .timer(style: .down, duration: 300)))
                 }
                 if duration != 600 {
-                    suggestions.append((String(format: String(localized: "HabitQuickAddView.Suggestion.10min", bundle: .module), cleanName), .timer(defaultDuration: 600)))
+                    suggestions.append((String(format: String(localized: "HabitQuickAddView.Suggestion.10min", bundle: .module), cleanName), .timer(style: .down, duration: 600)))
                 }
             case .task(let subtasks):
                 if subtasks.isEmpty {
@@ -337,7 +337,7 @@ struct HabitQuickAddView: View {
         switch type {
         case .task:
             return "#34C759" // Green
-        case .timer, .restTimer:
+        case .timer:
             return "#007AFF" // Blue
         case .appLaunch:
             return "#FF3B30" // Red
@@ -358,10 +358,15 @@ struct HabitQuickAddView: View {
         switch type {
         case .task:
             return String(localized: "HabitQuickAddView.DefaultName.NewTask", bundle: .module)
-        case .timer:
-            return String(localized: "HabitQuickAddView.DefaultName.TimedActivity", bundle: .module)
-        case .restTimer:
-            return String(localized: "HabitQuickAddView.DefaultName.RestPeriod", bundle: .module)
+        case .timer(let style, _, _):
+            switch style {
+            case .down:
+                return String(localized: "HabitQuickAddView.DefaultName.TimedActivity", bundle: .module)
+            case .up:
+                return String(localized: "HabitQuickAddView.DefaultName.RestPeriod", bundle: .module)
+            case .multiple:
+                return String(localized: "HabitQuickAddView.DefaultName.MultipleTimers", bundle: .module)
+            }
         case .appLaunch:
             return String(localized: "HabitQuickAddView.DefaultName.RunShortcut", bundle: .module)
         case .website:
@@ -406,18 +411,7 @@ private struct HabitTypePickerView: View {
                         description: String(localized: "HabitTypePickerView.Timer.Description", bundle: .module),
                         color: .blue
                     ) {
-                        onSelect(.timer(defaultDuration: 300))
-                        dismiss()
-                    }
-                    
-                    
-                    TypeOptionRow(
-                        icon: "pause.circle",
-                        title: String(localized: "HabitTypePickerView.RestTimer.Title", bundle: .module),
-                        description: String(localized: "HabitTypePickerView.RestTimer.Description", bundle: .module),
-                        color: .blue
-                    ) {
-                        onSelect(.restTimer(targetDuration: 120))
+                        onSelect(.timer(style: .down, duration: 300))
                         dismiss()
                     }
                 }
