@@ -14,7 +14,6 @@ public struct RoutineBuilderView: View {
     @State private var editingHabitIndex: Int?
     @State private var editingSubHabit: (habitIndex: Int, optionId: UUID, subHabitId: UUID)?
     @State private var editingOptionData: (habitId: UUID, option: ConditionalOption)?
-    @State private var isDefault = false
     @State private var expandedHabits: Set<UUID> = []
     @State private var selectedQuestionHabit: Habit?
     @State private var selectedOption: (habitId: UUID, optionId: UUID)?
@@ -80,7 +79,6 @@ public struct RoutineBuilderView: View {
                 templateName = template.name
                 templateColor = template.color
                 habits = template.habits
-                isDefault = template.isDefault
                 contextRule = template.contextRule
                 
                 // Initialize smart selection state from existing context rule
@@ -794,7 +792,6 @@ public struct RoutineBuilderView: View {
                         .frame(width: 44, height: 44)
                 }
                 
-                Toggle("Set as default routine", isOn: $isDefault)
                     .font(.subheadline)
                 
                 // Smart Selection Configuration
@@ -1293,7 +1290,7 @@ public struct RoutineBuilderView: View {
             updatedTemplate.name = templateName
             updatedTemplate.habits = habits
             updatedTemplate.color = templateColor
-            updatedTemplate.isDefault = isDefault
+            updatedTemplate.isDefault = false
             updatedTemplate.contextRule = finalContextRule
             
             routineService.updateTemplate(updatedTemplate)
@@ -1303,7 +1300,7 @@ public struct RoutineBuilderView: View {
                 name: templateName,
                 habits: habits,
                 color: templateColor,
-                isDefault: isDefault,
+                isDefault: false,
                 contextRule: finalContextRule
             )
             
