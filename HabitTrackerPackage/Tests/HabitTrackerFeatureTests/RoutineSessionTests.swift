@@ -6,9 +6,9 @@ struct RoutineSessionTests {
     
     private func createTestTemplate() -> RoutineTemplate {
         let habits = [
-            Habit(name: "Test Habit 1", type: .checkbox, order: 0),
+            Habit(name: "Test Habit 1", type: .task(subtasks: []), order: 0),
             Habit(name: "Test Habit 2", type: .timer(defaultDuration: 300), order: 1),
-            Habit(name: "Test Habit 3", type: .checkbox, order: 2)
+            Habit(name: "Test Habit 3", type: .task(subtasks: []), order: 2)
         ]
         
         return RoutineTemplate(

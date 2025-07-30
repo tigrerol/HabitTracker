@@ -17,6 +17,7 @@ struct ContextSettingsView: View {
     @State private var showingImportResult = false
     @State private var importResult: ImportResult?
     @State private var showingSnippetLibrary = false
+    @State private var showingContextCoverage = false
     
     var body: some View {
         NavigationStack {
@@ -96,6 +97,20 @@ struct ContextSettingsView: View {
                     Text(String(localized: "ContextSettingsView.CurrentStatus", bundle: .module))
                 }
                 
+                Section("Routine Coverage") {
+                    Button {
+                        showingContextCoverage = true
+                    } label: {
+                        SettingsRow(
+                            title: "Coverage Overview",
+                            subtitle: "Visualize routine assignments across contexts",
+                            icon: "chart.bar.xaxis",
+                            detail: ""
+                        )
+                    }
+                    .buttonStyle(.plain)
+                }
+                
                 Section("Habit Snippets") {
                     Button {
                         showingSnippetLibrary = true
@@ -159,6 +174,9 @@ struct ContextSettingsView: View {
         }
         .sheet(isPresented: $showingSnippetLibrary) {
             SnippetLibraryView()
+        }
+        .sheet(isPresented: $showingContextCoverage) {
+            ContextCoverageView()
         }
         .sheet(isPresented: $showingExportShare) {
             if let exportedFileURL = exportedFileURL {

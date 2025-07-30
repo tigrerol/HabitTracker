@@ -52,11 +52,11 @@ struct HabitOverviewView: View {
             templateName: "Morning Routine",
             templateColor: "#007AFF",
             isCompleted: false,
-            currentHabit: Habit(id: UUID(), name: "Current", type: .checkbox, color: "#007AFF", order: 2),
+            currentHabit: Habit(id: UUID(), name: "Current", type: .task(subtasks: []), color: "#007AFF", order: 2),
             activeHabits: [
                 Habit(id: UUID(), name: "Meditation", type: .timer(defaultDuration: 300), color: "#007AFF", order: 1),
-                Habit(id: UUID(), name: "Exercise", type: .checkbox, color: "#FF3B30", order: 2),
-                Habit(id: UUID(), name: "Journal", type: .checkbox, color: "#34C759", order: 3)
+                Habit(id: UUID(), name: "Exercise", type: .task(subtasks: []), color: "#FF3B30", order: 2),
+                Habit(id: UUID(), name: "Journal", type: .task(subtasks: []), color: "#34C759", order: 3)
             ],
             completions: [
                 HabitCompletion(habitId: UUID(), completedAt: Date(), duration: 300, isSkipped: false, notes: nil)

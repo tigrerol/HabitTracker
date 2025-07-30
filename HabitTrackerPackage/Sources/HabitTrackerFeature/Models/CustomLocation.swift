@@ -66,4 +66,30 @@ public enum ExtendedLocationType: Hashable, Sendable {
         if case .custom = self { return true }
         return false
     }
+    
+    /// Icon for the location type
+    public var icon: String {
+        switch self {
+        case .builtin(let locationType):
+            return locationType.icon
+        case .custom:
+            return "location.fill"
+        }
+    }
+    
+    /// Display name for the location type
+    public var displayName: String {
+        switch self {
+        case .builtin(let locationType):
+            return locationType.displayName
+        case .custom(let customLocationId):
+            // Load custom location from storage to get name
+            if let data = UserDefaults.standard.data(forKey: "CustomLocations"),
+               let locations = try? JSONDecoder().decode([UUID: CustomLocation].self, from: data),
+               let customLocation = locations[customLocationId] {
+                return customLocation.name
+            }
+            return "Custom Location"
+        }
+    }
 }

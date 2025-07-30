@@ -40,10 +40,8 @@ extension Habit {
     /// Estimated duration for the habit (for progress calculation)
     public var estimatedDuration: TimeInterval {
         switch type {
-        case .checkbox:
-            return 60 // 1 minute
-        case .checkboxWithSubtasks(let subtasks):
-            return TimeInterval(subtasks.count * 45) // 45 seconds per subtask
+        case .task(let subtasks):
+            return subtasks.isEmpty ? 60 : TimeInterval(subtasks.count * 45) // 1 minute or 45 seconds per subtask
         case .timer(let duration):
             return duration
         case .restTimer(let target):

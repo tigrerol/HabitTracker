@@ -2,11 +2,8 @@ import Foundation
 
 /// Represents different types of habits in the morning routine
 public enum HabitType: Codable, Hashable, Sendable {
-    /// Simple checkbox completion
-    case checkbox
-    
-    /// Checkbox with subtasks
-    case checkboxWithSubtasks(subtasks: [Subtask])
+    /// Task completion with optional subtasks
+    case task(subtasks: [Subtask])
     
     /// Timer-based habit with custom duration
     case timer(defaultDuration: TimeInterval)
@@ -68,10 +65,8 @@ extension HabitType {
     /// Human-readable description of the habit type
     public var description: String {
         switch self {
-        case .checkbox:
-            return "Simple task"
-        case .checkboxWithSubtasks(let subtasks):
-            return "\(subtasks.count) subtasks"
+        case .task(let subtasks):
+            return subtasks.isEmpty ? "Simple task" : "\(subtasks.count) subtasks"
         case .timer(let duration):
             return "Timer (\(Int(duration/60))min)"
         case .restTimer(let target):
@@ -103,10 +98,8 @@ extension HabitType {
     /// Icon name for the habit type
     public var iconName: String {
         switch self {
-        case .checkbox:
-            return "checkmark.square"
-        case .checkboxWithSubtasks:
-            return "checklist"
+        case .task(let subtasks):
+            return subtasks.isEmpty ? "checkmark.square" : "list.bullet.rectangle"
         case .timer:
             return "timer"
         case .restTimer:
@@ -129,10 +122,8 @@ extension HabitType {
     /// Quick default name for creating habits fast
     public var quickName: String {
         switch self {
-        case .checkbox:
+        case .task:
             return "New Task"
-        case .checkboxWithSubtasks:
-            return "New Checklist"
         case .timer:
             return "New Timer"
         case .restTimer:
@@ -152,10 +143,10 @@ extension HabitType {
         }
     }
     
-    /// Whether this is a checkbox-type habit
-    public var isCheckbox: Bool {
+    /// Whether this is a task-type habit
+    public var isTask: Bool {
         switch self {
-        case .checkbox, .checkboxWithSubtasks:
+        case .task:
             return true
         default:
             return false

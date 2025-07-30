@@ -106,7 +106,7 @@ struct HabitFactoryTests {
                        HabitFactory.createAfternoonHabits()
         
         // Check that we have different habit types
-        let hasCheckbox = allHabits.contains { $0.type.isCheckbox }
+        let hasTask = allHabits.contains { $0.type.isTask }
         let hasTimer = allHabits.contains { $0.type.isTimer }
         let hasAppLaunch = allHabits.contains { 
             if case .appLaunch = $0.type { return true }
@@ -117,7 +117,7 @@ struct HabitFactoryTests {
             return false
         }
         
-        #expect(hasCheckbox == true)
+        #expect(hasTask == true)
         #expect(hasTimer == true)
         #expect(hasAppLaunch == true)
         #expect(hasWebsite == true)
@@ -165,19 +165,19 @@ struct HabitFactoryTests {
 @Suite("Habit Type Extension Tests")  
 struct HabitTypeExtensionTests {
     
-    @Test("HabitType isCheckbox works correctly")
-    func testIsCheckbox() {
-        #expect(HabitType.checkbox.isCheckbox == true)
-        #expect(HabitType.timer(defaultDuration: 300).isCheckbox == false)
+    @Test("HabitType isTask works correctly")
+    func testIsTask() {
+        #expect(HabitType.task(subtasks: []).isTask == true)
+        #expect(HabitType.timer(defaultDuration: 300).isTask == false)
         
         let info = ConditionalHabitInfo(question: "Test?", options: [])
-        #expect(HabitType.conditional(info).isCheckbox == false)
+        #expect(HabitType.conditional(info).isTask == false)
     }
     
     @Test("HabitType isTimer works correctly")
     func testIsTimer() {
         #expect(HabitType.timer(defaultDuration: 300).isTimer == true)
-        #expect(HabitType.checkbox.isTimer == false)
+        #expect(HabitType.task(subtasks: []).isTimer == false)
         
         let info = ConditionalHabitInfo(question: "Test?", options: [])
         #expect(HabitType.conditional(info).isTimer == false)
@@ -187,13 +187,13 @@ struct HabitTypeExtensionTests {
     func testIsConditional() {
         let info = ConditionalHabitInfo(question: "Test?", options: [])
         #expect(HabitType.conditional(info).isConditional == true)
-        #expect(HabitType.checkbox.isConditional == false)
+        #expect(HabitType.task(subtasks: []).isConditional == false)
         #expect(HabitType.timer(defaultDuration: 300).isConditional == false)
     }
     
     @Test("HabitType descriptions are appropriate")
     func testDescriptions() {
-        #expect(HabitType.checkbox.description == "Checkbox")
+        #expect(HabitType.task(subtasks: []).description == "Task")
         #expect(HabitType.timer(defaultDuration: 300).description == "Timer (5:00)")
         
         let option = ConditionalOption(text: "Option 1", habits: [])
@@ -203,7 +203,7 @@ struct HabitTypeExtensionTests {
     
     @Test("HabitType iconNames are appropriate")
     func testIconNames() {
-        #expect(HabitType.checkbox.iconName == "checkmark.square")
+        #expect(HabitType.task(subtasks: []).iconName == "checkmark.square")
         #expect(HabitType.timer(defaultDuration: 300).iconName == "timer")
         
         let info = ConditionalHabitInfo(question: "Test?", options: [])

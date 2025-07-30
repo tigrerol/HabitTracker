@@ -41,7 +41,7 @@ struct RoutineServiceErrorTests {
         // Create a template that's not in the service
         let fakeTemplate = RoutineTemplate(
             name: "Fake Template",
-            habits: [Habit(name: "Fake Habit", type: .checkbox, order: 0)]
+            habits: [Habit(name: "Fake Habit", type: .task(subtasks: []), order: 0)]
         )
         
         do {
@@ -115,7 +115,7 @@ struct RoutineServiceErrorTests {
         // Adding a template should handle persistence failure gracefully
         let newTemplate = RoutineTemplate(
             name: "Test Template",
-            habits: [Habit(name: "Test Habit", type: .checkbox, order: 0)]
+            habits: [Habit(name: "Test Habit", type: .task(subtasks: []), order: 0)]
         )
         
         service.addTemplate(newTemplate)
@@ -150,7 +150,7 @@ struct RoutineServiceErrorTests {
         // Create a template with invalid habit
         var template = RoutineTemplate(
             name: "Test Template",
-            habits: [Habit(name: "Valid Habit", type: .checkbox, order: 0)]
+            habits: [Habit(name: "Valid Habit", type: .task(subtasks: []), order: 0)]
         )
         
         service.addTemplate(template)
@@ -171,7 +171,7 @@ struct RoutineSessionErrorTests {
     @Test("RoutineSession handles invalid habit indices")
     @MainActor func testRoutineSessionInvalidHabitIndex() {
         let habits = [
-            Habit(name: "Habit 1", type: .checkbox, order: 0),
+            Habit(name: "Habit 1", type: .task(subtasks: []), order: 0),
             Habit(name: "Habit 2", type: .timer(defaultDuration: 300), order: 1)
         ]
         let template = RoutineTemplate(name: "Test Template", habits: habits)
@@ -214,7 +214,7 @@ struct RoutineSessionErrorTests {
     @Test("RoutineSession handles reordering with invalid habits")
     @MainActor func testRoutineSessionInvalidReordering() {
         let habits = [
-            Habit(name: "Habit 1", type: .checkbox, order: 0),
+            Habit(name: "Habit 1", type: .task(subtasks: []), order: 0),
             Habit(name: "Habit 2", type: .timer(defaultDuration: 300), order: 1)
         ]
         let template = RoutineTemplate(name: "Test Template", habits: habits)
@@ -229,7 +229,7 @@ struct RoutineSessionErrorTests {
         #expect(session.activeHabits.count > 0)
         
         // Try to reorder with mismatched habits
-        let fakeHabits = [Habit(name: "Fake", type: .checkbox, order: 0)]
+        let fakeHabits = [Habit(name: "Fake", type: .task(subtasks: []), order: 0)]
         session.reorderHabits(fakeHabits)
         
         // Should reject invalid reordering
@@ -265,7 +265,7 @@ struct RoutineSelectorErrorTests {
         
         let template = RoutineTemplate(
             name: "Invalid Rule Template",
-            habits: [Habit(name: "Test", type: .checkbox, order: 0)],
+            habits: [Habit(name: "Test", type: .task(subtasks: []), order: 0)],
             contextRule: invalidRule
         )
         
@@ -289,7 +289,7 @@ struct RoutineSelectorErrorTests {
         
         let template = RoutineTemplate(
             name: "Office Template",
-            habits: [Habit(name: "Test", type: .checkbox, order: 0)],
+            habits: [Habit(name: "Test", type: .task(subtasks: []), order: 0)],
             contextRule: locationRule
         )
         

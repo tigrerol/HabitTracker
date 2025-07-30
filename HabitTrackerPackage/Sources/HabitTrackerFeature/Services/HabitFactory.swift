@@ -67,7 +67,7 @@ public enum HabitFactory {
     public static func createCoffeeHabit(order: Int) -> Habit {
         Habit(
             name: "Coffee",
-            type: .checkbox,
+            type: .task(subtasks: []),
             color: Colors.coffee,
             order: order
         )
@@ -104,7 +104,7 @@ public enum HabitFactory {
     public static func createShowerHabit(order: Int) -> Habit {
         Habit(
             name: "Shower",
-            type: .checkbox,
+            type: .task(subtasks: []),
             color: Colors.shower,
             order: order
         )
@@ -114,7 +114,7 @@ public enum HabitFactory {
     public static func createWorkspaceHabit(order: Int) -> Habit {
         Habit(
             name: "Prep Workspace",
-            type: .checkbox,
+            type: .task(subtasks: []),
             color: Colors.workspace,
             order: order
         )
@@ -124,7 +124,7 @@ public enum HabitFactory {
     public static func createGoalsReviewHabit(order: Int) -> Habit {
         Habit(
             name: "Review Daily Goals",
-            type: .checkbox,
+            type: .task(subtasks: []),
             color: Colors.goals,
             order: order
         )
@@ -134,7 +134,7 @@ public enum HabitFactory {
     public static func createHealthySnackHabit(order: Int) -> Habit {
         Habit(
             name: "Healthy Snack",
-            type: .checkbox,
+            type: .task(subtasks: []),
             color: Colors.snack,
             order: order
         )
@@ -163,7 +163,7 @@ public enum HabitFactory {
         
         return Habit(
             name: "Evening Planning",
-            type: .checkboxWithSubtasks(subtasks: subtasks),
+            type: .task(subtasks: subtasks),
             color: Colors.planning,
             order: order
         )

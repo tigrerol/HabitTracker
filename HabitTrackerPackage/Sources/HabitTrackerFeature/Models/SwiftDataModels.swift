@@ -41,7 +41,7 @@ public final class PersistedHabit {
         if let decodedType = try? JSONDecoder().decode(HabitType.self, from: typeData) {
             habitType = decodedType
         } else {
-            habitType = .checkbox // Fallback
+            habitType = .task(subtasks: []) // Fallback
         }
         
         return Habit(

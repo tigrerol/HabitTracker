@@ -335,6 +335,7 @@ public struct RoutineBuilderView: View {
                                                 }
                                             },
                                             onDelete: {
+                                                let _ = print("🔍 RoutineBuilderView: Deleting habit \(habit.name), current editingHabitIndex: \(editingHabitIndex?.description ?? "nil")")
                                                 withAnimation(.easeInOut) {
                                                     habits.removeAll { $0.id == habit.id }
                                                     if selectedQuestionHabit?.id == habit.id {
@@ -342,6 +343,11 @@ public struct RoutineBuilderView: View {
                                                     }
                                                     if selectedOption?.habitId == habit.id {
                                                         selectedOption = nil
+                                                    }
+                                                    // Clear editing state if the deleted habit was being edited
+                                                    if editingHabit?.id == habit.id {
+                                                        editingHabitIndex = nil
+                                                        editingHabit = nil
                                                     }
                                                 }
                                             },
@@ -427,8 +433,14 @@ public struct RoutineBuilderView: View {
                                                 editingHabit = habit
                                             }
                                         } onDelete: {
+                                            let _ = print("🔍 RoutineBuilderView: Deleting habit \(habit.name), current editingHabitIndex: \(editingHabitIndex?.description ?? "nil")")
                                             withAnimation(.easeInOut) {
                                                 habits.removeAll { $0.id == habit.id }
+                                                // Clear editing state if the deleted habit was being edited
+                                                if editingHabit?.id == habit.id {
+                                                    editingHabitIndex = nil
+                                                    editingHabit = nil
+                                                }
                                             }
                                         }
                                         .overlay(alignment: .topLeading) {
@@ -568,12 +580,16 @@ public struct RoutineBuilderView: View {
             set: { if !$0 { editingHabitIndex = nil; editingHabit = nil } }
         )) {
             if let index = editingHabitIndex, index < habits.count {
-                let _ = print("🔍 RoutineBuilderView: Sheet presenting using index \(index)")
+                let _ = print("🔍 RoutineBuilderView: Sheet presenting using index \(index) for habits.count \(habits.count)")
                 habitEditorView(for: $habits[index])
             } else {
+                let _ = print("🔍 RoutineBuilderView: ERROR - Invalid index: \(editingHabitIndex?.description ?? "nil"), habits.count: \(habits.count)")
                 VStack {
                     Text(String(localized: "RoutineBuilderView.Error.InvalidHabitIndex", bundle: .module))
                         .foregroundStyle(.red)
+                    Text("Index: \(editingHabitIndex?.description ?? "nil"), Count: \(habits.count)")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                     Button(String(localized: "RoutineBuilderView.Error.Close.Button", bundle: .module)) {
                         editingHabitIndex = nil
                         editingHabit = nil
@@ -715,9 +731,8 @@ public struct RoutineBuilderView: View {
                             let newHabit = createHabitFromType(habitType.type)
                             habits.append(newHabit)
                             
-                            // Immediately open the edit screen for the newly created habit
-                            let newIndex = habits.count - 1
-                            editingHabitIndex = newIndex
+                            // Set editing state immediately after adding to array
+                            editingHabitIndex = habits.count - 1
                             editingHabit = newHabit
                         }
                     } label: {
@@ -764,13 +779,7 @@ public struct RoutineBuilderView: View {
             HabitTypeOption(
                 name: String(localized: "HabitType.Task.Name", bundle: .module),
                 description: String(localized: "HabitType.Task.Description", bundle: .module),
-                type: .checkbox,
-                color: .green
-            ),
-            HabitTypeOption(
-                name: String(localized: "HabitType.Checklist.Name", bundle: .module),
-                description: String(localized: "HabitType.Checklist.Description", bundle: .module),
-                type: .checkboxWithSubtasks(subtasks: []),
+                type: .task(subtasks: []),
                 color: .green
             ),
             HabitTypeOption(
@@ -837,10 +846,8 @@ public struct RoutineBuilderView: View {
     
     private func getDefaultNameForType(_ type: HabitType) -> String {
         switch type {
-        case .checkbox:
+        case .task:
             return "New Task"
-        case .checkboxWithSubtasks:
-            return "Task with Steps"
         case .timer:
             return "Timed Activity"
         case .restTimer:
@@ -862,7 +869,7 @@ public struct RoutineBuilderView: View {
     
     private func getColorForType(_ type: HabitType) -> String {
         switch type {
-        case .checkbox, .checkboxWithSubtasks:
+        case .task:
             return "#34C759" // Green
         case .timer, .restTimer:
             return "#007AFF" // Blue
@@ -1468,7 +1475,7 @@ public struct RoutineBuilderView: View {
                    subHabitIndex < info.options[optionIndex].habits.count {
                     return info.options[optionIndex].habits[subHabitIndex]
                 }
-                return Habit(name: "Error", type: .checkbox) // Fallback
+                return Habit(name: "Error", type: .task(subtasks: [])) // Fallback
             },
             set: { newHabit in
                 print("🔍 RoutineBuilderView: subHabitEditorView - Updating sub-habit via binding")
@@ -1787,8 +1794,8 @@ struct ExpandableHabitRow: View {
     
     private var hasExpandableContent: Bool {
         switch habit.type {
-        case .checkboxWithSubtasks:
-            return true
+        case .task(let subtasks):
+            return !subtasks.isEmpty
         default:
             return false
         }
@@ -1800,8 +1807,10 @@ struct ExpandableHabitRow: View {
             switch habit.type {
             case .conditional(let info):
                 conditionalOptionsContent(info: info)
-            case .checkboxWithSubtasks(let subtasks):
-                subtasksContent(subtasks: subtasks)
+            case .task(let subtasks):
+                if !subtasks.isEmpty {
+                    subtasksContent(subtasks: subtasks)
+                }
             default:
                 EmptyView()
             }
@@ -1942,27 +1951,27 @@ struct ExpandableHabitRow: View {
     }
     
     private func addSubtask() {
-        guard case .checkboxWithSubtasks(var subtasks) = habit.type else { return }
+        guard case .task(var subtasks) = habit.type else { return }
         
         let newSubtask = Subtask(name: "New subtask")
         subtasks.append(newSubtask)
-        habit.type = .checkboxWithSubtasks(subtasks: subtasks)
+        habit.type = .task(subtasks: subtasks)
     }
     
     private func removeSubtask(at index: Int) {
-        guard case .checkboxWithSubtasks(var subtasks) = habit.type else { return }
+        guard case .task(var subtasks) = habit.type else { return }
         guard index < subtasks.count else { return }
         
         subtasks.remove(at: index)
-        habit.type = .checkboxWithSubtasks(subtasks: subtasks)
+        habit.type = .task(subtasks: subtasks)
     }
     
     private func updateSubtaskName(at index: Int, newName: String) {
-        guard case .checkboxWithSubtasks(var subtasks) = habit.type else { return }
+        guard case .task(var subtasks) = habit.type else { return }
         guard index < subtasks.count else { return }
         
         subtasks[index].name = newName
-        habit.type = .checkboxWithSubtasks(subtasks: subtasks)
+        habit.type = .task(subtasks: subtasks)
     }
 }
 

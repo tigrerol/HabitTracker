@@ -41,6 +41,7 @@ public struct HabitRowView: View {
                 
                 HStack(spacing: 8) {
                     Button {
+                        print("🔍 HabitRowView: Edit button tapped for habit: \(habit.name)")
                         onEdit()
                     } label: {
                         Image(systemName: "pencil")
@@ -49,9 +50,11 @@ public struct HabitRowView: View {
                             .frame(width: 28, height: 28)
                             .background(.blue.opacity(0.1), in: Circle())
                     }
+                    .buttonStyle(.plain)
                     .accessibilityLabel("Edit habit")
                     
                     Button {
+                        print("🔍 HabitRowView: Delete button tapped for habit: \(habit.name)")
                         onDelete()
                     } label: {
                         Image(systemName: "trash")
@@ -60,6 +63,7 @@ public struct HabitRowView: View {
                             .frame(width: 28, height: 28)
                             .background(.red.opacity(0.1), in: Circle())
                     }
+                    .buttonStyle(.plain)
                     .accessibilityLabel("Delete habit")
                 }
             }
@@ -80,18 +84,18 @@ public struct HabitRowView: View {
             Button("Delete") { onDelete() }
         }
         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-            Button(role: .destructive) {
-                onDelete()
-            } label: {
-                Label("Delete", systemImage: "trash")
-            }
-            
             Button {
                 onEdit()
             } label: {
                 Label("Edit", systemImage: "pencil")
             }
             .tint(.blue)
+            
+            Button(role: .destructive) {
+                onDelete()
+            } label: {
+                Label("Delete", systemImage: "trash")
+            }
         }
         .contextMenu {
             Button {

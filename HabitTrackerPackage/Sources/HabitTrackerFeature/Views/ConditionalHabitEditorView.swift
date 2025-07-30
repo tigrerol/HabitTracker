@@ -295,7 +295,7 @@ private struct OptionCard: View {
                             addQuickHabit(.timer(defaultDuration: 300))
                         }
                         QuickHabitButton(title: String(localized: "ConditionalHabitEditorView.Task.QuickButton", bundle: .module), icon: "checkmark.square") {
-                            addQuickHabit(.checkbox)
+                            addQuickHabit(.task(subtasks: []))
                         }
                         QuickHabitButton(title: String(localized: "ConditionalHabitEditorView.Counter.QuickButton", bundle: .module), icon: "list.bullet") {
                             addQuickHabit(.counter(items: [String(localized: "ConditionalHabitEditorView.CounterItem.Default", bundle: .module)]))
@@ -730,9 +730,9 @@ struct HabitPickerView: View {
     @ViewBuilder
     private func habitEditorView(for type: HabitTypeCategory) -> some View {
         switch type {
-        case .checkbox:
+        case .task:
             HabitEditorView(
-                habit: Habit(name: String(localized: "ConditionalHabitEditorView.NewTask.DefaultName", bundle: .module), type: .checkbox)
+                habit: Habit(name: String(localized: "ConditionalHabitEditorView.NewTask.DefaultName", bundle: .module), type: .task(subtasks: []))
             ) { habit in
                 onSelect(habit)
                 dismiss()
@@ -794,7 +794,7 @@ struct HabitPickerView: View {
 
 // MARK: - Habit Type Category
 enum HabitTypeCategory: CaseIterable, Identifiable {
-    case checkbox
+    case task
     case timer
     case counter
     case measurement
@@ -807,7 +807,7 @@ enum HabitTypeCategory: CaseIterable, Identifiable {
     
     var displayName: String {
         switch self {
-        case .checkbox: return String(localized: "HabitTypeCategory.Checkbox.DisplayName", bundle: .module)
+        case .task: return String(localized: "HabitTypeCategory.Task.DisplayName", bundle: .module)
         case .timer: return String(localized: "HabitTypeCategory.Timer.DisplayName", bundle: .module)
         case .counter: return String(localized: "HabitTypeCategory.Counter.DisplayName", bundle: .module)
         case .measurement: return String(localized: "HabitTypeCategory.Measurement.DisplayName", bundle: .module)
@@ -820,7 +820,7 @@ enum HabitTypeCategory: CaseIterable, Identifiable {
     
     var iconName: String {
         switch self {
-        case .checkbox: return "checkmark.square"
+        case .task: return "checkmark.square"
         case .timer: return "timer"
         case .counter: return "list.bullet"
         case .measurement: return "chart.line.uptrend.xyaxis"

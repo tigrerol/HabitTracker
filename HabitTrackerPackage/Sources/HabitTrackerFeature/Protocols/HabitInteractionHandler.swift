@@ -32,9 +32,7 @@ extension HabitInteractionHandler {
     public func canHandle(habit: Habit) -> Bool {
         // Default implementation checks if the habit type matches
         switch habit.type {
-        case .checkbox where Self.supportedHabitType == HabitType.self:
-            return true
-        case .checkboxWithSubtasks where Self.supportedHabitType == HabitType.self:
+        case .task where Self.supportedHabitType == HabitType.self:
             return true
         case .timer where Self.supportedHabitType == HabitType.self:
             return true
@@ -74,7 +72,7 @@ public struct CheckboxHabitHandler: HabitInteractionHandler {
     }
     
     public func canHandle(habit: Habit) -> Bool {
-        if case .checkbox = habit.type {
+        if case .task(let subtasks) = habit.type, subtasks.isEmpty {
             return true
         }
         return false
@@ -96,7 +94,7 @@ public struct SubtasksHabitHandler: HabitInteractionHandler {
         isCompleted: Bool
     ) -> AnyView {
         switch habit.type {
-        case .checkboxWithSubtasks(let subtasks):
+        case .task(let subtasks):
             return AnyView(SubtasksHabitView(habit: habit, subtasks: subtasks, onComplete: onComplete, isCompleted: isCompleted))
         default:
             return AnyView(Text("Invalid habit type for SubtasksHabitHandler"))
@@ -104,14 +102,14 @@ public struct SubtasksHabitHandler: HabitInteractionHandler {
     }
     
     public func canHandle(habit: Habit) -> Bool {
-        if case .checkboxWithSubtasks = habit.type {
+        if case .task(let subtasks) = habit.type, !subtasks.isEmpty {
             return true
         }
         return false
     }
     
     public func estimatedDuration(for habit: Habit) -> TimeInterval {
-        guard case .checkboxWithSubtasks(let subtasks) = habit.type else { return 60 }
+        guard case .task(let subtasks) = habit.type else { return 60 }
         return TimeInterval(subtasks.count * 45) // 45 seconds per subtask
     }
 }

@@ -35,7 +35,7 @@ struct ConditionalHabitTests {
     @Test("ConditionalOption can contain habits")
     func testOptionWithHabits() {
         let habit1 = Habit(name: "Stretch", type: .timer(defaultDuration: 300))
-        let habit2 = Habit(name: "Rest", type: .checkbox)
+        let habit2 = Habit(name: "Rest", type: .task(subtasks: []))
         
         let option = ConditionalOption(
             text: "Shoulder",

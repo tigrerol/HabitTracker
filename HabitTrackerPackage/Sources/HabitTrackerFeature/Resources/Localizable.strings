@@ -72,13 +72,12 @@
 "HabitEditorView.Sequence.AddStep.Label" = "Add Step";
 
 /* Habit Type Titles */
-"HabitType.Checkbox.Title" = "Simple Task";
-"HabitType.CheckboxWithSubtasks.Title" = "Subtasks";
+"HabitType.Task.Title" = "Task Settings";
 "HabitType.Timer.Title" = "Timer Settings";
 "HabitType.RestTimer.Title" = "Rest Timer";
 "HabitType.AppLaunch.Title" = "App Launch";
 "HabitType.Website.Title" = "Website";
-"HabitType.Counter.Title" = "Checklist Items";
+"HabitType.Counter.Title" = "Counter Items";
 "HabitType.Measurement.Title" = "Measurement";
 "HabitType.Sequence.Title" = "Sequence Steps";
 "HabitType.Question.Title" = "Question Settings";
@@ -124,9 +123,7 @@
 
 /* Habit Type Descriptions */
 "HabitType.Task.Name" = "Task";
-"HabitType.Task.Description" = "Simple checkbox";
-"HabitType.Checklist.Name" = "Checklist";
-"HabitType.Checklist.Description" = "Multiple steps";
+"HabitType.Task.Description" = "Simple or multi-step";
 "HabitType.Timer.Name" = "Timer";
 "HabitType.Timer.Description" = "Timed activity";
 "HabitType.RestTimer.Name" = "Rest Timer";
@@ -344,7 +341,7 @@
 "HabitQuickAddView.Website.Title" = "Website";
 "HabitQuickAddView.Suggestion.5min" = "%@ (5 min)";
 "HabitQuickAddView.Suggestion.10min" = "%@ (10 min)";
-"HabitQuickAddView.Suggestion.Checklist" = "%@ checklist";
+"HabitQuickAddView.Suggestion.Task" = "%@ task";
 "HabitQuickAddView.DefaultName.NewTask" = "New Task";
 "HabitQuickAddView.DefaultName.TaskWithSteps" = "Task with Steps";
 "HabitQuickAddView.DefaultName.TimedActivity" = "Timed Activity";
@@ -371,8 +368,8 @@
 "HabitTypePickerView.RunShortcut.Description" = "Execute a Shortcuts shortcut or open app via URL";
 "HabitTypePickerView.OpenWebsite.Title" = "Open Website";
 "HabitTypePickerView.OpenWebsite.Description" = "Visit a URL";
-"HabitTypePickerView.Checklist.Title" = "Checklist";
-"HabitTypePickerView.Checklist.Description" = "Track multiple items";
+"HabitTypePickerView.Task.Title" = "Task";
+"HabitTypePickerView.Task.Description" = "Simple or multi-step";
 "HabitTypePickerView.Measurement.Title" = "Measurement";
 "HabitTypePickerView.Measurement.Description" = "Record a value";
 "HabitTypePickerView.GuidedSequence.Title" = "Guided Sequence";
@@ -381,6 +378,8 @@
 "HabitTypePickerView.Question.Description" = "Branch based on answer";
 "HabitTypePickerView.Shortcut.AppName" = "Shortcut";
 "HabitTypePickerView.ExampleURL" = "https://example.com";
+"HabitTypePickerView.Counter.Title" = "Counter";
+"HabitTypePickerView.Counter.Description" = "Track multiple items";
 "HabitTypePickerView.CounterItem1" = "Item 1";
 "HabitTypePickerView.CounterItem2" = "Item 2";
 "HabitTypePickerView.MeasurementUnit" = "value";
@@ -447,7 +446,7 @@
 "ConditionalHabitEditorView.CounterItem.Default" = "Item 1";
 
 /* HabitTypeCategory Strings */
-"HabitTypeCategory.Checkbox.DisplayName" = "Checkbox";
+"HabitTypeCategory.Task.DisplayName" = "Task";
 "HabitTypeCategory.Timer.DisplayName" = "Timer";
 "HabitTypeCategory.Counter.DisplayName" = "Counter";
 "HabitTypeCategory.Measurement.DisplayName" = "Measurement";

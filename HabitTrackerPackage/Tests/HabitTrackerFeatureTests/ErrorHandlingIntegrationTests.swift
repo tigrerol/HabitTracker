@@ -100,7 +100,7 @@ struct ErrorHandlingIntegrationTests {
         // Create a template that's not in the service
         let fakeTemplate = RoutineTemplate(
             name: "Fake Template",
-            habits: [Habit(name: "Fake Habit", type: .checkbox, order: 0)]
+            habits: [Habit(name: "Fake Habit", type: .task(subtasks: []), order: 0)]
         )
         
         do {

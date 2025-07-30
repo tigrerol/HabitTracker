@@ -159,13 +159,8 @@ struct HabitQuickAddView: View {
             return .measurement(unit: unit, targetValue: nil)
         }
         
-        // Subtasks detection
-        if lowercased.contains("routine") || lowercased.contains("prep") || text.contains("->") {
-            return .checkboxWithSubtasks(subtasks: [])
-        }
-        
-        // Default to checkbox
-        return .checkbox
+        // Default to simple task
+        return .task(subtasks: [])
     }
     
     private func extractDuration(from text: String) -> TimeInterval? {
@@ -247,8 +242,10 @@ struct HabitQuickAddView: View {
                 if duration != 600 {
                     suggestions.append((String(format: String(localized: "HabitQuickAddView.Suggestion.10min", bundle: .module), cleanName), .timer(defaultDuration: 600)))
                 }
-            case .checkbox:
-                suggestions.append((String(format: String(localized: "HabitQuickAddView.Suggestion.Checklist", bundle: .module), cleanName), .checkboxWithSubtasks(subtasks: [])))
+            case .task(let subtasks):
+                if subtasks.isEmpty {
+                    suggestions.append((String(format: String(localized: "HabitQuickAddView.Suggestion.Task", bundle: .module), cleanName), .task(subtasks: [])))
+                }
             default:
                 break
             }
@@ -301,7 +298,7 @@ struct HabitQuickAddView: View {
         }
         
         let name = cleanHabitName(inputText)
-        let type = detectedType ?? .checkbox
+        let type = detectedType ?? .task(subtasks: [])
         previewHabit = Habit(
             name: name,
             type: type,
@@ -311,7 +308,7 @@ struct HabitQuickAddView: View {
     
     private func addHabitFromInput() {
         let name = cleanHabitName(inputText)
-        let type = detectedType ?? .checkbox
+        let type = detectedType ?? .task(subtasks: [])
         createHabit(name: name, type: type)
         clearInput()
     }
@@ -338,7 +335,7 @@ struct HabitQuickAddView: View {
     
     private func getColorForType(_ type: HabitType) -> String {
         switch type {
-        case .checkbox, .checkboxWithSubtasks:
+        case .task:
             return "#34C759" // Green
         case .timer, .restTimer:
             return "#007AFF" // Blue
@@ -359,10 +356,8 @@ struct HabitQuickAddView: View {
     
     private func getDefaultName(for type: HabitType) -> String {
         switch type {
-        case .checkbox:
+        case .task:
             return String(localized: "HabitQuickAddView.DefaultName.NewTask", bundle: .module)
-        case .checkboxWithSubtasks:
-            return String(localized: "HabitQuickAddView.DefaultName.TaskWithSteps", bundle: .module)
         case .timer:
             return String(localized: "HabitQuickAddView.DefaultName.TimedActivity", bundle: .module)
         case .restTimer:
@@ -395,21 +390,11 @@ private struct HabitTypePickerView: View {
                 Section {
                     TypeOptionRow(
                         icon: "checkmark.square",
-                        title: String(localized: "HabitTypePickerView.SimpleTask.Title", bundle: .module),
-                        description: String(localized: "HabitTypePickerView.SimpleTask.Description", bundle: .module),
+                        title: String(localized: "HabitTypePickerView.Task.Title", bundle: .module),
+                        description: String(localized: "HabitTypePickerView.Task.Description", bundle: .module),
                         color: .green
                     ) {
-                        onSelect(.checkbox)
-                        dismiss()
-                    }
-                    
-                    TypeOptionRow(
-                        icon: "checklist",
-                        title: String(localized: "HabitTypePickerView.TaskWithSubtasks.Title", bundle: .module),
-                        description: String(localized: "HabitTypePickerView.TaskWithSubtasks.Description", bundle: .module),
-                        color: .green
-                    ) {
-                        onSelect(.checkboxWithSubtasks(subtasks: []))
+                        onSelect(.task(subtasks: []))
                         dismiss()
                     }
                 }
@@ -462,8 +447,8 @@ private struct HabitTypePickerView: View {
                 Section {
                     TypeOptionRow(
                         icon: "list.bullet",
-                        title: String(localized: "HabitTypePickerView.Checklist.Title", bundle: .module),
-                        description: String(localized: "HabitTypePickerView.Checklist.Description", bundle: .module),
+                        title: String(localized: "HabitTypePickerView.Counter.Title", bundle: .module),
+                        description: String(localized: "HabitTypePickerView.Counter.Description", bundle: .module),
                         color: .yellow
                     ) {
                         onSelect(.counter(items: [String(localized: "HabitTypePickerView.CounterItem1", bundle: .module), String(localized: "HabitTypePickerView.CounterItem2", bundle: .module)]))

@@ -20,11 +20,12 @@ public struct HabitInteractionView: View {
     public var body: some View {
         // Use protocol-based handlers for better maintainability
         switch habit.type {
-            case .checkbox:
-                AnyView(CheckboxHabitHandler().createInteractionView(habit: habit, onComplete: self.onComplete, isCompleted: isCompleted))
-                
-            case .checkboxWithSubtasks:
-                AnyView(SubtasksHabitHandler().createInteractionView(habit: habit, onComplete: self.onComplete, isCompleted: isCompleted))
+            case .task(let subtasks):
+                if subtasks.isEmpty {
+                    AnyView(CheckboxHabitHandler().createInteractionView(habit: habit, onComplete: self.onComplete, isCompleted: isCompleted))
+                } else {
+                    AnyView(SubtasksHabitHandler().createInteractionView(habit: habit, onComplete: self.onComplete, isCompleted: isCompleted))
+                }
                 
             case .timer:
                 AnyView(TimerHabitHandler().createInteractionView(habit: habit, onComplete: self.onComplete, isCompleted: isCompleted))

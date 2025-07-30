@@ -60,15 +60,12 @@ public struct HabitEditorView: View {
         case .measurement(let unit, let target):
             self._measurementUnit = State(initialValue: unit)
             self._measurementTarget = State(initialValue: target)
-        case .checkboxWithSubtasks(let tasks):
-            print("🔍 HabitEditorView: init - checkboxWithSubtasks with \(tasks.count) tasks")
+        case .task(let tasks):
+            print("🔍 HabitEditorView: init - task with \(tasks.count) subtasks")
             for (index, task) in tasks.enumerated() {
                 print("🔍 HabitEditorView: init - subtask \(index): '\(task.name)' (id: \(task.id))")
             }
             self._subtasks = State(initialValue: tasks)
-        case .checkbox:
-            print("🔍 HabitEditorView: init - checkbox type, initializing empty subtasks")
-            self._subtasks = State(initialValue: [])
         case .guidedSequence(let steps):
             self._sequenceSteps = State(initialValue: steps)
         case .conditional:
@@ -171,12 +168,8 @@ public struct HabitEditorView: View {
             }
             
             switch habit.type {
-            case .checkbox:
-                let _ = print("typeSpecificSection: showing checkbox")
-                subtasksEditor
-                
-            case .checkboxWithSubtasks:
-                let _ = print("typeSpecificSection: showing checkboxWithSubtasks")
+            case .task:
+                let _ = print("typeSpecificSection: showing task")
                 subtasksEditor
                 
             case .timer:
@@ -227,10 +220,8 @@ public struct HabitEditorView: View {
     
     private var habitTypeTitle: String {
         switch habit.type {
-        case .checkbox:
-            return String(localized: "HabitType.Checkbox.Title", bundle: .module)
-        case .checkboxWithSubtasks:
-            return String(localized: "HabitType.CheckboxWithSubtasks.Title", bundle: .module)
+        case .task:
+            return String(localized: "HabitType.Task.Title", bundle: .module)
         case .timer:
             return String(localized: "HabitType.Timer.Title", bundle: .module)
         case .restTimer:
@@ -736,19 +727,12 @@ public struct HabitEditorView: View {
         
         // Update type with new values
         switch habit.type {
-        case .checkbox:
-            print("🔍 saveHabit: Processing checkbox type")
-            // Convert to checkboxWithSubtasks if subtasks were added
-            if !subtasks.isEmpty {
-                print("🔍 saveHabit: Converting to checkboxWithSubtasks with \(subtasks.count) subtasks")
-                for (index, subtask) in subtasks.enumerated() {
-                    print("🔍 saveHabit: Subtask \(index): '\(subtask.name)' (id: \(subtask.id))")
-                }
-                updatedHabit.type = .checkboxWithSubtasks(subtasks: subtasks)
-            } else {
-                print("🔍 saveHabit: Keeping as checkbox (no subtasks)")
-                updatedHabit.type = .checkbox
+        case .task:
+            print("🔍 saveHabit: Processing task type with \(subtasks.count) subtasks")
+            for (index, subtask) in subtasks.enumerated() {
+                print("🔍 saveHabit: Subtask \(index): '\(subtask.name)' (id: \(subtask.id))")
             }
+            updatedHabit.type = .task(subtasks: subtasks)
         case .timer:
             updatedHabit.type = .timer(defaultDuration: timerDuration)
         case .restTimer:
@@ -763,13 +747,6 @@ public struct HabitEditorView: View {
             updatedHabit.type = .counter(items: counterItems.filter { !$0.isEmpty })
         case .measurement:
             updatedHabit.type = .measurement(unit: measurementUnit, targetValue: measurementTarget)
-        case .checkboxWithSubtasks:
-            print("🔍 saveHabit: Processing checkboxWithSubtasks type")
-            print("🔍 saveHabit: Saving with \(subtasks.count) subtasks")
-            for (index, subtask) in subtasks.enumerated() {
-                print("🔍 saveHabit: Subtask \(index): '\(subtask.name)' (id: \(subtask.id))")
-            }
-            updatedHabit.type = .checkboxWithSubtasks(subtasks: subtasks)
         case .guidedSequence:
             updatedHabit.type = .guidedSequence(steps: sequenceSteps)
         case .conditional:

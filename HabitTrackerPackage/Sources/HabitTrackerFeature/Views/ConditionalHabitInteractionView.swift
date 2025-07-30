@@ -149,13 +149,13 @@ struct ConditionalHabitInteractionView_Previews: PreviewProvider {
                         options: [
                             ConditionalOption(text: String(localized: "ConditionalHabitInteractionView.Preview.Shoulder", bundle: .module), habits: [
                                 Habit(name: String(localized: "ConditionalHabitInteractionView.Preview.ShoulderStretches", bundle: .module), type: .timer(defaultDuration: 300)),
-                                Habit(name: String(localized: "ConditionalHabitInteractionView.Preview.NerveGlides", bundle: .module), type: .checkbox)
+                                Habit(name: String(localized: "ConditionalHabitInteractionView.Preview.NerveGlides", bundle: .module), type: .task(subtasks: []))
                             ]),
                             ConditionalOption(text: String(localized: "ConditionalHabitInteractionView.Preview.Knee", bundle: .module), habits: [
                                 Habit(name: String(localized: "ConditionalHabitInteractionView.Preview.KneeMobilization", bundle: .module), type: .timer(defaultDuration: 180))
                             ]),
                             ConditionalOption(text: String(localized: "ConditionalHabitInteractionView.Preview.Back", bundle: .module), habits: [
-                                Habit(name: String(localized: "ConditionalHabitInteractionView.Preview.BackExtensions", bundle: .module), type: .checkbox)
+                                Habit(name: String(localized: "ConditionalHabitInteractionView.Preview.BackExtensions", bundle: .module), type: .task(subtasks: []))
                             ]),
                             ConditionalOption(text: String(localized: "ConditionalHabitInteractionView.Preview.None", bundle: .module), habits: [])
                         ]
