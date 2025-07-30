@@ -8,6 +8,7 @@ public struct RoutineBuilderView: View {
     
     @State private var templateName = ""
     @State private var templateColor = "#34C759"
+    @FocusState private var isNameFieldFocused: Bool
     @State private var habits: [Habit] = []
     @State private var currentStep: BuilderStep = .naming
     @State private var editingHabit: Habit?
@@ -136,6 +137,7 @@ public struct RoutineBuilderView: View {
                     TextField(String(localized: "RoutineBuilderView.Naming.RoutineName.Placeholder", bundle: .module), text: $templateName)
                         .textFieldStyle(.roundedBorder)
                         .font(.title3)
+                        .focused($isNameFieldFocused)
                     
                     // Quick name suggestions
                     ScrollView(.horizontal, showsIndicators: false) {
@@ -676,6 +678,10 @@ public struct RoutineBuilderView: View {
                     habits.append(contentsOf: selectedHabits)
                 }
             }
+        }
+        .task {
+            // Auto-focus the name field when the view appears
+            isNameFieldFocused = true
         }
     }
     
