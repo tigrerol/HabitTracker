@@ -225,6 +225,11 @@ public struct RoutineBuilderView: View {
             .padding()
             .background(.regularMaterial)
         }
+        .task {
+            // Small delay to ensure TextField is fully rendered before focusing
+            try? await Task.sleep(for: .milliseconds(100))
+            isNameFieldFocused = true
+        }
     }
     
     // MARK: - Building Step
@@ -678,10 +683,6 @@ public struct RoutineBuilderView: View {
                     habits.append(contentsOf: selectedHabits)
                 }
             }
-        }
-        .task {
-            // Auto-focus the name field when the view appears
-            isNameFieldFocused = true
         }
     }
     
