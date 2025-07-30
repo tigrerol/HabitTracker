@@ -83,7 +83,7 @@ struct ContextRuleEditorView: View {
                     // Locations Section
                     Section {
                         // Built-in locations
-                        ForEach(LocationType.allCases.filter { $0 != .unknown }, id: \.self) { location in
+                        ForEach(LocationType.allCases, id: \.self) { location in
                             MultipleSelectionRow(
                                 title: location.displayName,
                                 subtitle: nil,

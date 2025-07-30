@@ -1015,7 +1015,7 @@ public struct RoutineBuilderView: View {
                         
                         LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
                             // Built-in locations
-                            ForEach([LocationType.home, LocationType.office], id: \.self) { locationType in
+                            ForEach([LocationType.home, LocationType.office, LocationType.unknown], id: \.self) { locationType in
                                 Button {
                                     withAnimation(.easeInOut) {
                                         let locationId = locationType.rawValue
@@ -1261,7 +1261,7 @@ public struct RoutineBuilderView: View {
                         
                         LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
                             // Built-in locations
-                            ForEach([LocationType.home, LocationType.office], id: \.self) { locationType in
+                            ForEach([LocationType.home, LocationType.office, LocationType.unknown], id: \.self) { locationType in
                                 Button {
                                     withAnimation(.easeInOut) {
                                         let locationId = locationType.rawValue

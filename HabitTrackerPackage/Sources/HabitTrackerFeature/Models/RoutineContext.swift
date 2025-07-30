@@ -109,7 +109,7 @@ public enum LocationType: String, Codable, CaseIterable, Sendable {
         switch self {
         case .home: return "Home"
         case .office: return "Office"
-        case .unknown: return "Unknown"
+        case .unknown: return "Other Location"
         }
     }
     
