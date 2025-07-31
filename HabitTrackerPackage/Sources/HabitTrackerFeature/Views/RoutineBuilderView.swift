@@ -16,6 +16,7 @@ public struct RoutineBuilderView: View {
     @State private var newHabitBeingCreated: Habit?
     @State private var newOptionHabitBeingCreated: (habit: Habit, optionId: UUID, habitId: UUID)?
     @State private var editingSubHabit: (habitIndex: Int, optionId: UUID, subHabitId: UUID)?
+    @State private var editingSubHabitData: Habit? // Store a copy of the sub-habit being edited
     @State private var editingOptionData: (habitId: UUID, option: ConditionalOption)?
     @State private var expandedHabits: Set<UUID> = []
     @State private var selectedQuestionHabit: Habit?
@@ -234,6 +235,197 @@ public struct RoutineBuilderView: View {
     
     // MARK: - Building Step
     
+    @ViewBuilder
+    private func habitListItem(for habit: Habit) -> some View {
+        if case .conditional = habit.type {
+            SelectableQuestionHabitRow(
+                habit: habit,
+                isSelected: selectedQuestionHabit?.id == habit.id,
+                selectedOption: selectedOption,
+                onSelect: {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        selectedQuestionHabit = selectedQuestionHabit?.id == habit.id ? nil : habit
+                        selectedOption = nil // Clear option selection when question selection changes
+                    }
+                },
+                onOptionSelect: { optionId in
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        if selectedOption?.optionId == optionId && selectedOption?.habitId == habit.id {
+                            selectedOption = nil // Deselect if already selected
+                        } else {
+                            selectedOption = (habitId: habit.id, optionId: optionId)
+                            selectedQuestionHabit = nil // Clear question selection when option is selected
+                        }
+                    }
+                },
+                onEdit: {
+                    print("🔍 RoutineBuilderView: Edit closure called for habit: \(habit.name)")
+                    if let index = habits.firstIndex(where: { $0.id == habit.id }) {
+                        print("🔍 RoutineBuilderView: Found habit at index \(index)")
+                        editingHabitIndex = index
+                        editingHabit = habit
+                    }
+                },
+                onDelete: {
+                    let _ = print("🔍 RoutineBuilderView: Deleting habit \(habit.name), current editingHabitIndex: \(editingHabitIndex?.description ?? "nil")")
+                    withAnimation(.easeInOut) {
+                        habits.removeAll { $0.id == habit.id }
+                        if selectedQuestionHabit?.id == habit.id {
+                            selectedQuestionHabit = nil
+                        }
+                        if selectedOption?.habitId == habit.id {
+                            selectedOption = nil
+                        }
+                        // Clear editing state if the deleted habit was being edited
+                        if editingHabit?.id == habit.id {
+                            editingHabitIndex = nil
+                            editingHabit = nil
+                        }
+                    }
+                },
+                onEditOption: { optionId in
+                    // Edit option functionality
+                    if case .conditional(let info) = habit.type,
+                       let optionIndex = info.options.firstIndex(where: { $0.id == optionId }) {
+                        let option = info.options[optionIndex]
+                        editingOptionData = (habitId: habit.id, option: option)
+                    }
+                },
+                onDeleteOption: { optionId in
+                    // Delete option functionality
+                    withAnimation(.easeInOut) {
+                        if case .conditional(let info) = habit.type {
+                            var updatedOptions = info.options
+                            updatedOptions.removeAll { $0.id == optionId }
+                            let updatedInfo = ConditionalHabitInfo(question: info.question, options: updatedOptions)
+                            
+                            if let habitIndex = habits.firstIndex(where: { $0.id == habit.id }) {
+                                var updatedHabit = habits[habitIndex]
+                                updatedHabit.type = .conditional(updatedInfo)
+                                habits[habitIndex] = updatedHabit
+                            }
+                            
+                            // Clear selection if deleted option was selected
+                            if selectedOption?.optionId == optionId {
+                                selectedOption = nil
+                            }
+                        }
+                    }
+                },
+                onEditSubHabit: { optionId, subHabitId in
+                    // Edit sub-habit functionality
+                    print("🔍 DEBUG: onEditSubHabit triggered")
+                    print("🔍 DEBUG: - habit.id: \(habit.id)")
+                    print("🔍 DEBUG: - optionId: \(optionId)")
+                    print("🔍 DEBUG: - subHabitId: \(subHabitId)")
+                    
+                    if let habitIndex = habits.firstIndex(where: { $0.id == habit.id }) {
+                        print("🔍 DEBUG: Found habit at index: \(habitIndex)")
+                        
+                        // Validate that the sub-habit exists before setting editingSubHabit
+                        if case .conditional(let info) = habits[habitIndex].type,
+                           let optionIndex = info.options.firstIndex(where: { $0.id == optionId }),
+                           let subHabitIndex = info.options[optionIndex].habits.firstIndex(where: { $0.id == subHabitId }) {
+                            print("✅ DEBUG: Validated sub-habit exists")
+                            print("🔍 DEBUG: Setting editingSubHabit to: (habitIndex: \(habitIndex), optionId: \(optionId), subHabitId: \(subHabitId))")
+                            // Store a copy of the sub-habit to prevent race conditions
+                            editingSubHabitData = info.options[optionIndex].habits[subHabitIndex]
+                            editingSubHabit = (habitIndex: habitIndex, optionId: optionId, subHabitId: subHabitId)
+                        } else {
+                            print("❌ DEBUG: Sub-habit validation failed")
+                            print("❌ DEBUG: Could not find optionId: \(optionId) or subHabitId: \(subHabitId)")
+                            if case .conditional(let info) = habits[habitIndex].type {
+                                print("❌ DEBUG: Available options: \(info.options.map { $0.id })")
+                                if let optionIndex = info.options.firstIndex(where: { $0.id == optionId }) {
+                                    print("❌ DEBUG: Available sub-habits in option: \(info.options[optionIndex].habits.map { $0.id })")
+                                }
+                            }
+                        }
+                    } else {
+                        print("❌ DEBUG: Could not find habit with id: \(habit.id)")
+                        print("❌ DEBUG: Available habit ids: \(habits.map { $0.id })")
+                    }
+                },
+                onDeleteSubHabit: { optionId, subHabitId in
+                    // Delete sub-habit functionality
+                    withAnimation(.easeInOut) {
+                        if case .conditional(let info) = habit.type,
+                           let optionIndex = info.options.firstIndex(where: { $0.id == optionId }) {
+                            var updatedOptions = info.options
+                            updatedOptions[optionIndex].habits.removeAll { $0.id == subHabitId }
+                            let updatedInfo = ConditionalHabitInfo(question: info.question, options: updatedOptions)
+                            
+                            if let habitIndex = habits.firstIndex(where: { $0.id == habit.id }) {
+                                var updatedHabit = habits[habitIndex]
+                                updatedHabit.type = .conditional(updatedInfo)
+                                habits[habitIndex] = updatedHabit
+                            }
+                        }
+                    }
+                }
+            )
+            .overlay(alignment: .topLeading) {
+                if isSelectingForSnippet {
+                    Button {
+                        if selectedHabitsForSnippet.contains(habit.id) {
+                            selectedHabitsForSnippet.remove(habit.id)
+                        } else {
+                            selectedHabitsForSnippet.insert(habit.id)
+                        }
+                    } label: {
+                        Image(systemName: selectedHabitsForSnippet.contains(habit.id) ? "checkmark.circle.fill" : "circle")
+                            .foregroundStyle(selectedHabitsForSnippet.contains(habit.id) ? .blue : .secondary)
+                            .font(.title3)
+                            .background(Color(.systemBackground), in: Circle())
+                    }
+                    .frame(width: 44, height: 44)
+                    .contentShape(Rectangle())
+                    .buttonStyle(.plain)
+                    .allowsHitTesting(true)
+                }
+            }
+        } else {
+            HabitRowView(habit: habit) {
+                print("🔍 RoutineBuilderView: Edit closure called for habit: \(habit.name)")
+                if let index = habits.firstIndex(where: { $0.id == habit.id }) {
+                    print("🔍 RoutineBuilderView: Found habit at index \(index)")
+                    editingHabitIndex = index
+                    editingHabit = habit
+                }
+            } onDelete: {
+                let _ = print("🔍 RoutineBuilderView: Deleting habit \(habit.name), current editingHabitIndex: \(editingHabitIndex?.description ?? "nil")")
+                withAnimation(.easeInOut) {
+                    habits.removeAll { $0.id == habit.id }
+                    // Clear editing state if the deleted habit was being edited
+                    if editingHabit?.id == habit.id {
+                        editingHabitIndex = nil
+                        editingHabit = nil
+                    }
+                }
+            }
+            .overlay(alignment: .topLeading) {
+                if isSelectingForSnippet {
+                    Button {
+                        if selectedHabitsForSnippet.contains(habit.id) {
+                            selectedHabitsForSnippet.remove(habit.id)
+                        } else {
+                            selectedHabitsForSnippet.insert(habit.id)
+                        }
+                    } label: {
+                        Image(systemName: selectedHabitsForSnippet.contains(habit.id) ? "checkmark.circle.fill" : "circle")
+                            .foregroundStyle(selectedHabitsForSnippet.contains(habit.id) ? .blue : .secondary)
+                            .font(.title3)
+                            .background(Color(.systemBackground), in: Circle())
+                    }
+                    .frame(width: 44, height: 44)
+                    .contentShape(Rectangle())
+                    .buttonStyle(.plain)
+                    .allowsHitTesting(true)
+                }
+            }
+        }
+    }
+
     private var buildingStepView: some View {
         VStack(spacing: 0) {
             // Enhanced progress header
@@ -314,165 +506,7 @@ public struct RoutineBuilderView: View {
                             // List with drag-and-drop support
                             List {
                                 ForEach(habits) { habit in
-                                    if case .conditional = habit.type {
-                                        SelectableQuestionHabitRow(
-                                            habit: habit,
-                                            isSelected: selectedQuestionHabit?.id == habit.id,
-                                            selectedOption: selectedOption,
-                                            onSelect: {
-                                                withAnimation(.easeInOut(duration: 0.2)) {
-                                                    selectedQuestionHabit = selectedQuestionHabit?.id == habit.id ? nil : habit
-                                                    selectedOption = nil // Clear option selection when question selection changes
-                                                }
-                                            },
-                                            onOptionSelect: { optionId in
-                                                withAnimation(.easeInOut(duration: 0.2)) {
-                                                    if selectedOption?.optionId == optionId && selectedOption?.habitId == habit.id {
-                                                        selectedOption = nil // Deselect if already selected
-                                                    } else {
-                                                        selectedOption = (habitId: habit.id, optionId: optionId)
-                                                        selectedQuestionHabit = nil // Clear question selection when option is selected
-                                                    }
-                                                }
-                                            },
-                                            onEdit: {
-                                                print("🔍 RoutineBuilderView: Edit closure called for habit: \(habit.name)")
-                                                if let index = habits.firstIndex(where: { $0.id == habit.id }) {
-                                                    print("🔍 RoutineBuilderView: Found habit at index \(index)")
-                                                    editingHabitIndex = index
-                                                    editingHabit = habit
-                                                }
-                                            },
-                                            onDelete: {
-                                                let _ = print("🔍 RoutineBuilderView: Deleting habit \(habit.name), current editingHabitIndex: \(editingHabitIndex?.description ?? "nil")")
-                                                withAnimation(.easeInOut) {
-                                                    habits.removeAll { $0.id == habit.id }
-                                                    if selectedQuestionHabit?.id == habit.id {
-                                                        selectedQuestionHabit = nil
-                                                    }
-                                                    if selectedOption?.habitId == habit.id {
-                                                        selectedOption = nil
-                                                    }
-                                                    // Clear editing state if the deleted habit was being edited
-                                                    if editingHabit?.id == habit.id {
-                                                        editingHabitIndex = nil
-                                                        editingHabit = nil
-                                                    }
-                                                }
-                                            },
-                                            onEditOption: { optionId in
-                                                // Edit option functionality
-                                                if case .conditional(let info) = habit.type,
-                                                   let optionIndex = info.options.firstIndex(where: { $0.id == optionId }) {
-                                                    let option = info.options[optionIndex]
-                                                    editingOptionData = (habitId: habit.id, option: option)
-                                                }
-                                            },
-                                            onDeleteOption: { optionId in
-                                                // Delete option functionality
-                                                withAnimation(.easeInOut) {
-                                                    if case .conditional(let info) = habit.type {
-                                                        var updatedOptions = info.options
-                                                        updatedOptions.removeAll { $0.id == optionId }
-                                                        let updatedInfo = ConditionalHabitInfo(question: info.question, options: updatedOptions)
-                                                        
-                                                        if let habitIndex = habits.firstIndex(where: { $0.id == habit.id }) {
-                                                            var updatedHabit = habits[habitIndex]
-                                                            updatedHabit.type = .conditional(updatedInfo)
-                                                            habits[habitIndex] = updatedHabit
-                                                        }
-                                                        
-                                                        // Clear selection if deleted option was selected
-                                                        if selectedOption?.optionId == optionId {
-                                                            selectedOption = nil
-                                                        }
-                                                    }
-                                                }
-                                            },
-                                            onEditSubHabit: { optionId, subHabitId in
-                                                // Edit sub-habit functionality
-                                                if let habitIndex = habits.firstIndex(where: { $0.id == habit.id }) {
-                                                    editingSubHabit = (habitIndex: habitIndex, optionId: optionId, subHabitId: subHabitId)
-                                                }
-                                            },
-                                            onDeleteSubHabit: { optionId, subHabitId in
-                                                // Delete sub-habit functionality
-                                                withAnimation(.easeInOut) {
-                                                    if case .conditional(let info) = habit.type,
-                                                       let optionIndex = info.options.firstIndex(where: { $0.id == optionId }) {
-                                                        var updatedOptions = info.options
-                                                        updatedOptions[optionIndex].habits.removeAll { $0.id == subHabitId }
-                                                        let updatedInfo = ConditionalHabitInfo(question: info.question, options: updatedOptions)
-                                                        
-                                                        if let habitIndex = habits.firstIndex(where: { $0.id == habit.id }) {
-                                                            var updatedHabit = habits[habitIndex]
-                                                            updatedHabit.type = .conditional(updatedInfo)
-                                                            habits[habitIndex] = updatedHabit
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        )
-                                        .overlay(alignment: .topLeading) {
-                                            if isSelectingForSnippet {
-                                                Button {
-                                                    if selectedHabitsForSnippet.contains(habit.id) {
-                                                        selectedHabitsForSnippet.remove(habit.id)
-                                                    } else {
-                                                        selectedHabitsForSnippet.insert(habit.id)
-                                                    }
-                                                } label: {
-                                                    Image(systemName: selectedHabitsForSnippet.contains(habit.id) ? "checkmark.circle.fill" : "circle")
-                                                        .foregroundStyle(selectedHabitsForSnippet.contains(habit.id) ? .blue : .secondary)
-                                                        .font(.title3)
-                                                        .background(Color(.systemBackground), in: Circle())
-                                                }
-                                                .frame(width: 44, height: 44)
-                                                .contentShape(Rectangle())
-                                                .buttonStyle(.plain)
-                                                .allowsHitTesting(true)
-                                            }
-                                        }
-                                    } else {
-                                        HabitRowView(habit: habit) {
-                                            print("🔍 RoutineBuilderView: Edit closure called for habit: \(habit.name)")
-                                            if let index = habits.firstIndex(where: { $0.id == habit.id }) {
-                                                print("🔍 RoutineBuilderView: Found habit at index \(index)")
-                                                editingHabitIndex = index
-                                                editingHabit = habit
-                                            }
-                                        } onDelete: {
-                                            let _ = print("🔍 RoutineBuilderView: Deleting habit \(habit.name), current editingHabitIndex: \(editingHabitIndex?.description ?? "nil")")
-                                            withAnimation(.easeInOut) {
-                                                habits.removeAll { $0.id == habit.id }
-                                                // Clear editing state if the deleted habit was being edited
-                                                if editingHabit?.id == habit.id {
-                                                    editingHabitIndex = nil
-                                                    editingHabit = nil
-                                                }
-                                            }
-                                        }
-                                        .overlay(alignment: .topLeading) {
-                                            if isSelectingForSnippet {
-                                                Button {
-                                                    if selectedHabitsForSnippet.contains(habit.id) {
-                                                        selectedHabitsForSnippet.remove(habit.id)
-                                                    } else {
-                                                        selectedHabitsForSnippet.insert(habit.id)
-                                                    }
-                                                } label: {
-                                                    Image(systemName: selectedHabitsForSnippet.contains(habit.id) ? "checkmark.circle.fill" : "circle")
-                                                        .foregroundStyle(selectedHabitsForSnippet.contains(habit.id) ? .blue : .secondary)
-                                                        .font(.title3)
-                                                        .background(Color(.systemBackground), in: Circle())
-                                                }
-                                                .frame(width: 44, height: 44)
-                                                .contentShape(Rectangle())
-                                                .buttonStyle(.plain)
-                                                .allowsHitTesting(true)
-                                            }
-                                        }
-                                    }
+                                    habitListItem(for: habit)
                                 }
                                 .onMove { source, destination in
                                     withAnimation(.easeInOut) {
@@ -620,23 +654,100 @@ public struct RoutineBuilderView: View {
                 .padding()
             }
         }
+        .onChange(of: habits) { oldValue, newValue in
+            print("🔍 DEBUG: habits array changed")
+            print("🔍 DEBUG: Old count: \(oldValue.count), New count: \(newValue.count)")
+            if let editData = editingSubHabit {
+                print("🔍 DEBUG: editingSubHabit is active during habits change")
+                print("🔍 DEBUG: - habitIndex: \(editData.habitIndex)")
+                print("🔍 DEBUG: - current habits.count: \(newValue.count)")
+                if editData.habitIndex >= newValue.count {
+                    print("❌ DEBUG: habitIndex is now out of bounds after habits change!")
+                }
+            }
+        }
         .sheet(isPresented: Binding(
             get: { editingSubHabit != nil },
-            set: { if !$0 { editingSubHabit = nil } }
+            set: { if !$0 { 
+                editingSubHabit = nil
+                editingSubHabitData = nil
+            } }
         )) {
-            if let editData = editingSubHabit,
-               editData.habitIndex < habits.count,
-               case .conditional(let info) = habits[editData.habitIndex].type,
-               let optionIndex = info.options.firstIndex(where: { $0.id == editData.optionId }),
-               let subHabitIndex = info.options[optionIndex].habits.firstIndex(where: { $0.id == editData.subHabitId }) {
+            if let editData = editingSubHabit {
+                let _ = print("🔍 DEBUG: Sheet presented with editData:")
+                let _ = print("🔍 DEBUG: - habitIndex: \(editData.habitIndex)")
+                let _ = print("🔍 DEBUG: - optionId: \(editData.optionId)")
+                let _ = print("🔍 DEBUG: - subHabitId: \(editData.subHabitId)")
+                let _ = print("🔍 DEBUG: - habits.count: \(habits.count)")
                 
-                let _ = print("🔍 RoutineBuilderView: Sheet presenting sub-habit editor")
-                subHabitEditorView(
-                    habitIndex: editData.habitIndex,
-                    optionIndex: optionIndex,
-                    subHabitIndex: subHabitIndex
-                )
+                if editData.habitIndex >= habits.count {
+                    let _ = print("❌ DEBUG: habitIndex \(editData.habitIndex) is out of bounds (habits.count: \(habits.count))")
+                } else {
+                    let habit = habits[editData.habitIndex]
+                    let _ = print("🔍 DEBUG: Found habit at index \(editData.habitIndex): \(habit.name)")
+                    
+                    if case .conditional(let info) = habit.type {
+                        let _ = print("🔍 DEBUG: Habit is conditional with \(info.options.count) options")
+                        let _ = print("🔍 DEBUG: Option IDs: \(info.options.map { $0.id })")
+                        
+                        if let optionIndex = info.options.firstIndex(where: { $0.id == editData.optionId }) {
+                            let _ = print("🔍 DEBUG: Found option at index \(optionIndex)")
+                            let option = info.options[optionIndex]
+                            let _ = print("🔍 DEBUG: Option has \(option.habits.count) sub-habits")
+                            let _ = print("🔍 DEBUG: Sub-habit IDs: \(option.habits.map { $0.id })")
+                            
+                            if let subHabitIndex = option.habits.firstIndex(where: { $0.id == editData.subHabitId }) {
+                                let _ = print("✅ DEBUG: Found sub-habit at index \(subHabitIndex)")
+                                let _ = print("🔍 RoutineBuilderView: Sheet presenting sub-habit editor")
+                                subHabitEditorView(
+                                    habitIndex: editData.habitIndex,
+                                    optionIndex: optionIndex,
+                                    subHabitIndex: subHabitIndex
+                                )
+                            } else if let storedSubHabit = editingSubHabitData {
+                                let _ = print("🔄 DEBUG: Sub-habit not found in array, using stored copy")
+                                let _ = print("🔄 DEBUG: Stored sub-habit name: \(storedSubHabit.name)")
+                                fallbackSubHabitEditorView(
+                                    storedSubHabit: storedSubHabit,
+                                    editData: editData
+                                )
+                            } else {
+                                let _ = print("❌ DEBUG: Could not find sub-habit with ID \(editData.subHabitId)")
+                                VStack {
+                                    Text(String(localized: "RoutineBuilderView.Error.InvalidSubHabitReference", bundle: .module))
+                                        .foregroundStyle(.red)
+                                    Button(String(localized: "RoutineBuilderView.Error.Close.Button", bundle: .module)) {
+                                        editingSubHabit = nil
+                                        editingSubHabitData = nil
+                                    }
+                                }
+                                .padding()
+                            }
+                        } else {
+                            let _ = print("❌ DEBUG: Could not find option with ID \(editData.optionId)")
+                            VStack {
+                                Text(String(localized: "RoutineBuilderView.Error.InvalidSubHabitReference", bundle: .module))
+                                    .foregroundStyle(.red)
+                                Button(String(localized: "RoutineBuilderView.Error.Close.Button", bundle: .module)) {
+                                    editingSubHabit = nil
+                                }
+                            }
+                            .padding()
+                        }
+                    } else {
+                        let _ = print("❌ DEBUG: Habit is not conditional type")
+                        VStack {
+                            Text(String(localized: "RoutineBuilderView.Error.InvalidSubHabitReference", bundle: .module))
+                                .foregroundStyle(.red)
+                            Button(String(localized: "RoutineBuilderView.Error.Close.Button", bundle: .module)) {
+                                editingSubHabit = nil
+                            }
+                        }
+                        .padding()
+                    }
+                }
             } else {
+                let _ = print("❌ DEBUG: editingSubHabit is nil in sheet")
                 VStack {
                     Text(String(localized: "RoutineBuilderView.Error.InvalidSubHabitReference", bundle: .module))
                         .foregroundStyle(.red)
@@ -1584,28 +1695,55 @@ public struct RoutineBuilderView: View {
     
     @ViewBuilder
     private func subHabitEditorView(habitIndex: Int, optionIndex: Int, subHabitIndex: Int) -> some View {
-        let _ = print("🔍 RoutineBuilderView: subHabitEditorView - Creating editor for sub-habit")
+        let _ = print("🔍 DEBUG: subHabitEditorView called with:")
+        let _ = print("🔍 DEBUG: - habitIndex: \(habitIndex)")
+        let _ = print("🔍 DEBUG: - optionIndex: \(optionIndex)")
+        let _ = print("🔍 DEBUG: - subHabitIndex: \(subHabitIndex)")
+        let _ = print("🔍 DEBUG: - habits.count: \(habits.count)")
         
         // Create a binding to the specific sub-habit
         let subHabitBinding = Binding<Habit>(
             get: {
-                if case .conditional(let info) = habits[habitIndex].type,
-                   optionIndex < info.options.count,
-                   subHabitIndex < info.options[optionIndex].habits.count {
-                    return info.options[optionIndex].habits[subHabitIndex]
+                let _ = print("🔍 DEBUG: subHabitBinding getter called")
+                if habitIndex < habits.count {
+                    let _ = print("🔍 DEBUG: Habit exists at index \(habitIndex)")
+                    if case .conditional(let info) = habits[habitIndex].type {
+                        let _ = print("🔍 DEBUG: Habit is conditional with \(info.options.count) options")
+                        if optionIndex < info.options.count {
+                            let _ = print("🔍 DEBUG: Option exists at index \(optionIndex)")
+                            let _ = print("🔍 DEBUG: Option has \(info.options[optionIndex].habits.count) sub-habits")
+                            if subHabitIndex < info.options[optionIndex].habits.count {
+                                let _ = print("✅ DEBUG: Returning sub-habit at index \(subHabitIndex)")
+                                return info.options[optionIndex].habits[subHabitIndex]
+                            } else {
+                                let _ = print("❌ DEBUG: subHabitIndex \(subHabitIndex) out of bounds")
+                            }
+                        } else {
+                            let _ = print("❌ DEBUG: optionIndex \(optionIndex) out of bounds")
+                        }
+                    } else {
+                        let _ = print("❌ DEBUG: Habit is not conditional type")
+                    }
+                } else {
+                    let _ = print("❌ DEBUG: habitIndex \(habitIndex) out of bounds")
                 }
+                let _ = print("❌ DEBUG: Returning fallback habit")
                 return Habit(name: "Error", type: .task(subtasks: [])) // Fallback
             },
             set: { newHabit in
-                print("🔍 RoutineBuilderView: subHabitEditorView - Updating sub-habit via binding")
-                if case .conditional(let info) = habits[habitIndex].type,
-                   optionIndex < info.options.count,
-                   subHabitIndex < info.options[optionIndex].habits.count {
-                    
-                    var updatedOptions = info.options
-                    updatedOptions[optionIndex].habits[subHabitIndex] = newHabit
-                    let updatedInfo = ConditionalHabitInfo(question: info.question, options: updatedOptions)
-                    habits[habitIndex].type = .conditional(updatedInfo)
+                let _ = print("🔍 DEBUG: subHabitBinding setter called")
+                let _ = print("🔍 DEBUG: New habit name: \(newHabit.name)")
+                if habitIndex < habits.count {
+                    if case .conditional(let info) = habits[habitIndex].type,
+                       optionIndex < info.options.count,
+                       subHabitIndex < info.options[optionIndex].habits.count {
+                        
+                        let _ = print("🔍 DEBUG: Updating sub-habit at indices [\(habitIndex)][\(optionIndex)][\(subHabitIndex)]")
+                        var updatedOptions = info.options
+                        updatedOptions[optionIndex].habits[subHabitIndex] = newHabit
+                        let updatedInfo = ConditionalHabitInfo(question: info.question, options: updatedOptions)
+                        habits[habitIndex].type = .conditional(updatedInfo)
+                    }
                 }
             }
         )
@@ -1625,6 +1763,57 @@ public struct RoutineBuilderView: View {
             HabitEditorView(habit: subHabit) { updatedHabit in
                 subHabitBinding.wrappedValue = updatedHabit
             }
+        }
+    }
+    
+    @ViewBuilder
+    private func fallbackSubHabitEditorView(storedSubHabit: Habit, editData: (habitIndex: Int, optionId: UUID, subHabitId: UUID)) -> some View {
+        let _ = print("🔄 DEBUG: fallbackSubHabitEditorView called")
+        let _ = print("🔄 DEBUG: - storedSubHabit.name: \(storedSubHabit.name)")
+        
+        // Create a binding that will save changes back to the array when possible
+        let fallbackBinding = Binding<Habit>(
+            get: {
+                let _ = print("🔄 DEBUG: fallbackBinding getter called")
+                return storedSubHabit
+            },
+            set: { updatedHabit in
+                let _ = print("🔄 DEBUG: fallbackBinding setter called")
+                let _ = print("🔄 DEBUG: Updated habit name: \(updatedHabit.name)")
+                
+                // Try to save the changes back to the array
+                if editData.habitIndex < habits.count,
+                   case .conditional(let info) = habits[editData.habitIndex].type,
+                   let optionIndex = info.options.firstIndex(where: { $0.id == editData.optionId }),
+                   let subHabitIndex = info.options[optionIndex].habits.firstIndex(where: { $0.id == editData.subHabitId }) {
+                    let _ = print("🔄 DEBUG: Successfully saving fallback changes to array")
+                    var updatedOptions = info.options
+                    updatedOptions[optionIndex].habits[subHabitIndex] = updatedHabit
+                    let updatedInfo = ConditionalHabitInfo(question: info.question, options: updatedOptions)
+                    habits[editData.habitIndex].type = .conditional(updatedInfo)
+                } else {
+                    let _ = print("⚠️ DEBUG: Could not save fallback changes - sub-habit still missing from array")
+                    // Update the stored copy for consistency
+                    editingSubHabitData = updatedHabit
+                }
+            }
+        )
+        
+        let fallbackSubHabit = fallbackBinding.wrappedValue
+        
+        switch fallbackSubHabit.type {
+        case .conditional:
+            ConditionalHabitEditorView(
+                existingHabit: fallbackSubHabit,
+                habitLibrary: getAllAvailableHabits(),
+                existingConditionalDepth: 1
+            ) { updatedHabit in
+                fallbackBinding.wrappedValue = updatedHabit
+            }
+        default:
+            HabitEditorView(habit: fallbackSubHabit, onSave: { updatedHabit in
+                fallbackBinding.wrappedValue = updatedHabit
+            })
         }
     }
     
@@ -2311,6 +2500,10 @@ struct SelectableQuestionHabitRow: View {
                                     
                                     HStack(spacing: 8) {
                                         Button {
+                                            print("🔍 DEBUG: Edit sub-habit button tapped")
+                                            print("🔍 DEBUG: - option.id: \(option.id)")
+                                            print("🔍 DEBUG: - sub-habit.id: \(habit.id)")
+                                            print("🔍 DEBUG: - sub-habit.name: \(habit.name)")
                                             onEditSubHabit(option.id, habit.id)
                                         } label: {
                                             Image(systemName: "pencil")
