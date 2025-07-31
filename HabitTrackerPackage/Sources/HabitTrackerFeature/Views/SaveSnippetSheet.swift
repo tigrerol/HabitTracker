@@ -10,6 +10,7 @@ struct SaveSnippetSheet: View {
     let onCancel: (() -> Void)?
     
     @State private var snippetName: String = ""
+    @FocusState private var isNameFieldFocused: Bool
     
     var body: some View {
         NavigationStack {
@@ -37,6 +38,7 @@ struct SaveSnippetSheet: View {
                     
                     TextField("Enter snippet name", text: $snippetName)
                         .textFieldStyle(.roundedBorder)
+                        .focused($isNameFieldFocused)
                 }
                 
                 // Preview
@@ -79,6 +81,11 @@ struct SaveSnippetSheet: View {
                     .disabled(snippetName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 }
             }
+        }
+        .task {
+            // Small delay to ensure TextField is fully rendered before focusing
+            try? await Task.sleep(for: .milliseconds(100))
+            isNameFieldFocused = true
         }
     }
     
