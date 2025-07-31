@@ -11,6 +11,7 @@ struct CustomLocationEditorView: View {
     @State private var name: String = ""
     @State private var selectedIcon: String = "location.fill"
     @State private var showingIconPicker = false
+    @FocusState private var isNameFieldFocused: Bool
     
     private var isEditing: Bool {
         customLocation != nil
@@ -33,6 +34,7 @@ struct CustomLocationEditorView: View {
                         #if canImport(UIKit)
                         .textInputAutocapitalization(.words)
                         #endif
+                        .focused($isNameFieldFocused)
                     
                     HStack {
                         Text(String(localized: "CustomLocationEditorView.Icon.Label", bundle: .module))
@@ -76,6 +78,11 @@ struct CustomLocationEditorView: View {
         }
         .onAppear {
             loadExistingData()
+        }
+        .task {
+            // Small delay to ensure TextField is fully rendered before focusing
+            try? await Task.sleep(for: .milliseconds(100))
+            isNameFieldFocused = true
         }
     }
     
