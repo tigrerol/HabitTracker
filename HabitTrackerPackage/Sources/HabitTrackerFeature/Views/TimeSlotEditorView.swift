@@ -219,6 +219,7 @@ private struct AddTimeSlotView: View {
     @State private var icon = "clock"
     @State private var startTime = TimeOfDay(hour: 9, minute: 0)
     @State private var endTime = TimeOfDay(hour: 17, minute: 0)
+    @FocusState private var isNameFieldFocused: Bool
     
     private let availableIcons = [
         "clock", "sunrise", "sun.min", "sun.max", "sun.max.fill", 
@@ -231,6 +232,7 @@ private struct AddTimeSlotView: View {
             Form {
                 Section(String(localized: "TimeSlotEditorView.TimeSlotDetails.Section", bundle: .module)) {
                     TextField(String(localized: "TimeSlotEditorView.Name.Placeholder", bundle: .module), text: $name)
+                        .focused($isNameFieldFocused)
                     
                     VStack(alignment: .leading, spacing: 8) {
                         Text(String(localized: "TimeSlotEditorView.Icon.Title", bundle: .module))
@@ -331,6 +333,11 @@ private struct AddTimeSlotView: View {
                     .disabled(name.isEmpty)
                 }
             }
+        }
+        .task {
+            // Small delay to ensure TextField is fully rendered before focusing
+            try? await Task.sleep(for: .milliseconds(100))
+            isNameFieldFocused = true
         }
     }
 }
