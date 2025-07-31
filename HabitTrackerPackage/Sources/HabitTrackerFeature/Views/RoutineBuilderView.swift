@@ -1963,11 +1963,12 @@ public struct RoutineBuilderView: View {
             }
             .padding(.horizontal)
             
+            // First 4 habit types in 2x2 grid with fixed heights
             LazyVGrid(columns: [
                 GridItem(.flexible()),
                 GridItem(.flexible())
             ], spacing: 12) {
-                ForEach(habitTypeOptions, id: \.type) { habitType in
+                ForEach(basicHabitTypeOptions, id: \.type) { habitType in
                     Button {
                         withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
                             let newHabit = createHabitFromType(habitType.type)
@@ -1992,18 +1993,61 @@ public struct RoutineBuilderView: View {
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
                                     .multilineTextAlignment(.leading)
+                                    .lineLimit(3)
                             }
                             
                             Spacer()
                         }
                         .padding(.horizontal, 16)
                         .padding(.vertical, 12)
+                        .frame(height: 80) // Fixed height for all cards
+                        .frame(maxWidth: .infinity)
                         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
                     }
                     .buttonStyle(.plain)
                 }
             }
             .padding(.horizontal)
+            
+            // Question type centered below at full width
+            if let questionOption = questionHabitTypeOption {
+                Button {
+                    withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                        let newHabit = createHabitFromType(questionOption.type)
+                        if let selectedOption = selectedOption {
+                            newOptionHabitBeingCreated = (habit: newHabit, optionId: selectedOption.optionId, habitId: selectedOption.habitId)
+                        }
+                    }
+                } label: {
+                    HStack(spacing: 16) {
+                        Spacer()
+                        
+                        Image(systemName: questionOption.type.iconName)
+                            .font(.title2)
+                            .foregroundStyle(questionOption.color)
+                            .frame(width: 32, height: 32)
+                        
+                        VStack(spacing: 2) {
+                            Text(questionOption.name)
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                            
+                            Text(questionOption.description)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        
+                        Spacer()
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+                    .frame(height: 80) // Same height as other cards
+                    .frame(maxWidth: .infinity)
+                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+                }
+                .buttonStyle(.plain)
+                .padding(.horizontal)
+            }
             }
         } else {
             EmptyView()
