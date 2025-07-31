@@ -17,7 +17,7 @@ public struct RoutineBuilderView: View {
     @State private var newOptionHabitBeingCreated: (habit: Habit, optionId: UUID, habitId: UUID)?
     @State private var editingSubHabit: (habitIndex: Int, optionId: UUID, subHabitId: UUID)?
     @State private var editingSubHabitData: Habit? // Store a copy of the sub-habit being edited
-    @State private var editingOptionData: (habitId: UUID, option: ConditionalOption)?
+    @State private var editingOptionData: EditingOptionData?
     @State private var expandedHabits: Set<UUID> = []
     @State private var selectedQuestionHabit: Habit?
     @State private var selectedOption: (habitId: UUID, optionId: UUID)?
@@ -285,10 +285,18 @@ public struct RoutineBuilderView: View {
                 },
                 onEditOption: { optionId in
                     // Edit option functionality
+                    print("🔍 DEBUG: onEditOption called for optionId: \(optionId)")
+                    // Prevent duplicate triggers
+                    guard editingOptionData == nil else { 
+                        print("🔍 DEBUG: Already editing an option, ignoring")
+                        return 
+                    }
+                    
                     if case .conditional(let info) = habit.type,
                        let optionIndex = info.options.firstIndex(where: { $0.id == optionId }) {
                         let option = info.options[optionIndex]
-                        editingOptionData = (habitId: habit.id, option: option)
+                        print("🔍 DEBUG: Setting editingOptionData for option: \(option.text)")
+                        editingOptionData = EditingOptionData(habitId: habit.id, option: option)
                     }
                 },
                 onDeleteOption: { optionId in
@@ -364,6 +372,40 @@ public struct RoutineBuilderView: View {
                     }
                 }
             )
+            .swipeActions(edge: .leading, allowsFullSwipe: false) {
+                Button {
+                    print("🔍 RoutineBuilderView: Edit closure called for habit: \(habit.name)")
+                    if let index = habits.firstIndex(where: { $0.id == habit.id }) {
+                        print("🔍 RoutineBuilderView: Found habit at index \(index)")
+                        editingHabitIndex = index
+                        editingHabit = habit
+                    }
+                } label: {
+                    Label("Edit", systemImage: "pencil")
+                }
+                .tint(.blue)
+            }
+            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                Button(role: .destructive) {
+                    let _ = print("🔍 RoutineBuilderView: Deleting habit \(habit.name), current editingHabitIndex: \(editingHabitIndex?.description ?? "nil")")
+                    withAnimation(.easeInOut) {
+                        habits.removeAll { $0.id == habit.id }
+                        if selectedQuestionHabit?.id == habit.id {
+                            selectedQuestionHabit = nil
+                        }
+                        if selectedOption?.habitId == habit.id {
+                            selectedOption = nil
+                        }
+                        // Clear editing state if the deleted habit was being edited
+                        if editingHabit?.id == habit.id {
+                            editingHabitIndex = nil
+                            editingHabit = nil
+                        }
+                    }
+                } label: {
+                    Label("Delete", systemImage: "trash")
+                }
+            }
             .overlay(alignment: .topLeading) {
                 if isSelectingForSnippet {
                     Button {
@@ -401,6 +443,34 @@ public struct RoutineBuilderView: View {
                         editingHabitIndex = nil
                         editingHabit = nil
                     }
+                }
+            }
+            .swipeActions(edge: .leading, allowsFullSwipe: false) {
+                Button {
+                    print("🔍 RoutineBuilderView: Edit closure called for habit: \(habit.name)")
+                    if let index = habits.firstIndex(where: { $0.id == habit.id }) {
+                        print("🔍 RoutineBuilderView: Found habit at index \(index)")
+                        editingHabitIndex = index
+                        editingHabit = habit
+                    }
+                } label: {
+                    Label("Edit", systemImage: "pencil")
+                }
+                .tint(.blue)
+            }
+            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                Button(role: .destructive) {
+                    let _ = print("🔍 RoutineBuilderView: Deleting habit \(habit.name), current editingHabitIndex: \(editingHabitIndex?.description ?? "nil")")
+                    withAnimation(.easeInOut) {
+                        habits.removeAll { $0.id == habit.id }
+                        // Clear editing state if the deleted habit was being deleted
+                        if editingHabit?.id == habit.id {
+                            editingHabitIndex = nil
+                            editingHabit = nil
+                        }
+                    }
+                } label: {
+                    Label("Delete", systemImage: "trash")
                 }
             }
             .overlay(alignment: .topLeading) {
@@ -758,10 +828,7 @@ public struct RoutineBuilderView: View {
                 .padding()
             }
         }
-        .sheet(item: Binding<EditingOptionData?>(
-            get: { editingOptionData.map { EditingOptionData(habitId: $0.habitId, option: $0.option) } },
-            set: { editingOptionData = $0.map { ($0.habitId, $0.option) } }
-        )) { data in
+        .sheet(item: $editingOptionData) { data in
             OptionEditorView(
                 option: data.option,
                 onSave: { updatedOption in
@@ -2352,73 +2419,50 @@ struct SelectableQuestionHabitRow: View {
     var body: some View {
         VStack(spacing: 8) {
             // Main habit row (selectable)
-            Button(action: onSelect) {
-                HStack {
-                    Image(systemName: habit.type.iconName)
-                        .font(.body)
-                        .foregroundStyle(habit.swiftUIColor)
-                        .frame(width: 32)
+            HStack {
+                Image(systemName: habit.type.iconName)
+                    .font(.body)
+                    .foregroundStyle(habit.swiftUIColor)
+                    .frame(width: 32)
+                
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(habit.name)
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                        .foregroundStyle(.primary)
                     
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(habit.name)
-                            .font(.subheadline)
-                            .fontWeight(.medium)
-                            .foregroundStyle(.primary)
-                        
-                        Text(habit.type.description)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                    
-                    Spacer()
-                    
-                    if isSelected {
-                        Image(systemName: "checkmark.circle.fill")
-                            .font(.body)
-                            .foregroundStyle(.blue)
-                    }
-                    
-                    Text(habit.estimatedDuration.formattedDuration)
+                    Text(habit.type.description)
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                        .monospacedDigit()
-                    
-                    HStack(spacing: 8) {
-                        Button {
-                            onEdit()
-                        } label: {
-                            Image(systemName: "pencil")
-                                .font(.caption)
-                                .foregroundStyle(.blue)
-                                .frame(width: 28, height: 28)
-                                .background(.blue.opacity(0.1), in: Circle())
-                        }
-                        .accessibilityLabel("Edit habit")
-                        
-                        Button {
-                            onDelete()
-                        } label: {
-                            Image(systemName: "trash")
-                                .font(.caption)
-                                .foregroundStyle(.red)
-                                .frame(width: 28, height: 28)
-                                .background(.red.opacity(0.1), in: Circle())
-                        }
-                        .accessibilityLabel("Delete habit")
-                    }
                 }
-                .padding(.vertical, 8)
-                .padding(.horizontal, 12)
-                .background(
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(.regularMaterial)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 8)
-                                .stroke(isSelected ? .blue : .clear, lineWidth: 2)
-                        )
-                )
+                
+                Spacer()
+                
+                if isSelected {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.body)
+                        .foregroundStyle(.blue)
+                }
+                
+                Text(habit.estimatedDuration.formattedDuration)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .monospacedDigit()
             }
-            .buttonStyle(.plain)
+            .padding(.vertical, 8)
+            .padding(.horizontal, 12)
+            .background(
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(.regularMaterial)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(isSelected ? .blue : .clear, lineWidth: 2)
+                    )
+            )
+            .contentShape(Rectangle())
+            .onTapGesture {
+                onSelect()
+            }
             
             // Show options for conditional habits
             if case .conditional(let info) = habit.type {
@@ -2437,78 +2481,78 @@ struct SelectableQuestionHabitRow: View {
                     
                     VStack(spacing: 8) {
                         // Option in identical format to main habit row (selectable)
-                        Button(action: { onOptionSelect(option.id) }) {
-                            HStack {
-                                Image(systemName: "questionmark.circle")
-                                    .font(.body)
-                                    .foregroundStyle(optionColor)
-                                    .frame(width: 32)
+                        HStack {
+                            Image(systemName: "questionmark.circle")
+                                .font(.body)
+                                .foregroundStyle(optionColor)
+                                .frame(width: 32)
+                            
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(option.text)
+                                    .font(.subheadline)
+                                    .fontWeight(.medium)
+                                    .foregroundStyle(.primary)
                                 
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(option.text)
-                                        .font(.subheadline)
-                                        .fontWeight(.medium)
-                                        .foregroundStyle(.primary)
-                                    
-                                    Text(option.habits.count == 1 ? String(localized: "RoutineBuilderView.Building.HabitCount", bundle: .module).replacingOccurrences(of: "%lld", with: "\(option.habits.count)") : String(localized: "RoutineBuilderView.Building.HabitsCount.Plural", bundle: .module).replacingOccurrences(of: "%lld", with: "\(option.habits.count)"))
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
-                                }
-                                
-                                Spacer()
-                                
-                                // Show selection indicator for this option
-                                if let selection = selectedOption, 
-                                   selection.habitId == habit.id && selection.optionId == option.id {
-                                    Image(systemName: "checkmark.circle.fill")
-                                        .font(.body)
-                                        .foregroundStyle(.blue)
-                                }
-                                
-                                Text(String(localized: "RoutineBuilderView.Duration.Default", bundle: .module))
+                                Text(option.habits.count == 1 ? String(localized: "RoutineBuilderView.Building.HabitCount", bundle: .module).replacingOccurrences(of: "%lld", with: "\(option.habits.count)") : String(localized: "RoutineBuilderView.Building.HabitsCount.Plural", bundle: .module).replacingOccurrences(of: "%lld", with: "\(option.habits.count)"))
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
-                                    .monospacedDigit()
-                                
-                                HStack(spacing: 8) {
-                                    Button {
-                                        onEditOption(option.id)
-                                    } label: {
-                                        Image(systemName: "pencil")
-                                            .font(.caption)
-                                            .foregroundStyle(.blue)
-                                            .frame(width: 28, height: 28)
-                                            .background(.blue.opacity(0.1), in: Circle())
-                                    }
-                                    .accessibilityLabel("Edit option")
-                                    
-                                    Button {
-                                        onDeleteOption(option.id)
-                                    } label: {
-                                        Image(systemName: "trash")
-                                            .font(.caption)
-                                            .foregroundStyle(.red)
-                                            .frame(width: 28, height: 28)
-                                            .background(.red.opacity(0.1), in: Circle())
-                                    }
-                                    .accessibilityLabel("Delete option")
-                                }
                             }
-                            .padding(.vertical, 8)
-                            .padding(.horizontal, 12)
-                            .background(
-                                RoundedRectangle(cornerRadius: 8)
-                                    .fill(.regularMaterial)
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 8)
-                                            .stroke(
-                                                (selectedOption?.habitId == habit.id && selectedOption?.optionId == option.id) ? .blue : .clear, 
-                                                lineWidth: 2
-                                            )
-                                    )
-                            )
+                            
+                            Spacer()
+                            
+                            // Show selection indicator for this option
+                            if let selection = selectedOption, 
+                               selection.habitId == habit.id && selection.optionId == option.id {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .font(.body)
+                                    .foregroundStyle(.blue)
+                            }
+                            
+                            Text(String(localized: "RoutineBuilderView.Duration.Default", bundle: .module))
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .monospacedDigit()
+                            
+                            // Edit and Delete buttons for options
+                            HStack(spacing: 8) {
+                                Button {
+                                    print("🔍 DEBUG: Edit option button tapped for option: \(option.text)")
+                                    onEditOption(option.id)
+                                } label: {
+                                    Image(systemName: "pencil")
+                                        .font(.caption)
+                                        .foregroundStyle(.blue)
+                                }
+                                .buttonStyle(.plain)
+                                .disabled(selectedOption?.optionId == option.id) // Disable if this option is selected
+                                
+                                Button {
+                                    onDeleteOption(option.id)
+                                } label: {
+                                    Image(systemName: "trash")
+                                        .font(.caption)
+                                        .foregroundStyle(.red)
+                                }
+                                .buttonStyle(.plain)
+                            }
                         }
-                        .buttonStyle(.plain)
+                        .padding(.vertical, 8)
+                        .padding(.horizontal, 12)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(.regularMaterial)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .stroke(
+                                            (selectedOption?.habitId == habit.id && selectedOption?.optionId == option.id) ? .blue : .clear, 
+                                            lineWidth: 2
+                                        )
+                                )
+                        )
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            onOptionSelect(option.id)
+                        }
                         
                         // Habits for this option (indented to show hierarchy)
                         if !option.habits.isEmpty {
@@ -2542,32 +2586,29 @@ struct SelectableQuestionHabitRow: View {
                                         .foregroundStyle(.secondary)
                                         .monospacedDigit()
                                     
+                                    // Edit and Delete buttons for sub-habits
                                     HStack(spacing: 8) {
                                         Button {
-                                            print("🔍 DEBUG: Edit sub-habit button tapped")
+                                            print("🔍 DEBUG: Edit sub-habit button pressed")
                                             print("🔍 DEBUG: - option.id: \(option.id)")
                                             print("🔍 DEBUG: - sub-habit.id: \(habit.id)")
                                             print("🔍 DEBUG: - sub-habit.name: \(habit.name)")
                                             onEditSubHabit(option.id, habit.id)
                                         } label: {
                                             Image(systemName: "pencil")
-                                                .font(.caption)
+                                                .font(.caption2)
                                                 .foregroundStyle(.blue)
-                                                .frame(width: 28, height: 28)
-                                                .background(.blue.opacity(0.1), in: Circle())
                                         }
-                                        .accessibilityLabel("Edit sub-habit")
+                                        .buttonStyle(.plain)
                                         
                                         Button {
                                             onDeleteSubHabit(option.id, habit.id)
                                         } label: {
                                             Image(systemName: "trash")
-                                                .font(.caption)
+                                                .font(.caption2)
                                                 .foregroundStyle(.red)
-                                                .frame(width: 28, height: 28)
-                                                .background(.red.opacity(0.1), in: Circle())
                                         }
-                                        .accessibilityLabel("Delete sub-habit")
+                                        .buttonStyle(.plain)
                                     }
                                 }
                                 .padding(.vertical, 8)

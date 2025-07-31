@@ -55,7 +55,9 @@
       "Bash(sed:*)",
       "mcp__XcodeBuildMCP__build_sim_id_ws",
       "mcp__XcodeBuildMCP__build_dev_ws",
-      "Bash(rg:*)"
+      "Bash(rg:*)",
+      "mcp__gemini-cli__ask-gemini",
+      "mcp__XcodeBuildMCP__swipe"
     ],
     "deny": []
   }

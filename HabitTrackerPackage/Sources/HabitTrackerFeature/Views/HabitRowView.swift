@@ -38,34 +38,6 @@ public struct HabitRowView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .monospacedDigit()
-                
-                HStack(spacing: 8) {
-                    Button {
-                        print("🔍 HabitRowView: Edit button tapped for habit: \(habit.name)")
-                        onEdit()
-                    } label: {
-                        Image(systemName: "pencil")
-                            .font(.caption)
-                            .foregroundStyle(.blue)
-                            .frame(width: 28, height: 28)
-                            .background(.blue.opacity(0.1), in: Circle())
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("Edit habit")
-                    
-                    Button {
-                        print("🔍 HabitRowView: Delete button tapped for habit: \(habit.name)")
-                        onDelete()
-                    } label: {
-                        Image(systemName: "trash")
-                            .font(.caption)
-                            .foregroundStyle(.red)
-                            .frame(width: 28, height: 28)
-                            .background(.red.opacity(0.1), in: Circle())
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("Delete habit")
-                }
             }
             .padding(.vertical, 8)
             .padding(.horizontal, 12)
@@ -76,26 +48,13 @@ public struct HabitRowView: View {
                 conditionalOptionsContent(info: info)
             }
         }
+        .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(habit.name), \(habit.type.description), estimated duration \(habit.estimatedDuration.formattedDuration)")
         .accessibilityHint("Double tap to edit, or use actions")
         .accessibilityActions {
             Button("Edit") { onEdit() }
             Button("Delete") { onDelete() }
-        }
-        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-            Button {
-                onEdit()
-            } label: {
-                Label("Edit", systemImage: "pencil")
-            }
-            .tint(.blue)
-            
-            Button(role: .destructive) {
-                onDelete()
-            } label: {
-                Label("Delete", systemImage: "trash")
-            }
         }
         .contextMenu {
             Button {
@@ -127,7 +86,7 @@ public struct HabitRowView: View {
         VStack(spacing: 8) {
             // Options displayed exactly like main habit rows
             if !info.options.isEmpty {
-                ForEach(Array(info.options.enumerated()), id: \.element.id) { index, option in
+                List(Array(info.options.enumerated()), id: \.element.id) { index, option in
                     let optionColor = optionColors[index % optionColors.count]
                     
                     VStack(spacing: 8) {
@@ -163,7 +122,7 @@ public struct HabitRowView: View {
                         
                         // Habits for this option (indented to show hierarchy)
                         if !option.habits.isEmpty {
-                            ForEach(option.habits) { habit in
+                            List(option.habits) { habit in
                                 HStack {
                                     // Visual indentation - color-coded line to show hierarchy
                                     Rectangle()
@@ -197,10 +156,22 @@ public struct HabitRowView: View {
                                 .padding(.horizontal, 12)
                                 .padding(.leading, 32) // Additional left padding for indentation
                                 .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8))
+                                .listRowBackground(Color.clear)
+                                .listRowSeparator(.hidden)
+                                .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 4, trailing: 0))
                             }
+                            .listStyle(.plain)
+                            .scrollDisabled(true)
+                            .frame(height: CGFloat(option.habits.count) * 56)
                         }
                     }
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
+                    .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 4, trailing: 0))
                 }
+                .listStyle(.plain)
+                .scrollDisabled(true)
+                .frame(height: CGFloat(info.options.count) * 120)
             }
         }
     }
