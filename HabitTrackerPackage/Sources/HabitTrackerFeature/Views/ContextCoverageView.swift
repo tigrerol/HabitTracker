@@ -30,14 +30,14 @@ public struct ContextCoverageView: View {
     @Environment(RoutineService.self) private var routineService
     @Environment(DayCategoryManager.self) private var dayCategoryManager
     
-    @State private var xAxisDimension: ContextDimension = .timeSlot
-    @State private var yAxisDimension: ContextDimension = .location
+    @State private var xAxisDimension: ContextDimension = .location
+    @State private var yAxisDimension: ContextDimension = .timeSlot
     @State private var filterDimension: ContextDimension = .dayCategory
     
     @State private var selectedFilterValue: Any = DayCategory.weekday
     @State private var showingRoutineDetails = false
     @State private var selectedCellRoutines: [RoutineTemplate] = []
-    @State private var selectedContext: (x: Any, y: Any, filter: Any) = (TimeSlot.morning, ExtendedLocationType.builtin(.home), DayCategory.weekday)
+    @State private var selectedContext: (x: Any, y: Any, filter: Any) = (ExtendedLocationType.builtin(.home), TimeSlot.morning, DayCategory.weekday)
     @State private var customLocations: [CustomLocation] = []
     
     private var availableDayCategories: [DayCategory] {
