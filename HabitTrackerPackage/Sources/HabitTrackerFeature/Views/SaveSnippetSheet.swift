@@ -7,6 +7,7 @@ struct SaveSnippetSheet: View {
     
     let selectedHabits: [Habit]
     let onSave: () -> Void
+    let onCancel: (() -> Void)?
     
     @State private var snippetName: String = ""
     
@@ -66,6 +67,7 @@ struct SaveSnippetSheet: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {
+                        onCancel?()
                         dismiss()
                     }
                 }

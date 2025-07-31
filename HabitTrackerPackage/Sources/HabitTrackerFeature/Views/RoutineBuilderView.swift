@@ -23,7 +23,7 @@ public struct RoutineBuilderView: View {
     @State private var selectedOption: (habitId: UUID, optionId: UUID)?
     @State private var contextRule: RoutineContextRule?
     @State private var customLocations: [CustomLocation] = []
-    @State private var smartSelectionEnabled = true // Enable by default
+    @State private var smartSelectionExpanded = false
     @State private var selectedTimeSlots: Set<TimeSlot> = []
     @State private var selectedDayCategories: Set<String> = []
     @State private var selectedLocationIds: Set<String> = []
@@ -83,7 +83,6 @@ public struct RoutineBuilderView: View {
                 
                 // Initialize smart selection state from existing context rule
                 if let rule = template.contextRule {
-                    smartSelectionEnabled = true
                     selectedTimeSlots = Set(rule.timeSlots)
                     selectedDayCategories = Set(rule.dayCategoryIds)
                     selectedLocationIds = Set(rule.locationIds)
@@ -850,10 +849,17 @@ public struct RoutineBuilderView: View {
         }
         .sheet(isPresented: $showingSaveSnippetSheet) {
             let selectedHabits = habits.filter { selectedHabitsForSnippet.contains($0.id) }
-            SaveSnippetSheet(selectedHabits: selectedHabits) {
-                isSelectingForSnippet = false
-                selectedHabitsForSnippet.removeAll()
-            }
+            SaveSnippetSheet(
+                selectedHabits: selectedHabits,
+                onSave: {
+                    isSelectingForSnippet = false
+                    selectedHabitsForSnippet.removeAll()
+                },
+                onCancel: {
+                    isSelectingForSnippet = false
+                    selectedHabitsForSnippet.removeAll()
+                }
+            )
         }
         .sheet(isPresented: $showingSnippetBrowser) {
             SnippetBrowserView { selectedHabits in
@@ -1139,28 +1145,40 @@ public struct RoutineBuilderView: View {
     
     private var smartSelectionSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            // Header with toggle
-            HStack {
-                Label {
-                    Text("Smart Selection")
-                        .font(.subheadline)
-                        .fontWeight(.medium)
-                } icon: {
-                    Image(systemName: "sparkles")
-                        .foregroundStyle(.blue)
+            // Header with disclosure arrow
+            Button {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    smartSelectionExpanded.toggle()
                 }
-                
-                Spacer()
-                
-                Toggle("", isOn: $smartSelectionEnabled)
-                    .toggleStyle(.switch)
+            } label: {
+                HStack {
+                    Label {
+                        Text("Smart Selection Settings")
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                    } icon: {
+                        Image(systemName: "sparkles")
+                            .foregroundStyle(.blue)
+                    }
+                    
+                    Spacer()
+                    
+                    Image(systemName: "chevron.right")
+                        .font(.caption)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(.secondary)
+                        .rotationEffect(.degrees(smartSelectionExpanded ? 90 : 0))
+                }
+                .contentShape(Rectangle())
             }
+            .buttonStyle(.plain)
             
-            if smartSelectionEnabled {
+            if smartSelectionExpanded {
                 VStack(alignment: .leading, spacing: 12) {
                     Text("When should this routine be suggested?")
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                        .padding(.top, 4)
                     
                     // Time Slots
                     VStack(alignment: .leading, spacing: 6) {
@@ -1385,28 +1403,40 @@ public struct RoutineBuilderView: View {
     
     private var smartSelectionEditingSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            // Header with toggle
-            HStack {
-                Label {
-                    Text("Smart Selection")
-                        .font(.subheadline)
-                        .fontWeight(.medium)
-                } icon: {
-                    Image(systemName: "sparkles")
-                        .foregroundStyle(.blue)
+            // Header with disclosure arrow
+            Button {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    smartSelectionExpanded.toggle()
                 }
-                
-                Spacer()
-                
-                Toggle("", isOn: $smartSelectionEnabled)
-                    .toggleStyle(.switch)
+            } label: {
+                HStack {
+                    Label {
+                        Text("Smart Selection Settings")
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                    } icon: {
+                        Image(systemName: "sparkles")
+                            .foregroundStyle(.blue)
+                    }
+                    
+                    Spacer()
+                    
+                    Image(systemName: "chevron.right")
+                        .font(.caption)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(.secondary)
+                        .rotationEffect(.degrees(smartSelectionExpanded ? 90 : 0))
+                }
+                .contentShape(Rectangle())
             }
+            .buttonStyle(.plain)
             
-            if smartSelectionEnabled {
+            if smartSelectionExpanded {
                 VStack(alignment: .leading, spacing: 12) {
                     Text("When should this routine be suggested?")
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                        .padding(.top, 4)
                     
                     // Time Slots
                     VStack(alignment: .leading, spacing: 6) {
@@ -1894,7 +1924,7 @@ public struct RoutineBuilderView: View {
         
         // Create context rule from smart selection state
         let finalContextRule: RoutineContextRule? = {
-            if smartSelectionEnabled && (!selectedTimeSlots.isEmpty || !selectedDayCategories.isEmpty || !selectedLocationIds.isEmpty) {
+            if (!selectedTimeSlots.isEmpty || !selectedDayCategories.isEmpty || !selectedLocationIds.isEmpty) {
                 return RoutineContextRule(
                     timeSlots: selectedTimeSlots,
                     dayCategoryIds: selectedDayCategories,
