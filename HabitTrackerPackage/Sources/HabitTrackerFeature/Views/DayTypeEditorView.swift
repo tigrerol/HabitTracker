@@ -332,6 +332,7 @@ private struct CategoryCreatorView: View {
     @State private var name: String
     @State private var selectedIcon: String
     @State private var selectedColor: Color
+    @FocusState private var isNameFieldFocused: Bool
     
     private let availableIcons = [
         "briefcase", "house", "figure.walk", "dumbbell", "book", "gamecontroller",
@@ -359,6 +360,7 @@ private struct CategoryCreatorView: View {
             Form {
                 Section("Category Details") {
                     TextField("Category Name", text: $name)
+                        .focused($isNameFieldFocused)
                     
                     VStack(alignment: .leading, spacing: 8) {
                         Text(String(localized: "DayTypeEditorView.Icon.Title", bundle: .module))
@@ -417,6 +419,11 @@ private struct CategoryCreatorView: View {
                     .disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 }
             }
+        }
+        .task {
+            // Small delay to ensure TextField is fully rendered before focusing
+            try? await Task.sleep(for: .milliseconds(100))
+            isNameFieldFocused = true
         }
     }
     
