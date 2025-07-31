@@ -29,6 +29,7 @@ public struct HabitEditorView: View {
     }
     @State private var subtasks: [Subtask] = []
     @State private var sequenceSteps: [SequenceStep] = []
+    @FocusState private var isNameFieldFocused: Bool
     
     let onSave: (Habit) -> Void
     
@@ -90,6 +91,7 @@ public struct HabitEditorView: View {
                     
                     TextField(String(localized: "HabitEditorView.BasicInformation.HabitName.Placeholder", bundle: .module), text: $habitName)
                         .textFieldStyle(.roundedBorder)
+                        .focused($isNameFieldFocused)
                     
                     
                     // Color picker
@@ -154,6 +156,11 @@ public struct HabitEditorView: View {
                     .fontWeight(.semibold)
                 }
             }
+        }
+        .task {
+            // Small delay to ensure TextField is fully rendered before focusing
+            try? await Task.sleep(for: .milliseconds(100))
+            isNameFieldFocused = true
         }
     }
     
