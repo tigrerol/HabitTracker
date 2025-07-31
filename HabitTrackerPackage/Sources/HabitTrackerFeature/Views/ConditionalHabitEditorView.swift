@@ -3,7 +3,6 @@ import SwiftUI
 /// View for creating and editing conditional habits
 public struct ConditionalHabitEditorView: View {
     @Environment(\.dismiss) private var dismiss
-    @State private var habitName: String
     @State private var question: String
     @State private var options: [ConditionalOption]
     @State private var color: String
@@ -31,16 +30,15 @@ public struct ConditionalHabitEditorView: View {
         // Initialize state from existing habit or defaults
         if let existingHabit = existingHabit,
            case .conditional(let info) = existingHabit.type {
-            _habitName = State(initialValue: existingHabit.name)
-            _question = State(initialValue: info.question)
+            // For existing habits, use the habit name if question is empty
+            _question = State(initialValue: info.question.isEmpty ? existingHabit.name : info.question)
             _options = State(initialValue: info.options)
             _color = State(initialValue: existingHabit.color)
         } else {
-            _habitName = State(initialValue: "")
             _question = State(initialValue: "")
             _options = State(initialValue: [
-                ConditionalOption(text: "Option 1", habits: []),
-                ConditionalOption(text: "Option 2", habits: [])
+                ConditionalOption(text: "Yes", habits: []),
+                ConditionalOption(text: "No", habits: [])
             ])
             _color = State(initialValue: "#007AFF")
         }
@@ -67,6 +65,9 @@ public struct ConditionalHabitEditorView: View {
                         saveHabit()
                     }
                     .disabled(!isValid)
+                    .onAppear {
+                        print("🔍 Save button: isValid = \(isValid), question = '\(question)', options.count = \(options.count)")
+                    }
                 }
             }
             .sheet(item: $selectedOptionForBuilder) { option in
@@ -141,8 +142,13 @@ public struct ConditionalHabitEditorView: View {
     @ViewBuilder
     private var habitDetailsSection: some View {
         Section(String(localized: "ConditionalHabitEditorView.HabitDetails.Section", bundle: .module)) {
-            TextField(String(localized: "ConditionalHabitEditorView.HabitName.Placeholder", bundle: .module), text: $habitName)
             TextField(String(localized: "ConditionalHabitEditorView.Question.Placeholder", bundle: .module), text: $question)
+                .onAppear {
+                    print("🔍 ConditionalHabitEditorView: question = '\(question)', isValid = \(isValid)")
+                }
+                .onChange(of: question) { oldValue, newValue in
+                    print("🔍 ConditionalHabitEditorView: question changed from '\(oldValue)' to '\(newValue)', isValid = \(isValid)")
+                }
             colorPickerView
         }
     }
@@ -181,22 +187,14 @@ public struct ConditionalHabitEditorView: View {
             ForEach(Array(options.enumerated()), id: \.element.id) { index, option in
                 OptionCard(
                     option: optionBinding(for: index),
-                    onDelete: {
+                    onDelete: options.count > 2 ? {
                         optionToDelete = option
                         showingDeleteAlert = true
-                    },
+                    } : nil,
                     onEditPath: {
                         selectedOptionForBuilder = option
                     }
                 )
-            }
-            
-            if options.count < 4 {
-                Button {
-                    addNewOption()
-                } label: {
-                    Label(String(localized: "ConditionalHabitEditorView.AddOption.Label", bundle: .module), systemImage: "plus.circle.fill")
-                }
             }
         }
     }
@@ -223,17 +221,8 @@ public struct ConditionalHabitEditorView: View {
     }
     
     private var isValid: Bool {
-        !habitName.isEmpty && !question.isEmpty && options.count >= 2
+        !question.isEmpty && options.count >= 2
     }
-    
-    private func addNewOption() {
-        let newOption = ConditionalOption(
-            text: "\(String(localized: "ConditionalHabitEditorView.Option.DefaultPrefix", bundle: .module)) \(options.count + 1)",
-            habits: []
-        )
-        options.append(newOption)
-    }
-    
     
     private func saveHabit() {
         let conditionalInfo = ConditionalHabitInfo(
@@ -243,7 +232,7 @@ public struct ConditionalHabitEditorView: View {
         
         let habit = Habit(
             id: existingHabit?.id ?? UUID(),
-            name: habitName,
+            name: question,  // Use question as the habit name
             type: .conditional(conditionalInfo),
             isOptional: existingHabit?.isOptional ?? false,
             notes: existingHabit?.notes,
@@ -259,7 +248,7 @@ public struct ConditionalHabitEditorView: View {
 
 private struct OptionCard: View {
     @Binding var option: ConditionalOption
-    let onDelete: () -> Void
+    let onDelete: (() -> Void)?
     let onEditPath: () -> Void
     
     var body: some View {
@@ -275,11 +264,13 @@ private struct OptionCard: View {
                 
                 Spacer()
                 
-                Button(action: onDelete) {
-                    Image(systemName: "trash")
-                        .foregroundStyle(.red)
+                if let onDelete = onDelete {
+                    Button(action: onDelete) {
+                        Image(systemName: "trash")
+                            .foregroundStyle(.red)
+                    }
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
             }
             
             // Habits preview and actions
@@ -290,17 +281,12 @@ private struct OptionCard: View {
                         .foregroundStyle(.secondary)
                         .frame(maxWidth: .infinity)
                     
-                    HStack(spacing: 12) {
-                        QuickHabitButton(title: String(localized: "ConditionalHabitEditorView.Timer.QuickButton", bundle: .module), icon: "timer") {
-                            addQuickHabit(.timer(style: .down, duration: 300))
-                        }
-                        QuickHabitButton(title: String(localized: "ConditionalHabitEditorView.Task.QuickButton", bundle: .module), icon: "checkmark.square") {
-                            addQuickHabit(.task(subtasks: []))
-                        }
-                        QuickHabitButton(title: String(localized: "ConditionalHabitEditorView.Counter.QuickButton", bundle: .module), icon: "list.bullet") {
-                            addQuickHabit(.tracking(.counter(items: [String(localized: "ConditionalHabitEditorView.CounterItem.Default", bundle: .module)])))
-                        }
+                    // Edit path button for empty options
+                    Button(String(localized: "ConditionalHabitEditorView.EditPath.Button", bundle: .module)) {
+                        onEditPath()
                     }
+                    .font(.caption)
+                    .foregroundStyle(.blue)
                 }
             } else {
                 VStack(alignment: .leading, spacing: 6) {
@@ -340,40 +326,9 @@ private struct OptionCard: View {
         .background(Color.gray.opacity(0.1), in: RoundedRectangle(cornerRadius: 8))
     }
     
-    private func addQuickHabit(_ type: HabitType) {
-        let habit = Habit(
-            name: type.quickName,
-            type: type,
-            order: option.habits.count
-        )
-        var updatedOption = option
-        updatedOption.habits.append(habit)
-        option = updatedOption
-    }
 }
 
 // MARK: - Supporting Views
-
-private struct QuickHabitButton: View {
-    let title: String
-    let icon: String
-    let action: () -> Void
-    
-    var body: some View {
-        Button(action: action) {
-            VStack(spacing: 2) {
-                Image(systemName: icon)
-                    .font(.caption)
-                Text(title)
-                    .font(.caption2)
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 6)
-            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 6))
-        }
-        .buttonStyle(.plain)
-    }
-}
 
 private struct CompactHabitRow: View {
     @Binding var habit: Habit

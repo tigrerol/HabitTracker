@@ -872,7 +872,13 @@ public struct RoutineBuilderView: View {
         HabitTypeOption(
             name: "Question",
             description: "Conditional path",
-            type: .conditional(ConditionalHabitInfo(question: "", options: [])),
+            type: .conditional(ConditionalHabitInfo(
+                question: "", 
+                options: [
+                    ConditionalOption(text: "Yes", habits: []),
+                    ConditionalOption(text: "No", habits: [])
+                ]
+            )),
             color: .indigo
         )
     }
