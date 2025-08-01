@@ -97,30 +97,29 @@ public struct HabitEditorView: View {
                             VStack(alignment: .leading, spacing: 8) {
                                 Text(String(localized: "HabitEditorView.BasicInformation.Color.Label", bundle: .module))
                                     .customCaption()
-                            .foregroundStyle(.secondary)
-                        
-                        HStack(spacing: 12) {
-                            ForEach(["#34C759", "#007AFF", "#FF9500", "#FF3B30", "#AF52DE", "#5AC8FA", "#FFD60A", "#FF2D55"], id: \.self) { color in
-                                Circle()
-                                    .fill(Color(hex: color) ?? .blue)
-                                    .frame(width: 32, height: 32)
-                                    .overlay {
-                                        if habitColor == color {
-                                            Image(systemName: "checkmark")
-                                                .font(.caption)
-                                                .fontWeight(.bold)
-                                                .foregroundStyle(.white)
-                                        }
+                                    .foregroundStyle(.secondary)
+                                
+                                HStack(spacing: 12) {
+                                    ForEach(["#34C759", "#007AFF", "#FF9500", "#FF3B30", "#AF52DE", "#5AC8FA", "#FFD60A", "#FF2D55"], id: \.self) { color in
+                                        Circle()
+                                            .fill(Color(hex: color) ?? .blue)
+                                            .frame(width: 32, height: 32)
+                                            .overlay {
+                                                if habitColor == color {
+                                                    Image(systemName: "checkmark")
+                                                        .font(.caption)
+                                                        .fontWeight(.bold)
+                                                        .foregroundStyle(.white)
+                                                }
+                                            }
+                                            .onTapGesture {
+                                                habitColor = color
+                                            }
                                     }
-                                    .onTapGesture {
-                                        habitColor = color
-                                    }
+                                }
                             }
                         }
                     }
-                }
-            }
-        }
                     
                     // Type-specific settings card
                     ModernCard {
