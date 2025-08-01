@@ -1,5 +1,8 @@
 import SwiftUI
 import HabitTrackerFeature
+#if canImport(ActivityKit)
+import ActivityKit
+#endif
 
 @main
 struct HabitTrackerApp: App {

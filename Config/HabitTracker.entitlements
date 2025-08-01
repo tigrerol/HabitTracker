@@ -5,6 +5,12 @@
 	<!-- Base entitlements - add your app's entitlements here -->
 	<!-- AI agents can safely modify this file to add capabilities -->
 	
+	<!-- Live Activities support for timer habits -->
+	<!-- Temporarily disabled for development - uncomment when ready for Live Activities
+	<key>com.apple.developer.ActivityKit</key>
+	<true/>
+	-->
+	
 	<!-- Example entitlements (commented out by default):
 	
 	<key>com.apple.developer.healthkit</key>

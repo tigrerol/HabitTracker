@@ -2,6 +2,9 @@ import SwiftUI
 #if canImport(UIKit)
 import UIKit
 #endif
+#if canImport(ActivityKit)
+import ActivityKit
+#endif
 
 /// Example enhanced habit views with comprehensive accessibility support
 /// These demonstrate how to implement accessibility across different habit types
@@ -173,6 +176,19 @@ struct AccessibleTimerHabitView: View {
         // Haptic feedback for timer start
         HapticManager.trigger(.medium)
         
+        // Start Live Activity if available
+        #if canImport(ActivityKit)
+        if #available(iOS 16.1, *) {
+            Task {
+                await LiveActivityManager.shared.startTimerActivity(
+                    for: habit,
+                    duration: defaultDuration,
+                    startTime: Date()
+                )
+            }
+        }
+        #endif
+        
         // Announce start to VoiceOver
         #if canImport(UIKit)
         UIAccessibility.post(
@@ -185,6 +201,21 @@ struct AccessibleTimerHabitView: View {
             Task { @MainActor in
                 if timeRemaining > 0 {
                     timeRemaining -= 1
+                    
+                    // Update Live Activity every 5 seconds or when near completion
+                    let currentProgress = 1.0 - (timeRemaining / defaultDuration)
+                    if Int(timeRemaining) % 5 == 0 || timeRemaining <= 30 {
+                        #if canImport(ActivityKit)
+                        if #available(iOS 16.1, *) {
+                            await LiveActivityManager.shared.updateTimerActivity(
+                                for: habit.id.uuidString,
+                                currentProgress: currentProgress,
+                                timeRemaining: timeRemaining,
+                                isRunning: true
+                            )
+                        }
+                        #endif
+                    }
                 } else {
                     timerFinished()
                 }
@@ -199,6 +230,21 @@ struct AccessibleTimerHabitView: View {
         
         // Haptic feedback for timer pause
         HapticManager.trigger(.light)
+        
+        // Update Live Activity to paused state
+        #if canImport(ActivityKit)
+        if #available(iOS 16.1, *) {
+            Task {
+                let currentProgress = 1.0 - (timeRemaining / defaultDuration)
+                await LiveActivityManager.shared.updateTimerActivity(
+                    for: habit.id.uuidString,
+                    currentProgress: currentProgress,
+                    timeRemaining: timeRemaining,
+                    isRunning: false
+                )
+            }
+        }
+        #endif
         
         // Announce pause to VoiceOver
         #if canImport(UIKit)
@@ -224,6 +270,18 @@ struct AccessibleTimerHabitView: View {
         // Provide completion feedback
         HapticManager.trigger(.success)
         
+        // Complete Live Activity
+        #if canImport(ActivityKit)
+        if #available(iOS 16.1, *) {
+            Task {
+                await LiveActivityManager.shared.completeTimerActivity(
+                    for: habit.id.uuidString,
+                    actualDuration: actualDuration
+                )
+            }
+        }
+        #endif
+        
         // Announce completion to VoiceOver
         #if canImport(UIKit)
         UIAccessibility.post(
@@ -245,6 +303,18 @@ struct AccessibleTimerHabitView: View {
         
         // Haptic feedback for early completion
         HapticManager.trigger(.success)
+        
+        // Complete Live Activity
+        #if canImport(ActivityKit)
+        if #available(iOS 16.1, *) {
+            Task {
+                await LiveActivityManager.shared.completeTimerActivity(
+                    for: habit.id.uuidString,
+                    actualDuration: actualDuration
+                )
+            }
+        }
+        #endif
         
         // Announce early completion
         #if canImport(UIKit)
