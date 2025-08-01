@@ -8,6 +8,13 @@ public struct HabitTrackerFeature {
     @MainActor
     public static func morningRoutineView() -> some View {
         MorningRoutineView()
+            .withDynamicTheme()
+    }
+    
+    @MainActor
+    public static func themeCustomizationView() -> some View {
+        ThemeCustomizationView()
+            .withDynamicTheme()
     }
     
     // MARK: - Watch Connectivity
@@ -25,4 +32,10 @@ public struct HabitTrackerFeature {
         LiveActivityManager.shared
     }
     #endif
+    
+    // MARK: - Theme Management
+    @MainActor
+    public static var themeManager: ThemeManager {
+        ThemeManager.shared
+    }
 }

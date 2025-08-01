@@ -43,11 +43,7 @@ struct SmartTemplateSelectionView: View {
             
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button {
-                        showingContextSettings = true
-                    } label: {
-                        Image(systemName: "gearshape")
-                    }
+                    SettingsButton()
                 }
                 
                 ToolbarItem(placement: .confirmationAction) {

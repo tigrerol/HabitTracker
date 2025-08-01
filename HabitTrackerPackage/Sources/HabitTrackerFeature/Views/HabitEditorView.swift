@@ -126,7 +126,7 @@ public struct HabitEditorView: View {
                         VStack(alignment: .leading, spacing: 16) {
                             HStack {
                                 Image(systemName: habit.type.iconName)
-                                    .foregroundColor(Theme.accent)
+                                    .foregroundColor(Theme.Colors.accentTeal)
                                 Text(habitTypeTitle)
                                     .customHeadline()
                             }

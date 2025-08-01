@@ -107,7 +107,7 @@ public struct RoutineBuilderView: View {
                     // Step indicator
                     HStack(spacing: 4) {
                         Circle()
-                            .fill(Theme.accent)
+                            .fill(Theme.Colors.accentTeal)
                             .frame(width: 8, height: 8)
                         Circle()
                             .fill(Color.gray.opacity(0.3))
@@ -158,7 +158,7 @@ public struct RoutineBuilderView: View {
                                                 .foregroundColor(templateName == suggestion ? .white : Theme.text)
                                                 .padding(.horizontal, 16)
                                                 .padding(.vertical, 8)
-                                                .background(templateName == suggestion ? Theme.accent : Theme.cardBackground, in: Capsule())
+                                                .background(templateName == suggestion ? Theme.Colors.accentTeal : Theme.cardBackground, in: Capsule())
                                         }
                                         .buttonStyle(ModernButtonStyle())
                                     }
@@ -186,7 +186,7 @@ public struct RoutineBuilderView: View {
                                             .overlay {
                                                 if templateColor == color {
                                                     Circle()
-                                                        .stroke(Theme.accent, lineWidth: 3)
+                                                        .stroke(Theme.Colors.accentTeal, lineWidth: 3)
                                                     Image(systemName: "checkmark")
                                                         .font(.caption)
                                                         .fontWeight(.bold)

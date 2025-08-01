@@ -7,6 +7,7 @@ public struct PrimaryButton: View {
     let action: () -> Void
     let isEnabled: Bool
     let isLoading: Bool
+    @Environment(\.themeManager) private var themeManager
     
     public init(_ title: String, isEnabled: Bool = true, isLoading: Bool = false, action: @escaping () -> Void) {
         self.title = title
@@ -37,7 +38,7 @@ public struct PrimaryButton: View {
             .frame(height: 50)
             .background(
                 Capsule()
-                    .fill(isEnabled ? Theme.accent : Color.gray)
+                    .fill(isEnabled ? themeManager.currentAccentColor : Color.gray)
             )
         }
         .disabled(!isEnabled || isLoading)
@@ -50,6 +51,7 @@ public struct PrimaryButton: View {
 public struct SecondaryButton: View {
     let title: String
     let action: () -> Void
+    @Environment(\.themeManager) private var themeManager
     
     public init(_ title: String, action: @escaping () -> Void) {
         self.title = title
@@ -63,12 +65,12 @@ public struct SecondaryButton: View {
         }) {
             Text(title)
                 .customSubheadline()
-                .foregroundColor(Theme.accent)
+                .foregroundColor(themeManager.currentAccentColor)
                 .frame(maxWidth: .infinity)
                 .frame(height: 50)
                 .background(
                     Capsule()
-                        .stroke(Theme.accent, lineWidth: 2)
+                        .stroke(themeManager.currentAccentColor, lineWidth: 2)
                 )
         }
         .buttonStyle(ScaleButtonStyle())
@@ -82,6 +84,7 @@ public struct IconButton: View {
     let title: String?
     let action: () -> Void
     let style: ButtonStyle
+    @Environment(\.themeManager) private var themeManager
     
     public enum ButtonStyle {
         case primary
@@ -123,7 +126,7 @@ public struct IconButton: View {
         case .primary:
             return .white
         case .secondary:
-            return Theme.accent
+            return themeManager.currentAccentColor
         case .minimal:
             return Theme.text
         }
@@ -134,10 +137,10 @@ public struct IconButton: View {
         switch style {
         case .primary:
             Capsule()
-                .fill(Theme.accent)
+                .fill(themeManager.currentAccentColor)
         case .secondary:
             Capsule()
-                .stroke(Theme.accent, lineWidth: 2)
+                .stroke(themeManager.currentAccentColor, lineWidth: 2)
         case .minimal:
             Capsule()
                 .fill(Color.gray.opacity(0.1))
@@ -150,6 +153,7 @@ public struct IconButton: View {
 public struct FloatingActionButton: View {
     let icon: String
     let action: () -> Void
+    @Environment(\.themeManager) private var themeManager
     
     public init(icon: String, action: @escaping () -> Void) {
         self.icon = icon
@@ -169,13 +173,13 @@ public struct FloatingActionButton: View {
                     Circle()
                         .fill(
                             LinearGradient(
-                                colors: [Theme.accent, Theme.accent.opacity(0.8)],
+                                colors: [themeManager.currentAccentColor, themeManager.currentAccentColor.opacity(0.8)],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
                             )
                         )
                 )
-                .shadow(color: Theme.accent.opacity(0.3), radius: 8, x: 0, y: 4)
+                .shadow(color: themeManager.currentAccentColor.opacity(0.3), radius: 8, x: 0, y: 4)
         }
         .buttonStyle(BounceButtonStyle())
     }
@@ -210,6 +214,7 @@ public struct BounceButtonStyle: ButtonStyle {
 public struct AnimatedToggle: View {
     @Binding var isOn: Bool
     let label: String
+    @Environment(\.themeManager) private var themeManager
     
     public init(_ label: String, isOn: Binding<Bool>) {
         self.label = label
@@ -225,7 +230,7 @@ public struct AnimatedToggle: View {
             
             Toggle("", isOn: $isOn)
                 .labelsHidden()
-                .toggleStyle(SwitchToggleStyle(tint: Theme.accent))
+                .toggleStyle(SwitchToggleStyle(tint: themeManager.currentAccentColor))
         }
         .sensoryFeedback(.selection, trigger: isOn)
     }

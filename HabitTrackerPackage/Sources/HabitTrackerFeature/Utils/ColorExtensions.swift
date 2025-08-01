@@ -154,6 +154,6 @@ public struct Theme {
         dark: Colors.darkSecondaryText
     )
     
-    // Primary accent - customize based on brand preference
+    // Primary accent - will be overridden by ThemeManager
     public static let accent = Colors.accentTeal
 }

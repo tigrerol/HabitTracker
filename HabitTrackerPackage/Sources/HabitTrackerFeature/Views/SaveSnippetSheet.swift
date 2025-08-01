@@ -23,7 +23,7 @@ struct SaveSnippetSheet: View {
                             VStack(spacing: 12) {
                                 Image(systemName: "square.stack.3d.up")
                                     .font(.system(size: 48))
-                                    .foregroundColor(Theme.accent)
+                                    .foregroundColor(Theme.Colors.accentTeal)
                                 
                                 Text("Save Snippet")
                                     .customTitle()

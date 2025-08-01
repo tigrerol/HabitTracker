@@ -116,7 +116,7 @@ public struct HabitCard: View {
                     // Selection Indicator
                     if isSelected {
                         Image(systemName: "checkmark.circle.fill")
-                            .foregroundColor(Theme.accent)
+                            .foregroundColor(Theme.Colors.accentTeal)
                             .font(.title3)
                     }
                 }

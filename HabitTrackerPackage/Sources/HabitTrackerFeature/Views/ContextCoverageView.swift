@@ -583,7 +583,7 @@ struct CoverageCell: View {
         case 2...3:
             return Theme.Colors.accentOrange.opacity(0.6)
         default:
-            return Theme.accent.opacity(0.6)
+            return Theme.Colors.accentTeal.opacity(0.6)
         }
     }
     
