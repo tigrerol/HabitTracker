@@ -101,92 +101,105 @@ public struct RoutineBuilderView: View {
     
     private var namingStepView: some View {
         VStack(spacing: 0) {
-            // Fixed header
-            VStack(spacing: 16) {
-                // Step indicator
-                HStack(spacing: 4) {
-                    Circle()
-                        .fill(.blue)
-                        .frame(width: 8, height: 8)
-                    Circle()
-                        .fill(.gray.opacity(0.3))
-                        .frame(width: 8, height: 8)
-                    Circle()
-                        .fill(.gray.opacity(0.3))
-                        .frame(width: 8, height: 8)
+            // Fixed header with modern card
+            ModernCard(style: .frosted) {
+                VStack(spacing: 16) {
+                    // Step indicator
+                    HStack(spacing: 4) {
+                        Circle()
+                            .fill(Theme.accent)
+                            .frame(width: 8, height: 8)
+                        Circle()
+                            .fill(Color.gray.opacity(0.3))
+                            .frame(width: 8, height: 8)
+                        Circle()
+                            .fill(Color.gray.opacity(0.3))
+                            .frame(width: 8, height: 8)
+                    }
+                    .accessibilityLabel(String(localized: "Accessibility.Step1.Naming", bundle: .module))
+                    .padding(.bottom, 8)
+                    
+                    Text(String(localized: "RoutineBuilderView.Naming.Title", bundle: .module))
+                        .customTitle()
+                    
+                    Text(String(localized: "RoutineBuilderView.Naming.Subtitle", bundle: .module))
+                        .customCaption()
+                        .multilineTextAlignment(.center)
                 }
-                .accessibilityLabel(String(localized: "Accessibility.Step1.Naming", bundle: .module))
-                .padding(.bottom, 8)
-                
-                Text(String(localized: "RoutineBuilderView.Naming.Title", bundle: .module))
-                    .font(.title2)
-                    .fontWeight(.semibold)
-                
-                Text(String(localized: "RoutineBuilderView.Naming.Subtitle", bundle: .module))
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
             }
-            .padding(.top, 40)
-            .padding(.bottom, 20)
-            .background(.regularMaterial)
+            .padding(.horizontal)
+            .padding(.top, 20)
             
             // Scrollable content
             ScrollView {
-                VStack(spacing: 24) {
-                    TextField(String(localized: "RoutineBuilderView.Naming.RoutineName.Placeholder", bundle: .module), text: $templateName)
-                        .textFieldStyle(.roundedBorder)
-                        .font(.title3)
-                        .focused($isNameFieldFocused)
-                    
-                    // Quick name suggestions
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 12) {
-                            ForEach([String(localized: "RoutineSuggestion.WeekdayMorning", bundle: .module), String(localized: "RoutineSuggestion.Weekend", bundle: .module), String(localized: "RoutineSuggestion.QuickStart", bundle: .module), String(localized: "RoutineSuggestion.FullRoutine", bundle: .module), String(localized: "RoutineSuggestion.Travel", bundle: .module)], id: \.self) { suggestion in
-                                Button {
-                                    withAnimation(.easeInOut) {
-                                        templateName = suggestion
+                LazyVStack(spacing: 16) {
+                    // Name input card
+                    ModernCard {
+                        VStack(alignment: .leading, spacing: 16) {
+                            Text(String(localized: "RoutineBuilderView.Naming.RoutineName.Placeholder", bundle: .module))
+                                .customHeadline()
+                            
+                            TextField(String(localized: "RoutineBuilderView.Naming.RoutineName.Placeholder", bundle: .module), text: $templateName)
+                                .textFieldStyle(.roundedBorder)
+                                .font(.title3)
+                                .focused($isNameFieldFocused)
+                            
+                            // Quick name suggestions
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 12) {
+                                    ForEach([String(localized: "RoutineSuggestion.WeekdayMorning", bundle: .module), String(localized: "RoutineSuggestion.Weekend", bundle: .module), String(localized: "RoutineSuggestion.QuickStart", bundle: .module), String(localized: "RoutineSuggestion.FullRoutine", bundle: .module), String(localized: "RoutineSuggestion.Travel", bundle: .module)], id: \.self) { suggestion in
+                                        Button {
+                                            withAnimation(.easeInOut) {
+                                                templateName = suggestion
+                                            }
+                                        } label: {
+                                            Text(suggestion)
+                                                .customBody()
+                                                .foregroundColor(templateName == suggestion ? .white : Theme.text)
+                                                .padding(.horizontal, 16)
+                                                .padding(.vertical, 8)
+                                                .background(templateName == suggestion ? Theme.accent : Theme.cardBackground, in: Capsule())
+                                        }
+                                        .buttonStyle(ModernButtonStyle())
                                     }
-                                } label: {
-                                    Text(suggestion)
-                                        .font(.subheadline)
-                                        .padding(.horizontal, 16)
-                                        .padding(.vertical, 8)
-                                        .background(.regularMaterial, in: Capsule())
                                 }
-                                .buttonStyle(.plain)
                             }
                         }
                     }
                     
-                    // Color picker
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text(String(localized: "RoutineBuilderView.Naming.Color.Label", bundle: .module))
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                        
-                        HStack(spacing: 12) {
-                            ForEach(Array(zip(["#34C759", "#007AFF", "#FF9500", "#FF3B30", "#AF52DE", "#5AC8FA"], [String(localized: "Color.Green", bundle: .module), String(localized: "Color.Blue", bundle: .module), String(localized: "Color.Orange", bundle: .module), String(localized: "Color.Red", bundle: .module), String(localized: "Color.Purple", bundle: .module), String(localized: "Color.LightBlue", bundle: .module)])), id: \.0) { color, colorName in
-                                Button {
-                                    withAnimation(.easeInOut) {
-                                        templateColor = color
-                                    }
-                                } label: {
-                                    Circle()
-                                        .fill(Color(hex: color) ?? .blue)
-                                        .frame(width: 36, height: 36)
-                                        .overlay {
-                                            if templateColor == color {
-                                                Image(systemName: "checkmark")
-                                                    .font(.caption)
-                                                    .fontWeight(.bold)
-                                                    .foregroundStyle(.white)
-                                            }
+                    // Color picker card
+                    ModernCard {
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text(String(localized: "RoutineBuilderView.Naming.Color.Label", bundle: .module))
+                                .customHeadline()
+                            
+                            HStack(spacing: 12) {
+                                ForEach(Array(zip(["#34C759", "#007AFF", "#FF9500", "#FF3B30", "#AF52DE", "#5AC8FA"], [String(localized: "Color.Green", bundle: .module), String(localized: "Color.Blue", bundle: .module), String(localized: "Color.Orange", bundle: .module), String(localized: "Color.Red", bundle: .module), String(localized: "Color.Purple", bundle: .module), String(localized: "Color.LightBlue", bundle: .module)])), id: \.0) { color, colorName in
+                                    Button {
+                                        withAnimation(.easeInOut) {
+                                            templateColor = color
                                         }
+                                    } label: {
+                                        Circle()
+                                            .fill(Color(hex: color) ?? .blue)
+                                            .frame(width: 40, height: 40)
+                                            .overlay {
+                                                if templateColor == color {
+                                                    Circle()
+                                                        .stroke(Theme.accent, lineWidth: 3)
+                                                    Image(systemName: "checkmark")
+                                                        .font(.caption)
+                                                        .fontWeight(.bold)
+                                                        .foregroundStyle(.white)
+                                                }
+                                            }
+                                    }
+                                    .buttonStyle(ModernButtonStyle())
+                                    .sensoryFeedback(.selection, trigger: templateColor == color)
+                                    .accessibilityLabel(String(localized: "Accessibility.ColorButton", bundle: .module).replacingOccurrences(of: "%@", with: colorName))
+                                    .accessibilityValue(templateColor == color ? String(localized: "Color.Selected", bundle: .module) : String(localized: "Color.NotSelected", bundle: .module))
+                                    .accessibilityAddTraits(templateColor == color ? .isSelected : [])
                                 }
-                                .accessibilityLabel(String(localized: "Accessibility.ColorButton", bundle: .module).replacingOccurrences(of: "%@", with: colorName))
-                                .accessibilityValue(templateColor == color ? String(localized: "Color.Selected", bundle: .module) : String(localized: "Color.NotSelected", bundle: .module))
-                                .accessibilityAddTraits(templateColor == color ? .isSelected : [])
                             }
                         }
                     }

@@ -82,22 +82,21 @@ public struct HabitEditorView: View {
         
         NavigationStack {
             ScrollView {
-                VStack(spacing: 20) {
-                // Basic info
-                VStack(alignment: .leading, spacing: 16) {
-                    Text(String(localized: "HabitEditorView.BasicInformation.Title", bundle: .module))
-                        .font(.headline)
-                        .foregroundStyle(.primary)
-                    
-                    TextField(String(localized: "HabitEditorView.BasicInformation.HabitName.Placeholder", bundle: .module), text: $habitName)
-                        .textFieldStyle(.roundedBorder)
-                        .focused($isNameFieldFocused)
-                    
-                    
-                    // Color picker
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text(String(localized: "HabitEditorView.BasicInformation.Color.Label", bundle: .module))
-                            .font(.caption)
+                LazyVStack(spacing: 16, pinnedViews: []) {
+                    // Basic Information Card
+                    ModernCard {
+                        VStack(alignment: .leading, spacing: 16) {
+                            Text(String(localized: "HabitEditorView.BasicInformation.Title", bundle: .module))
+                                .customHeadline()
+                            
+                            TextField(String(localized: "HabitEditorView.BasicInformation.HabitName.Placeholder", bundle: .module), text: $habitName)
+                                .textFieldStyle(.roundedBorder)
+                                .focused($isNameFieldFocused)
+                            
+                            // Color picker
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text(String(localized: "HabitEditorView.BasicInformation.Color.Label", bundle: .module))
+                                    .customCaption()
                             .foregroundStyle(.secondary)
                         
                         HStack(spacing: 12) {
@@ -120,27 +119,40 @@ public struct HabitEditorView: View {
                         }
                     }
                 }
-                .padding()
-                .background(Color.gray.opacity(0.1), in: RoundedRectangle(cornerRadius: 10))
-                
-                // Type-specific settings
-                typeSpecificSection
-                
-                // Notes
-                VStack(alignment: .leading, spacing: 8) {
-                    Text(String(localized: "HabitEditorView.BasicInformation.Notes.Title", bundle: .module))
-                        .font(.headline)
+            }
+        }
                     
-                    TextField(String(localized: "HabitEditorView.BasicInformation.Notes.Placeholder", bundle: .module), text: $notes, axis: .vertical)
-                        .lineLimit(2...4)
-                        .textFieldStyle(.roundedBorder)
-                }
-                .padding()
-                .background(Color.gray.opacity(0.1), in: RoundedRectangle(cornerRadius: 10))
+                    // Type-specific settings card
+                    ModernCard {
+                        VStack(alignment: .leading, spacing: 16) {
+                            HStack {
+                                Image(systemName: habit.type.iconName)
+                                    .foregroundColor(Theme.accent)
+                                Text(habitTypeTitle)
+                                    .customHeadline()
+                            }
+                            
+                            typeSpecificSection
+                        }
+                    }
+                    
+                    // Notes card
+                    ModernCard {
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text(String(localized: "HabitEditorView.BasicInformation.Notes.Title", bundle: .module))
+                                .customHeadline()
+                            
+                            TextField(String(localized: "HabitEditorView.BasicInformation.Notes.Placeholder", bundle: .module), text: $notes, axis: .vertical)
+                                .lineLimit(3...5)
+                                .textFieldStyle(.roundedBorder)
+                        }
+                    }
                 }
                 .padding()
             }
+            .background(Theme.background.ignoresSafeArea())
             .navigationTitle(String(localized: "HabitEditorView.NavigationTitle", bundle: .module))
+            .navigationBarTitleDisplayMode(.inline)
             
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -168,15 +180,7 @@ public struct HabitEditorView: View {
     
     @ViewBuilder
     private var typeSpecificSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack {
-                Image(systemName: habit.type.iconName)
-                    .foregroundStyle(.blue)
-                Text(habitTypeTitle)
-                    .font(.headline)
-            }
-            
-            switch habit.type {
+        switch habit.type {
             case .task:
                 let _ = print("typeSpecificSection: showing task")
                 subtasksEditor

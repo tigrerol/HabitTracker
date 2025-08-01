@@ -14,57 +14,60 @@ struct SaveSnippetSheet: View {
     
     var body: some View {
         NavigationStack {
-            VStack(spacing: 24) {
-                // Header
-                VStack(spacing: 8) {
-                    Image(systemName: "square.stack.3d.up")
-                        .font(.system(size: 40))
-                        .foregroundStyle(.blue)
-                    
-                    Text("Save snippet")
-                        .font(.title2)
-                        .fontWeight(.semibold)
-                    
-                    Text("Create a reusable collection of habits")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.center)
-                }
-                
-                // Name input
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Snippet Name")
-                        .font(.headline)
-                    
-                    TextField("Enter snippet name", text: $snippetName)
-                        .textFieldStyle(.roundedBorder)
-                        .focused($isNameFieldFocused)
-                }
-                
-                // Preview
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("Habits in this snippet")
-                        .font(.headline)
-                    
-                    VStack(spacing: 8) {
-                        ForEach(selectedHabits) { habit in
-                            HStack {
-                                Image(systemName: habit.type.iconName)
-                                    .foregroundStyle(Color(hex: habit.color) ?? .blue)
-                                Text(habit.name)
-                                Spacer()
+            ScrollView {
+                VStack(spacing: 24) {
+                    // Header with modern card
+                    ModernCard(style: .frosted) {
+                        VStack(spacing: 16) {
+                            // Icon and title section
+                            VStack(spacing: 12) {
+                                Image(systemName: "square.stack.3d.up")
+                                    .font(.system(size: 48))
+                                    .foregroundColor(Theme.accent)
+                                
+                                Text("Save Snippet")
+                                    .customTitle()
+                                
+                                Text("Create a reusable collection of habits")
+                                    .customBody()
+                                    .multilineTextAlignment(.center)
                             }
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 8)
-                            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8))
+                            
+                            // Input field
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("Snippet Name")
+                                    .customHeadline()
+                                
+                                TextField("Enter snippet name", text: $snippetName)
+                                    .textFieldStyle(.roundedBorder)
+                                    .focused($isNameFieldFocused)
+                            }
+                        }
+                    }
+                    
+                    // Habits preview section
+                    if !selectedHabits.isEmpty {
+                        ModernCard {
+                            VStack(alignment: .leading, spacing: 16) {
+                                Text("Habits in this snippet")
+                                    .customHeadline()
+                                
+                                // Habit preview cards in grid
+                                LazyVGrid(columns: [GridItem(.flexible())], spacing: 12) {
+                                    ForEach(selectedHabits) { habit in
+                                        HabitCard(habit: habit, isSelected: false) { }
+                                            .disabled(true)
+                                    }
+                                }
+                            }
                         }
                     }
                 }
-                
-                Spacer()
+                .padding()
             }
-            .padding()
+            .background(Theme.background.ignoresSafeArea())
             .navigationTitle("New Snippet")
+            .navigationBarTitleDisplayMode(.inline)
             
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
