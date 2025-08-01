@@ -151,7 +151,9 @@ public struct HabitEditorView: View {
             }
             .background(Theme.background.ignoresSafeArea())
             .navigationTitle(String(localized: "HabitEditorView.NavigationTitle", bundle: .module))
+            #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
+            #endif
             
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -179,7 +181,8 @@ public struct HabitEditorView: View {
     
     @ViewBuilder
     private var typeSpecificSection: some View {
-        switch habit.type {
+        Group {
+            switch habit.type {
             case .task:
                 let _ = print("typeSpecificSection: showing task")
                 subtasksEditor

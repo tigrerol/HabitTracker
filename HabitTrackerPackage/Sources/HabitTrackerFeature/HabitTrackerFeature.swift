@@ -8,7 +8,9 @@ public struct HabitTrackerFeature {
     }
     
     // MARK: - Watch Connectivity
+    #if canImport(WatchConnectivity)
     public static var watchConnectivityManager: WatchConnectivityManager {
         WatchConnectivityManager.shared
     }
+    #endif
 }

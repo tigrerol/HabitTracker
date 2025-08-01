@@ -430,7 +430,7 @@ public struct RoutineBuilderView: View {
                         Image(systemName: selectedHabitsForSnippet.contains(habit.id) ? "checkmark.circle.fill" : "circle")
                             .foregroundStyle(selectedHabitsForSnippet.contains(habit.id) ? .blue : .secondary)
                             .font(.title3)
-                            .background(Color(.systemBackground), in: Circle())
+                            .background(Theme.cardBackground, in: Circle())
                     }
                     .frame(width: 44, height: 44)
                     .contentShape(Rectangle())
@@ -497,7 +497,7 @@ public struct RoutineBuilderView: View {
                         Image(systemName: selectedHabitsForSnippet.contains(habit.id) ? "checkmark.circle.fill" : "circle")
                             .foregroundStyle(selectedHabitsForSnippet.contains(habit.id) ? .blue : .secondary)
                             .font(.title3)
-                            .background(Color(.systemBackground), in: Circle())
+                            .background(Theme.cardBackground, in: Circle())
                     }
                     .frame(width: 44, height: 44)
                     .contentShape(Rectangle())

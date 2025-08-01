@@ -67,7 +67,9 @@ struct SaveSnippetSheet: View {
             }
             .background(Theme.background.ignoresSafeArea())
             .navigationTitle("New Snippet")
+            #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
+            #endif
             
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
