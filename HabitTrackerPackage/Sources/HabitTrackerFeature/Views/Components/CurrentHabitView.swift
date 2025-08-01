@@ -6,13 +6,24 @@ struct CurrentHabitView: View {
     let data: RoutineExecutionView.SessionDisplayData
     let onComplete: (UUID, TimeInterval?, String?) -> Void
     
+    @Environment(\.themeManager) private var themeManager
+    
     var body: some View {
         VStack(spacing: AppConstants.Spacing.extraLarge) {
             // Habit info
             VStack(spacing: 8) {
                 Image(systemName: habit.type.iconName)
                     .font(.system(size: AppConstants.Spacing.page))
-                    .foregroundStyle(habit.swiftUIColor)
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: [
+                                themeManager.currentAccentColor,
+                                themeManager.currentAccentColor.opacity(0.7)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
                 
                 Text(habit.name)
                     .font(.title2)

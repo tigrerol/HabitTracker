@@ -6,6 +6,8 @@ public struct ModernCard<Content: View>: View {
     let content: Content
     let style: CardStyle
     
+    @Environment(\.themeManager) private var themeManager
+    
     public enum CardStyle {
         case standard
         case frosted
@@ -43,7 +45,11 @@ public struct ModernCard<Content: View>: View {
                 RoundedRectangle(cornerRadius: 20, style: .continuous)
                     .stroke(
                         LinearGradient(
-                            colors: [.white.opacity(0.5), .clear],
+                            colors: [
+                                themeManager.currentAccentColor.opacity(0.3),
+                                .white.opacity(0.5),
+                                .clear
+                            ],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         ),
@@ -56,7 +62,18 @@ public struct ModernCard<Content: View>: View {
                 .fill(Theme.cardBackground)
                 .overlay(
                     RoundedRectangle(cornerRadius: 20, style: .continuous)
-                        .stroke(Color.gray.opacity(0.1), lineWidth: 1)
+                        .stroke(
+                            LinearGradient(
+                                colors: [
+                                    themeManager.currentAccentColor.opacity(0.2),
+                                    themeManager.currentAccentColor.opacity(0.05),
+                                    Color.gray.opacity(0.1)
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            lineWidth: 1
+                        )
                 )
         }
     }

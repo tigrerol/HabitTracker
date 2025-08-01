@@ -38,7 +38,22 @@ public struct PrimaryButton: View {
             .frame(height: 50)
             .background(
                 Capsule()
-                    .fill(isEnabled ? themeManager.currentAccentColor : Color.gray)
+                    .fill(
+                        isEnabled ? 
+                        LinearGradient(
+                            colors: [
+                                themeManager.currentAccentColor,
+                                themeManager.currentAccentColor.opacity(0.8)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ) :
+                        LinearGradient(
+                            colors: [Color.gray, Color.gray.opacity(0.8)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
             )
         }
         .disabled(!isEnabled || isLoading)
@@ -70,7 +85,21 @@ public struct SecondaryButton: View {
                 .frame(height: 50)
                 .background(
                     Capsule()
-                        .stroke(themeManager.currentAccentColor, lineWidth: 2)
+                        .fill(themeManager.currentAccentColor.opacity(0.1))
+                        .overlay(
+                            Capsule()
+                                .stroke(
+                                    LinearGradient(
+                                        colors: [
+                                            themeManager.currentAccentColor,
+                                            themeManager.currentAccentColor.opacity(0.7)
+                                        ],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    ),
+                                    lineWidth: 2
+                                )
+                        )
                 )
         }
         .buttonStyle(ScaleButtonStyle())

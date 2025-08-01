@@ -5,12 +5,20 @@ struct RoutineProgressHeaderView: View {
     let data: RoutineExecutionView.SessionDisplayData
     let namespace: Namespace.ID
     
+    @Environment(\.themeManager) private var themeManager
+    
     var body: some View {
         VStack(spacing: 12) {
             // Progress bar
             ProgressView(value: data.progress)
-                .tint(Color(hex: data.templateColor) ?? .blue)
-                .scaleEffect(y: 2)
+                .tint(
+                    LinearGradient(
+                        colors: [themeManager.currentAccentColor, themeManager.currentAccentColor.opacity(0.8)],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                )
+                .scaleEffect(y: 3)
                 .matchedGeometry(id: .routineProgress, in: namespace)
                 .accessibilityProgress(
                     identifier: AccessibilityConfiguration.Identifiers.progressBar,
@@ -41,7 +49,24 @@ struct RoutineProgressHeaderView: View {
             }
         }
         .padding()
-        .background(.regularMaterial)
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(.regularMaterial)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .stroke(
+                            LinearGradient(
+                                colors: [
+                                    themeManager.currentAccentColor.opacity(0.2),
+                                    themeManager.currentAccentColor.opacity(0.1)
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            lineWidth: 1
+                        )
+                )
+        )
     }
 }
 

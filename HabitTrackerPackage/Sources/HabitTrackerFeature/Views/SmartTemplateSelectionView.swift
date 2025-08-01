@@ -3,6 +3,7 @@ import SwiftUI
 /// Smart template selection with quick start and template switching
 struct SmartTemplateSelectionView: View {
     @Environment(RoutineService.self) private var routineService
+    @Environment(\.themeManager) private var themeManager
     @State private var selectedTemplate: RoutineTemplate?
     @State private var selectionReason: String = ""
     @State private var showingRoutineBuilder = false
@@ -34,10 +35,6 @@ struct SmartTemplateSelectionView: View {
             VStack(spacing: 24) {
                 headerView
                 
-                if let quickStartTemplate = selectedTemplate {
-                    quickStartSection(quickStartTemplate)
-                }
-                
                 allTemplatesSection
             }
             .padding()
@@ -53,6 +50,8 @@ struct SmartTemplateSelectionView: View {
                         showingRoutineBuilder = true
                     } label: {
                         Image(systemName: "plus")
+                            .fontWeight(.semibold)
+                            .foregroundStyle(themeManager.currentAccentColor)
                     }
                 }
             }
@@ -163,6 +162,7 @@ struct SmartTemplateSelectionView: View {
                 Text(context.timeSlot.displayName)
             } icon: {
                 Image(systemName: context.timeSlot.icon)
+                    .foregroundStyle(themeManager.currentAccentColor.opacity(0.8))
             }
             .font(.caption)
             .foregroundStyle(.secondary)
@@ -184,6 +184,7 @@ struct SmartTemplateSelectionView: View {
                     Text(context.location.displayName)
                 } icon: {
                     Image(systemName: context.location.icon)
+                        .foregroundStyle(themeManager.currentAccentColor)
                 }
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -193,6 +194,7 @@ struct SmartTemplateSelectionView: View {
                     Text("Current Location")
                 } icon: {
                     Image(systemName: "location")
+                        .foregroundStyle(themeManager.currentAccentColor.opacity(0.7))
                 }
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -207,7 +209,7 @@ struct SmartTemplateSelectionView: View {
                         Image(systemName: "location.circle")
                     }
                     .font(.caption)
-                    .foregroundStyle(.blue)
+                    .foregroundStyle(themeManager.currentAccentColor)
                 }
                 .buttonStyle(.plain)
             }
@@ -239,7 +241,13 @@ struct SmartTemplateSelectionView: View {
                 
                 Image(systemName: "play.circle.fill")
                     .font(.system(size: 32))
-                    .foregroundStyle(template.swiftUIColor)
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: [themeManager.currentAccentColor, themeManager.currentAccentColor.opacity(0.8)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
             }
             
             HStack {
@@ -265,7 +273,14 @@ struct SmartTemplateSelectionView: View {
         )
         .overlay(
             RoundedRectangle(cornerRadius: 16)
-                .stroke(template.swiftUIColor.opacity(0.3), lineWidth: 1)
+                .stroke(
+                    LinearGradient(
+                        colors: [themeManager.currentAccentColor.opacity(0.5), themeManager.currentAccentColor.opacity(0.2)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 2
+                )
         )
         .contextMenu {
             Button {
@@ -281,21 +296,42 @@ struct SmartTemplateSelectionView: View {
                 Label("Delete Template", systemImage: "trash")
             }
         }
-        .simultaneousGesture(
-            DragGesture(minimumDistance: 0)
-                .onChanged { _ in
-                    interactionState.setPressed(template.id.uuidString, isPressed: true)
-                }
-                .onEnded { _ in
-                    interactionState.setPressed(template.id.uuidString, isPressed: false)
-                }
-        )
+        .contentShape(Rectangle())
+        .onTapGesture {
+            withAnimation(AnimationPresets.smoothSpring) {
+                startRoutine(with: template)
+            }
+        }
         .frame(height: 120)
     }
     
     
     private var allTemplatesSection: some View {
         List {
+            // Quick Start Section (only show if there's a selected template)
+            if let quickStartTemplate = selectedTemplate {
+                quickStartSection(quickStartTemplate)
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
+                    .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 16, trailing: 0))
+                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                        Button(role: .destructive) {
+                            templateToDelete = quickStartTemplate
+                            showingDeleteAlert = true
+                        } label: {
+                            Label("Delete", systemImage: "trash")
+                        }
+                    }
+                    .swipeActions(edge: .leading, allowsFullSwipe: false) {
+                        Button {
+                            editingTemplate = quickStartTemplate
+                        } label: {
+                            Label("Edit", systemImage: "pencil")
+                        }
+                        .tint(.orange)
+                    }
+            }
+            
             ForEach(routineService.templates) { template in
                 CompactTemplateCard(
                     template: template,
@@ -362,6 +398,8 @@ private struct CompactTemplateCard: View {
     let onEdit: () -> Void
     let onDelete: () -> Void
     
+    @Environment(\.themeManager) private var themeManager
+    
     
     var body: some View {
         HStack {
@@ -385,7 +423,19 @@ private struct CompactTemplateCard: View {
             
             Image(systemName: "play.circle.fill")
                 .font(.title2)
-                .foregroundStyle(template.swiftUIColor)
+                .foregroundStyle(
+                    isSelected ? 
+                    LinearGradient(
+                        colors: [themeManager.currentAccentColor, themeManager.currentAccentColor.opacity(0.7)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ) :
+                    LinearGradient(
+                        colors: [themeManager.currentAccentColor.opacity(0.6), themeManager.currentAccentColor.opacity(0.4)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
                 .matchedGeometry(
                     id: .templatePlayButton(templateId: template.id), 
                     in: namespace,
@@ -400,11 +450,34 @@ private struct CompactTemplateCard: View {
         .padding(.vertical, 8)
         .background(
             RoundedRectangle(cornerRadius: 8)
-                .fill(.regularMaterial)
+                .fill(
+                    isSelected ? 
+                    LinearGradient(
+                        colors: [
+                            themeManager.currentAccentColor.opacity(0.1),
+                            themeManager.currentAccentColor.opacity(0.05)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ) :
+                    LinearGradient(
+                        colors: [Color.clear, Color.clear],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .background(.regularMaterial)
                 .matchedGeometry(
                     id: .templateCard(templateId: template.id), 
                     in: namespace,
                     isSource: true
+                )
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(
+                    isSelected ? themeManager.currentAccentColor.opacity(0.3) : Color.clear,
+                    lineWidth: isSelected ? 1 : 0
                 )
         )
         .contentShape(Rectangle())

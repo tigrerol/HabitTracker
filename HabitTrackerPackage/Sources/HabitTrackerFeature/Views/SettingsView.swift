@@ -21,7 +21,13 @@ public struct SettingsView: View {
                     } label: {
                         HStack {
                             Image(systemName: "paintpalette.fill")
-                                .foregroundColor(themeManager.currentAccentColor)
+                                .foregroundStyle(
+                                    LinearGradient(
+                                        colors: [themeManager.currentAccentColor, themeManager.currentAccentColor.opacity(0.7)],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
+                                )
                                 .frame(width: 24)
                             
                             VStack(alignment: .leading, spacing: 2) {
@@ -37,8 +43,18 @@ public struct SettingsView: View {
                             
                             // Current color preview
                             Circle()
-                                .fill(themeManager.currentAccentColor)
+                                .fill(
+                                    LinearGradient(
+                                        colors: [themeManager.currentAccentColor, themeManager.currentAccentColor.opacity(0.8)],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
+                                )
                                 .frame(width: 20, height: 20)
+                                .overlay(
+                                    Circle()
+                                        .stroke(themeManager.currentAccentColor.opacity(0.3), lineWidth: 1)
+                                )
                             
                             Image(systemName: "chevron.right")
                                 .font(.caption)
@@ -57,7 +73,13 @@ public struct SettingsView: View {
                     } label: {
                         HStack {
                             Image(systemName: "gearshape.fill")
-                                .foregroundColor(.orange)
+                                .foregroundStyle(
+                                    LinearGradient(
+                                        colors: [themeManager.currentAccentColor.opacity(0.8), themeManager.currentAccentColor.opacity(0.6)],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
+                                )
                                 .frame(width: 24)
                             
                             VStack(alignment: .leading, spacing: 2) {
@@ -84,7 +106,13 @@ public struct SettingsView: View {
                 Section("About") {
                     HStack {
                         Image(systemName: "info.circle.fill")
-                            .foregroundColor(.blue)
+                            .foregroundStyle(
+                                LinearGradient(
+                                    colors: [themeManager.currentAccentColor.opacity(0.7), themeManager.currentAccentColor.opacity(0.5)],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
                             .frame(width: 24)
                         
                         VStack(alignment: .leading, spacing: 2) {
