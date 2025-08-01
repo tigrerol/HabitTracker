@@ -107,7 +107,7 @@ public struct HabitCard: View {
                             .customSubheadline()
                             .lineLimit(1)
                         
-                        Text(habit.type.displayName)
+                        Text(habit.type.description)
                             .customCaption()
                     }
                     
