@@ -1,4 +1,6 @@
+#if canImport(WatchConnectivity)
 import WatchConnectivity
+#endif
 import Foundation
 
 // MARK: - Data Transfer Objects for Watch Communication
@@ -61,6 +63,7 @@ public struct WatchHabitCompletion: Codable, Sendable {
     }
 }
 
+#if canImport(WatchConnectivity)
 @Observable
 public final class WatchConnectivityManager: NSObject, Sendable, WCSessionDelegate {
     public static let shared = WatchConnectivityManager()
@@ -234,3 +237,4 @@ public final class WatchConnectivityManager: NSObject, Sendable, WCSessionDelega
         }
     }
 }
+#endif

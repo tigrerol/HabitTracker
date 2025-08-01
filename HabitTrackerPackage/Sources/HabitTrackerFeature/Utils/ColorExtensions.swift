@@ -97,3 +97,62 @@ public struct ColorUtils {
         let opacity: Float
     }
 }
+
+// MARK: - Modern Theme System
+
+public struct Theme {
+    
+    // MARK: - Color Palette
+    public struct Colors {
+        // Primary Backgrounds
+        public static let primaryBackground = Color(hex: "F7F7F7")!     // Off-white
+        public static let darkPrimaryBackground = Color(hex: "1A202C")! // Deep blue-grey
+        
+        // Card Backgrounds
+        public static let cardBackground = Color.white
+        public static let darkCardBackground = Color(hex: "2D3748")!    // Lighter dark
+        
+        // Accent Colors - Choose one as primary
+        public static let accentTeal = Color(hex: "4FD1C5")!      // Energetic primary
+        public static let accentOrange = Color(hex: "F56565")!    // Warm alerts
+        public static let accentLavender = Color(hex: "9F7AEA")!  // Soothing secondary
+        public static let accentGreen = Color(hex: "48BB78")!     // Success states
+        
+        // Text Colors
+        public static let primaryText = Color.black
+        public static let darkPrimaryText = Color.white
+        public static let secondaryText = Color.gray
+        public static let darkSecondaryText = Color(hex: "A0AEC0")!
+    }
+    
+    // MARK: - Dynamic Colors (Auto Light/Dark Mode)
+    public static func dynamicColor(light: Color, dark: Color) -> Color {
+        return Color(UIColor { traits in
+            traits.userInterfaceStyle == .dark ? UIColor(dark) : UIColor(light)
+        })
+    }
+    
+    // Semantic Colors
+    public static let background = dynamicColor(
+        light: Colors.primaryBackground,
+        dark: Colors.darkPrimaryBackground
+    )
+    
+    public static let cardBackground = dynamicColor(
+        light: Colors.cardBackground,
+        dark: Colors.darkCardBackground
+    )
+    
+    public static let text = dynamicColor(
+        light: Colors.primaryText,
+        dark: Colors.darkPrimaryText
+    )
+    
+    public static let secondaryText = dynamicColor(
+        light: Colors.secondaryText,
+        dark: Colors.darkSecondaryText
+    )
+    
+    // Primary accent - customize based on brand preference
+    public static let accent = Colors.accentTeal
+}

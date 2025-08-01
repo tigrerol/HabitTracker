@@ -36,7 +36,9 @@ public final class RoutineService {
                     templates = loadedTemplates
                     
                     // Send loaded templates to watch on app startup
+                    #if canImport(WatchConnectivity)
                     WatchConnectivityManager.shared.sendRoutineDataToWatch(templates)
+                    #endif
                     return
                 }
             } catch {
@@ -75,7 +77,9 @@ public final class RoutineService {
             
             // Send updated templates to watch
             await MainActor.run {
+                #if canImport(WatchConnectivity)
                 WatchConnectivityManager.shared.sendRoutineDataToWatch(templates)
+                #endif
             }
         } catch {
             ErrorHandlingService.shared.handleDataError(
