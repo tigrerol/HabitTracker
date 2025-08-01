@@ -6,6 +6,8 @@ public struct ThemeCustomizationView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var selectedColor: Color = ThemeManager.shared.currentAccentColor
     @State private var showingPreview = false
+    @State private var interactionState = InteractionState()
+    @Namespace private var colorTransition
     
     private let themeManager = ThemeManager.shared
     
@@ -155,8 +157,10 @@ public struct ThemeCustomizationView: View {
                         ColorSelectionButton(
                             color: item.color,
                             isSelected: selectedColor.description == item.color.description,
+                            namespace: colorTransition,
+                            interactionState: interactionState,
                             action: {
-                                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                                withAnimation(AnimationPresets.smoothSpring) {
                                     selectedColor = item.color
                                     HapticManager.trigger(.selection)
                                 }
@@ -210,27 +214,60 @@ public struct ThemeCustomizationView: View {
 struct ColorSelectionButton: View {
     let color: Color
     let isSelected: Bool
+    let namespace: Namespace.ID
+    let interactionState: InteractionState
     let action: () -> Void
+    
+    private var colorId: String {
+        color.description
+    }
+    
+    private var isPressed: Bool {
+        interactionState.isPressed(colorId)
+    }
     
     var body: some View {
         Button(action: action) {
             Circle()
                 .fill(color)
                 .frame(width: 50, height: 50)
+                .matchedGeometry(
+                    id: isSelected ? GeometryEffectID.selectedColor : GeometryEffectID.colorPicker,
+                    in: namespace,
+                    isSource: isSelected
+                )
                 .overlay(
                     Circle()
                         .stroke(Color.white, lineWidth: 3)
                         .opacity(isSelected ? 1 : 0)
+                        .scaleEffect(isSelected ? 1.0 : 0.8)
                 )
                 .overlay(
                     Circle()
                         .stroke(color.opacity(0.3), lineWidth: isSelected ? 4 : 0)
                         .frame(width: 58, height: 58)
+                        .scaleEffect(isSelected ? 1.0 : 0.9)
                 )
-                .shadow(color: color.opacity(0.3), radius: isSelected ? 8 : 4, x: 0, y: 2)
-                .scaleEffect(isSelected ? 1.1 : 1.0)
-                .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isSelected)
+                .shadow(
+                    color: color.opacity(isPressed ? 0.5 : 0.3), 
+                    radius: isSelected ? 12 : (isPressed ? 6 : 4), 
+                    x: 0, 
+                    y: isPressed ? 1 : 2
+                )
+                .scaleEffect(isSelected ? 1.1 : (isPressed ? 0.95 : 1.0))
+                .animation(AnimationPresets.quickSpring, value: isSelected)
+                .animation(AnimationPresets.quickSpring, value: isPressed)
         }
+        .buttonStyle(.plain)
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { _ in
+                    interactionState.setPressed(colorId, isPressed: true)
+                }
+                .onEnded { _ in
+                    interactionState.setPressed(colorId, isPressed: false)
+                }
+        )
     }
 }
 

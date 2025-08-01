@@ -3,6 +3,7 @@ import SwiftUI
 /// Header view showing routine progress, completion counts, and duration
 struct RoutineProgressHeaderView: View {
     let data: RoutineExecutionView.SessionDisplayData
+    let namespace: Namespace.ID
     
     var body: some View {
         VStack(spacing: 12) {
@@ -10,6 +11,7 @@ struct RoutineProgressHeaderView: View {
             ProgressView(value: data.progress)
                 .tint(Color(hex: data.templateColor) ?? .blue)
                 .scaleEffect(y: 2)
+                .matchedGeometry(id: .routineProgress, in: namespace)
                 .accessibilityProgress(
                     identifier: AccessibilityConfiguration.Identifiers.progressBar,
                     label: AccessibilityConfiguration.Labels.progressBar(
@@ -44,7 +46,8 @@ struct RoutineProgressHeaderView: View {
 }
 
 #Preview {
-    RoutineProgressHeaderView(
+    @Previewable @Namespace var namespace
+    return RoutineProgressHeaderView(
         data: RoutineExecutionView.SessionDisplayData(
             id: UUID(),
             templateName: "Morning Routine",
@@ -58,6 +61,7 @@ struct RoutineProgressHeaderView: View {
             completedCount: 3,
             totalCount: 5,
             currentHabitIndex: 3
-        )
+        ),
+        namespace: namespace
     )
 }

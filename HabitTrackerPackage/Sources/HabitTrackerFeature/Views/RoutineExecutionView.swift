@@ -5,6 +5,7 @@ public struct RoutineExecutionView: View {
     @Environment(RoutineService.self) private var routineService
     @State private var sessionData: SessionDisplayData?
     @State private var showingCancelAlert = false
+    @Namespace private var routineTransition
     
     public init() {}
     
@@ -134,7 +135,8 @@ public struct RoutineExecutionView: View {
     private func activeRoutineViewFromData(_ data: SessionDisplayData) -> some View {
         VStack(spacing: 0) {
             // Progress header
-            RoutineProgressHeaderView(data: data)
+            RoutineProgressHeaderView(data: data, namespace: routineTransition)
+                .transition(TransitionEffects.slideInFromBottom)
             
             // Habit overview
             HabitOverviewView(data: data) { index in

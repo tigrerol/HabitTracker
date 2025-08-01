@@ -11,6 +11,8 @@ struct SmartTemplateSelectionView: View {
     @State private var showingDeleteAlert = false
     @State private var showingLocationSetup = false
     @State private var showingContextSettings = false
+    @State private var interactionState = InteractionState()
+    @Namespace private var templateTransition
     
     private var timeBasedGreeting: String {
         let hour = Calendar.current.component(.hour, from: Date())
@@ -219,71 +221,76 @@ struct SmartTemplateSelectionView: View {
     }
     
     private func quickStartSection(_ template: RoutineTemplate) -> some View {
-        List {
-            VStack(spacing: 12) {
-                HStack {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(String(localized: "SmartTemplateSelectionView.QuickStart", bundle: .module))
-                            .font(.caption)
-                            .fontWeight(.semibold)
-                            .foregroundStyle(.secondary)
-                        
-                        Text(template.name)
-                            .font(.title3)
-                            .fontWeight(.semibold)
-                            .foregroundStyle(.primary)
-                    }
+        VStack(spacing: 12) {
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(String(localized: "SmartTemplateSelectionView.QuickStart", bundle: .module))
+                        .font(.caption)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(.secondary)
                     
-                    Spacer()
-                    
-                    Image(systemName: "play.circle.fill")
-                        .font(.system(size: 32))
-                        .foregroundStyle(template.swiftUIColor)
+                    Text(template.name)
+                        .font(.title3)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(.primary)
                 }
                 
-                HStack {
-                    Label(String(format: String(localized: "SmartTemplateSelectionView.HabitsCount", bundle: .module), template.activeHabitsCount), systemImage: "list.bullet")
-                    
-                    Spacer()
-                    
-                    Label(template.formattedDuration, systemImage: "clock")
-                }
-                .font(.caption)
-                .foregroundStyle(.secondary)
+                Spacer()
+                
+                Image(systemName: "play.circle.fill")
+                    .font(.system(size: 32))
+                    .foregroundStyle(template.swiftUIColor)
             }
-            .padding()
-            .background(
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(.regularMaterial)
-                    .stroke(template.swiftUIColor.opacity(0.3), lineWidth: 1)
-            )
-            .contentShape(Rectangle())
-            .onTapGesture {
-                startRoutine(with: template)
+            
+            HStack {
+                Label(String(format: String(localized: "SmartTemplateSelectionView.HabitsCount", bundle: .module), template.activeHabitsCount), systemImage: "list.bullet")
+                
+                Spacer()
+                
+                Label(template.formattedDuration, systemImage: "clock")
             }
-            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                Button(role: .destructive) {
-                    templateToDelete = template
-                    showingDeleteAlert = true
-                } label: {
-                    Label("Delete", systemImage: "trash")
-                }
-            }
-            .swipeActions(edge: .leading, allowsFullSwipe: false) {
-                Button {
-                    editingTemplate = template
-                } label: {
-                    Label("Edit", systemImage: "pencil")
-                }
-                .tint(.orange)
-            }
-            .listRowBackground(Color.clear)
-            .listRowSeparator(.hidden)
-            .listRowInsets(EdgeInsets())
+            .font(.caption)
+            .foregroundStyle(.secondary)
         }
-        .listStyle(.plain)
-        .frame(height: 120) // Fixed height for the quick start card
-        .scrollDisabled(true)
+        .padding()
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(.regularMaterial)
+                .shadow(
+                    color: .black.opacity(0.05),
+                    radius: 6,
+                    x: 0,
+                    y: 3
+                )
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(template.swiftUIColor.opacity(0.3), lineWidth: 1)
+        )
+        .contextMenu {
+            Button {
+                editingTemplate = template
+            } label: {
+                Label("Edit Template", systemImage: "pencil")
+            }
+            
+            Button(role: .destructive) {
+                templateToDelete = template
+                showingDeleteAlert = true
+            } label: {
+                Label("Delete Template", systemImage: "trash")
+            }
+        }
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { _ in
+                    interactionState.setPressed(template.id.uuidString, isPressed: true)
+                }
+                .onEnded { _ in
+                    interactionState.setPressed(template.id.uuidString, isPressed: false)
+                }
+        )
+        .frame(height: 120)
     }
     
     
@@ -293,9 +300,13 @@ struct SmartTemplateSelectionView: View {
                 CompactTemplateCard(
                     template: template,
                     isSelected: selectedTemplate?.id == template.id,
+                    namespace: templateTransition,
+                    interactionState: interactionState,
                     onTap: {
                         selectedTemplate = template
-                        startRoutine(with: template)
+                        withAnimation(AnimationPresets.smoothSpring) {
+                            startRoutine(with: template)
+                        }
                     },
                     onEdit: {
                         editingTemplate = template
@@ -345,9 +356,12 @@ struct SmartTemplateSelectionView: View {
 private struct CompactTemplateCard: View {
     let template: RoutineTemplate
     let isSelected: Bool
+    let namespace: Namespace.ID
+    let interactionState: InteractionState
     let onTap: () -> Void
     let onEdit: () -> Void
     let onDelete: () -> Void
+    
     
     var body: some View {
         HStack {
@@ -356,6 +370,11 @@ private struct CompactTemplateCard: View {
                     .font(.subheadline)
                     .fontWeight(.medium)
                     .foregroundStyle(.primary)
+                    .matchedGeometry(
+                        id: .templateTitle(templateId: template.id), 
+                        in: namespace,
+                        isSource: true
+                    )
                 
                 Text("\(String(format: String(localized: "SmartTemplateSelectionView.HabitsCount", bundle: .module), template.activeHabitsCount)) • \(template.formattedDuration)")
                     .font(.caption)
@@ -367,6 +386,11 @@ private struct CompactTemplateCard: View {
             Image(systemName: "play.circle.fill")
                 .font(.title2)
                 .foregroundStyle(template.swiftUIColor)
+                .matchedGeometry(
+                    id: .templatePlayButton(templateId: template.id), 
+                    in: namespace,
+                    isSource: true
+                )
             
             Image(systemName: "chevron.right")
                 .font(.caption2)
@@ -377,6 +401,11 @@ private struct CompactTemplateCard: View {
         .background(
             RoundedRectangle(cornerRadius: 8)
                 .fill(.regularMaterial)
+                .matchedGeometry(
+                    id: .templateCard(templateId: template.id), 
+                    in: namespace,
+                    isSource: true
+                )
         )
         .contentShape(Rectangle())
         .onTapGesture {
