@@ -115,6 +115,7 @@ public struct Theme {
         // Accent Colors - Choose one as primary
         public static let accentTeal = Color(hex: "4FD1C5")!      // Energetic primary
         public static let accentOrange = Color(hex: "F56565")!    // Warm alerts
+        public static let accentRed = Color(hex: "E53E3E")!       // Error states
         public static let accentLavender = Color(hex: "9F7AEA")!  // Soothing secondary
         public static let accentGreen = Color(hex: "48BB78")!     // Success states
         

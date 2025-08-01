@@ -14,38 +14,68 @@ struct AccessibleCheckboxHabitView: View {
     let isCompleted: Bool
     
     var body: some View {
-        VStack(spacing: 16) {
-            // Checkbox
-            Button {
-                onComplete(habit.id, nil, nil)
-            } label: {
-                HStack(spacing: 12) {
-                    Image(systemName: isCompleted ? "checkmark.circle.fill" : "circle")
-                        .font(.title)
-                        .foregroundStyle(isCompleted ? .green : .secondary)
+        ModernCard(style: isCompleted ? .elevated : .standard) {
+            VStack(spacing: 16) {
+                // Habit Info Header
+                HStack {
+                    Image(systemName: habit.type.iconName)
+                        .font(.title2)
+                        .foregroundColor(habit.swiftUIColor)
+                        .frame(width: 32, height: 32)
+                        .background(
+                            Circle()
+                                .fill(habit.swiftUIColor.opacity(0.1))
+                        )
                     
-                    Text(isCompleted ?
-                         String(localized: "HabitInteractionView.Checkbox.Completed", bundle: .module) :
-                         String(localized: "HabitInteractionView.Checkbox.TapToComplete", bundle: .module))
-                        .font(.headline)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(habit.name)
+                            .customHeadline()
+                            .lineLimit(2)
+                        
+                        Text(habit.type.description)
+                            .customCaption()
+                    }
+                    
+                    Spacer()
                 }
-                .padding()
-                .frame(maxWidth: .infinity)
-                .background(Color.gray.opacity(0.1))
-                .clipShape(RoundedRectangle(cornerRadius: 12))
+                
+                // Checkbox Button
+                Button {
+                    HapticManager.trigger(isCompleted ? .success : .medium)
+                    onComplete(habit.id, nil, nil)
+                } label: {
+                    HStack(spacing: 12) {
+                        Image(systemName: isCompleted ? "checkmark.circle.fill" : "circle")
+                            .font(.title)
+                            .foregroundStyle(isCompleted ? Theme.Colors.accentGreen : Theme.secondaryText)
+                        
+                        Text(isCompleted ?
+                             String(localized: "HabitInteractionView.Checkbox.Completed", bundle: .module) :
+                             String(localized: "HabitInteractionView.Checkbox.TapToComplete", bundle: .module))
+                            .customSubheadline()
+                            .foregroundColor(isCompleted ? Theme.Colors.accentGreen : Theme.text)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 16)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(isCompleted ? Theme.Colors.accentGreen.opacity(0.1) : Color.gray.opacity(0.05))
+                    )
+                }
+                .accessibilityButton(
+                    identifier: AccessibilityConfiguration.Identifiers.completeHabitButton(habitId: habit.id),
+                    label: AccessibilityConfiguration.Labels.checkboxHabit(
+                        habitName: habit.name,
+                        isCompleted: isCompleted
+                    ),
+                    hint: AccessibilityConfiguration.Hints.doubleTapToComplete,
+                    traits: AccessibilityConfiguration.habitCardTraits
+                )
+                .disabled(isCompleted)
+                .buttonStyle(ScaleButtonStyle())
+                .sensoryFeedback(.selection, trigger: isCompleted)
             }
-            .accessibilityButton(
-                identifier: AccessibilityConfiguration.Identifiers.completeHabitButton(habitId: habit.id),
-                label: AccessibilityConfiguration.Labels.checkboxHabit(
-                    habitName: habit.name,
-                    isCompleted: isCompleted
-                ),
-                hint: AccessibilityConfiguration.Hints.doubleTapToComplete,
-                traits: AccessibilityConfiguration.habitCardTraits
-            )
-            .disabled(isCompleted)
         }
-        .padding()
     }
 }
 
@@ -112,25 +142,22 @@ struct AccessibleTimerHabitView: View {
                     traits: AccessibilityConfiguration.timerButtonTraits
                 )
                 
-                // Complete early button (only show when running)
-                if isRunning {
-                    Button {
-                        completeEarly()
-                    } label: {
-                        Text("Complete")
-                            .font(.headline)
-                            .foregroundStyle(.white)
-                            .padding(.vertical, 12)
-                            .padding(.horizontal, 24)
-                            .background(Color.blue)
-                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                    
+                    // Complete early button (only show when running)
+                    if isRunning {
+                        IconButton(
+                            icon: "checkmark.circle.fill",
+                            title: "Complete",
+                            style: .secondary
+                        ) {
+                            completeEarly()
+                        }
+                        .accessibilityButton(
+                            identifier: AccessibilityConfiguration.Identifiers.completeHabitButton(habitId: habit.id),
+                            label: AccessibilityConfiguration.Labels.completeHabitButton(habitName: habit.name),
+                            hint: AccessibilityConfiguration.Hints.doubleTapToComplete
+                        )
                     }
-                    .accessibilityButton(
-                        identifier: AccessibilityConfiguration.Identifiers.completeHabitButton(habitId: habit.id),
-                        label: AccessibilityConfiguration.Labels.completeHabitButton(habitName: habit.name),
-                        hint: AccessibilityConfiguration.Hints.doubleTapToComplete
-                    )
-                }
             }
         }
         .padding()
@@ -142,6 +169,9 @@ struct AccessibleTimerHabitView: View {
     private func startTimer() {
         isRunning = true
         startTime = Date()
+        
+        // Haptic feedback for timer start
+        HapticManager.trigger(.medium)
         
         // Announce start to VoiceOver
         #if canImport(UIKit)
@@ -167,6 +197,9 @@ struct AccessibleTimerHabitView: View {
         timer?.invalidate()
         timer = nil
         
+        // Haptic feedback for timer pause
+        HapticManager.trigger(.light)
+        
         // Announce pause to VoiceOver
         #if canImport(UIKit)
         UIAccessibility.post(
@@ -189,10 +222,7 @@ struct AccessibleTimerHabitView: View {
         let actualDuration = startTime?.timeIntervalSinceNow.magnitude ?? defaultDuration
         
         // Provide completion feedback
-        #if canImport(UIKit)
-        let impactFeedback = UIImpactFeedbackGenerator(style: .heavy)
-        impactFeedback.impactOccurred()
-        #endif
+        HapticManager.trigger(.success)
         
         // Announce completion to VoiceOver
         #if canImport(UIKit)
@@ -212,6 +242,9 @@ struct AccessibleTimerHabitView: View {
         let actualDuration = startTime?.timeIntervalSinceNow.magnitude ?? (defaultDuration - timeRemaining)
         stopTimer()
         isRunning = false
+        
+        // Haptic feedback for early completion
+        HapticManager.trigger(.success)
         
         // Announce early completion
         #if canImport(UIKit)

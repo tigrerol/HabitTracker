@@ -101,7 +101,9 @@ public struct ContextCoverageView: View {
                 Spacer()
             }
             .navigationTitle("Coverage Overview")
+            #if os(iOS)
             .navigationBarTitleDisplayMode(.large)
+            #endif
             .sheet(isPresented: $showingRoutineDetails) {
                 routineDetailsSheet
             }
@@ -115,9 +117,9 @@ public struct ContextCoverageView: View {
     }
     
     private var axisConfigurationSection: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 8) {
             // X-Axis
-            VStack(spacing: 4) {
+            VStack(spacing: 2) {
                 Text("X-Axis")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
@@ -125,29 +127,30 @@ public struct ContextCoverageView: View {
                 Menu {
                     ForEach(availableDimensions) { dimension in
                         Button {
+                            HapticManager.trigger(.selection)
                             xAxisDimension = dimension
                         } label: {
                             Label(dimension.displayName, systemImage: dimension.icon)
                         }
                     }
                 } label: {
-                    HStack(spacing: 4) {
+                    HStack(spacing: 3) {
                         Image(systemName: xAxisDimension.icon)
-                            .font(.caption)
+                            .font(.caption2)
                         Text(xAxisDimension.displayName)
-                            .font(.caption)
+                            .font(.caption2)
                             .fontWeight(.medium)
                         Image(systemName: "chevron.up.chevron.down")
-                            .font(.caption2)
+                            .font(.system(size: 8))
                     }
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 6)
-                    .background(Color(.systemGray5), in: RoundedRectangle(cornerRadius: 6))
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Theme.cardBackground, in: Capsule())
                 }
             }
             
             // Y-Axis
-            VStack(spacing: 4) {
+            VStack(spacing: 2) {
                 Text("Y-Axis")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
@@ -155,29 +158,30 @@ public struct ContextCoverageView: View {
                 Menu {
                     ForEach(availableDimensions) { dimension in
                         Button {
+                            HapticManager.trigger(.selection)
                             yAxisDimension = dimension
                         } label: {
                             Label(dimension.displayName, systemImage: dimension.icon)
                         }
                     }
                 } label: {
-                    HStack(spacing: 4) {
+                    HStack(spacing: 3) {
                         Image(systemName: yAxisDimension.icon)
-                            .font(.caption)
+                            .font(.caption2)
                         Text(yAxisDimension.displayName)
-                            .font(.caption)
+                            .font(.caption2)
                             .fontWeight(.medium)
                         Image(systemName: "chevron.up.chevron.down")
-                            .font(.caption2)
+                            .font(.system(size: 8))
                     }
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 6)
-                    .background(Color(.systemGray5), in: RoundedRectangle(cornerRadius: 6))
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Theme.cardBackground, in: Capsule())
                 }
             }
             
             // Filter
-            VStack(spacing: 4) {
+            VStack(spacing: 2) {
                 Text("Filter")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
@@ -185,29 +189,30 @@ public struct ContextCoverageView: View {
                 Menu {
                     ForEach(availableDimensions) { dimension in
                         Button {
+                            HapticManager.trigger(.selection)
                             filterDimension = dimension
                         } label: {
                             Label(dimension.displayName, systemImage: dimension.icon)
                         }
                     }
                 } label: {
-                    HStack(spacing: 4) {
+                    HStack(spacing: 3) {
                         Image(systemName: filterDimension.icon)
-                            .font(.caption)
+                            .font(.caption2)
                         Text(filterDimension.displayName)
-                            .font(.caption)
+                            .font(.caption2)
                             .fontWeight(.medium)
                         Image(systemName: "chevron.up.chevron.down")
-                            .font(.caption2)
+                            .font(.system(size: 8))
                     }
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 6)
-                    .background(Color(.systemGray5), in: RoundedRectangle(cornerRadius: 6))
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Theme.cardBackground, in: Capsule())
                 }
             }
         }
         .padding(.horizontal)
-        .padding(.vertical, 8)
+        .padding(.vertical, 4)
     }
     
     private var filterSection: some View {
@@ -215,6 +220,7 @@ public struct ContextCoverageView: View {
             HStack(spacing: 8) {
                 ForEach(Array(filterItems.enumerated()), id: \.offset) { index, item in
                     Button {
+                        HapticManager.trigger(.selection)
                         selectedFilterValue = item
                     } label: {
                         HStack(spacing: 6) {
@@ -296,6 +302,7 @@ public struct ContextCoverageView: View {
                         )
                         
                         Button {
+                            HapticManager.trigger(.light)
                             selectedCellRoutines = routines
                             selectedContext = (xItem, yItem, selectedFilterValue)
                             showingRoutineDetails = true
@@ -316,90 +323,99 @@ public struct ContextCoverageView: View {
         NavigationStack {
             VStack(alignment: .leading, spacing: 16) {
                 // Context header
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Context")
-                        .font(.headline)
-                        .fontWeight(.semibold)
-                    
-                    VStack(alignment: .leading, spacing: 8) {
-                        HStack(spacing: 6) {
-                            Image(systemName: xAxisDimension.icon)
-                                .foregroundStyle(.secondary)
-                            Text("\(xAxisDimension.displayName): \(displayNameForItem(selectedContext.x))")
-                                .fontWeight(.medium)
-                        }
+                ModernCard(style: .frosted) {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Context")
+                            .customHeadline()
+                            .fontWeight(.semibold)
                         
-                        HStack(spacing: 6) {
-                            Image(systemName: yAxisDimension.icon)
-                                .foregroundStyle(.secondary)
-                            Text("\(yAxisDimension.displayName): \(displayNameForItem(selectedContext.y))")
-                                .fontWeight(.medium)
-                        }
-                        
-                        HStack(spacing: 6) {
-                            Image(systemName: filterDimension.icon)
-                                .foregroundStyle(.secondary)
-                            Text("\(filterDimension.displayName): \(displayNameForItem(selectedContext.filter))")
-                                .fontWeight(.medium)
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack(spacing: 6) {
+                                Image(systemName: xAxisDimension.icon)
+                                    .foregroundStyle(.secondary)
+                                Text("\(xAxisDimension.displayName): \(displayNameForItem(selectedContext.x))")
+                                    .customSubheadline()
+                                    .fontWeight(.medium)
+                            }
+                            
+                            HStack(spacing: 6) {
+                                Image(systemName: yAxisDimension.icon)
+                                    .foregroundStyle(.secondary)
+                                Text("\(yAxisDimension.displayName): \(displayNameForItem(selectedContext.y))")
+                                    .customSubheadline()
+                                    .fontWeight(.medium)
+                            }
+                            
+                            HStack(spacing: 6) {
+                                Image(systemName: filterDimension.icon)
+                                    .foregroundStyle(.secondary)
+                                Text("\(filterDimension.displayName): \(displayNameForItem(selectedContext.filter))")
+                                    .customSubheadline()
+                                    .fontWeight(.medium)
+                            }
                         }
                     }
-                    .font(.subheadline)
                 }
                 .padding(.horizontal)
                 
-                Divider()
-                
                 // Routines list
                 if selectedCellRoutines.isEmpty {
-                    VStack(spacing: 12) {
-                        Image(systemName: "calendar.badge.exclamationmark")
-                            .font(.largeTitle)
-                            .foregroundStyle(.secondary)
-                        
-                        Text("No routines for this context")
-                            .font(.headline)
-                            .foregroundStyle(.secondary)
-                        
-                        Text("This combination of time, location, and day category doesn't have any matching routines.")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                            .multilineTextAlignment(.center)
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .padding()
-                } else {
-                    List(selectedCellRoutines) { routine in
-                        HStack(spacing: 12) {
-                            RoundedRectangle(cornerRadius: 8)
-                                .fill(routine.swiftUIColor)
-                                .frame(width: 4, height: 40)
-                            
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(routine.name)
-                                    .font(.subheadline)
-                                    .fontWeight(.medium)
-                                
-                                HStack(spacing: 8) {
-                                    Text("\(routine.activeHabitsCount) habits")
-                                    Text("•")
-                                    Text(routine.formattedDuration)
-                                }
-                                .font(.caption)
+                    ModernCard {
+                        VStack(spacing: 12) {
+                            Image(systemName: "calendar.badge.exclamationmark")
+                                .font(.largeTitle)
                                 .foregroundStyle(.secondary)
-                            }
                             
-                            Spacer()
+                            Text("No routines for this context")
+                                .customHeadline()
+                                .foregroundStyle(.secondary)
+                            
+                            Text("This combination of time, location, and day category doesn't have any matching routines.")
+                                .customSubheadline()
+                                .foregroundStyle(.secondary)
+                                .multilineTextAlignment(.center)
                         }
-                        .padding(.vertical, 4)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                        .padding()
                     }
-                    .listStyle(.plain)
+                    .padding(.horizontal)
+                } else {
+                    LazyVStack(spacing: 8) {
+                        ForEach(selectedCellRoutines) { routine in
+                            ModernCard {
+                                HStack(spacing: 12) {
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .fill(routine.swiftUIColor)
+                                        .frame(width: 4, height: 40)
+                                    
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text(routine.name)
+                                            .customSubheadline()
+                                            .fontWeight(.medium)
+                                        
+                                        HStack(spacing: 8) {
+                                            Text("\(routine.activeHabitsCount) habits")
+                                            Text("•")
+                                            Text(routine.formattedDuration)
+                                        }
+                                        .customCaption()
+                                        .foregroundStyle(.secondary)
+                                    }
+                                    
+                                    Spacer()
+                                }
+                                .padding(.vertical, 4)
+                            }
+                        }
+                    }
+                    .padding(.horizontal)
                 }
             }
             .navigationTitle("Routine Details")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") {
+                    SecondaryButton("Done") {
                         showingRoutineDetails = false
                     }
                 }
@@ -556,22 +572,23 @@ public struct ContextCoverageView: View {
 struct CoverageCell: View {
     let routineCount: Int
     let firstRoutine: RoutineTemplate?
+    @State private var isPressed = false
     
     private var cellColor: Color {
         switch routineCount {
         case 0:
-            return Color(.systemRed).opacity(0.2)
+            return Theme.Colors.accentRed.opacity(0.2)
         case 1:
-            return Color(.systemGreen).opacity(0.6)
+            return Theme.Colors.accentGreen.opacity(0.6)
         case 2...3:
-            return Color(.systemOrange).opacity(0.6)
+            return Theme.Colors.accentOrange.opacity(0.6)
         default:
-            return Color(.systemBlue).opacity(0.6)
+            return Theme.accent.opacity(0.6)
         }
     }
     
     private var textColor: Color {
-        routineCount == 0 ? .secondary : .white
+        routineCount == 0 ? Theme.secondaryText : .white
     }
     
     var body: some View {
@@ -580,22 +597,39 @@ struct CoverageCell: View {
                 RoundedRectangle(cornerRadius: 3)
                     .fill(routine.swiftUIColor)
                     .frame(width: 16, height: 3)
+                    .shadow(color: routine.swiftUIColor.opacity(0.3), radius: 2, x: 0, y: 1)
             } else {
                 Spacer()
                     .frame(height: 3)
             }
             
             Text("\(routineCount)")
-                .font(.caption)
+                .customCaption()
                 .fontWeight(.semibold)
                 .foregroundStyle(textColor)
         }
         .frame(width: 60, height: 44)
-        .background(cellColor, in: RoundedRectangle(cornerRadius: 8))
+        .background(
+            RoundedRectangle(cornerRadius: 8)
+                .fill(cellColor)
+                .shadow(color: cellColor.opacity(0.3), radius: isPressed ? 1 : 2, x: 0, y: isPressed ? 1 : 2)
+        )
         .overlay(
             RoundedRectangle(cornerRadius: 8)
                 .stroke(Color(.separator), lineWidth: 0.5)
         )
+        .scaleEffect(isPressed ? 0.95 : 1.0)
+        .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isPressed)
+        .onTapGesture {
+            withAnimation(.spring(response: 0.2, dampingFraction: 0.8)) {
+                isPressed = true
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                withAnimation(.spring(response: 0.2, dampingFraction: 0.8)) {
+                    isPressed = false
+                }
+            }
+        }
     }
 }
 
