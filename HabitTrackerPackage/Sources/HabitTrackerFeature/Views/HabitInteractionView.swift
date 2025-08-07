@@ -380,6 +380,7 @@ struct TimerHabitView: View {
                         timeRemaining -= 1
                     } else {
                         timer?.invalidate()
+                        FeedbackManager.shared.timerCompleted()
                         onComplete(habit.id, duration, nil)
                     }
                 case .multiple:
@@ -387,7 +388,8 @@ struct TimerHabitView: View {
                         timeRemaining -= 1
                         totalElapsed += 1
                     } else {
-                        // Move to next step
+                        // Move to next step - provide feedback for completed timer
+                        FeedbackManager.shared.stepCompleted()
                         currentStepIndex += 1
                         if currentStepIndex < steps.count {
                             // Start next timer step
@@ -396,6 +398,7 @@ struct TimerHabitView: View {
                         } else {
                             // All steps completed
                             timer?.invalidate()
+                            FeedbackManager.shared.timerCompleted()
                             let totalDuration = steps.reduce(0) { $0 + $1.duration }
                             onComplete(habit.id, totalDuration, "All intervals completed")
                         }
@@ -407,6 +410,7 @@ struct TimerHabitView: View {
                     // Check if we've reached the target (if set)
                     if let target = target, timeElapsed >= target {
                         timer?.invalidate()
+                        FeedbackManager.shared.timerCompleted()
                         onComplete(habit.id, timeElapsed, nil)
                     }
                 }
@@ -1088,6 +1092,7 @@ struct GuidedSequenceHabitView: View {
                         .foregroundStyle(.secondary)
                     
                     Button {
+                        FeedbackManager.shared.timerCompleted()
                         onComplete(habit.id, totalElapsed, "Completed all \(steps.count) steps")
                     } label: {
                         Text(String(localized: "HabitInteractionView.Sequence.Done", bundle: .module))
@@ -1150,6 +1155,7 @@ struct GuidedSequenceHabitView: View {
                     timeRemaining -= 1
                 } else {
                     // Auto advance to next step
+                    FeedbackManager.shared.stepCompleted()
                     nextStep()
                 }
             }
