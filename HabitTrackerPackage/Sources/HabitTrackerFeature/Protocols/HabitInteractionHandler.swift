@@ -119,8 +119,8 @@ public struct TimerHabitHandler: HabitInteractionHandler {
         isCompleted: Bool
     ) -> AnyView {
         switch habit.type {
-        case .timer(let style, let duration, let target, let steps):
-            return AnyView(TimerHabitView(habit: habit, style: style, duration: duration, target: target, steps: steps, onComplete: onComplete, isCompleted: isCompleted))
+        case .timer(let style, let duration, let target, let steps, let repeatCount):
+            return AnyView(TimerHabitView(habit: habit, style: style, duration: duration, target: target, steps: steps, repeatCount: repeatCount, onComplete: onComplete, isCompleted: isCompleted))
         default:
             return AnyView(Text("Invalid habit type for TimerHabitHandler"))
         }
@@ -134,17 +134,19 @@ public struct TimerHabitHandler: HabitInteractionHandler {
     }
     
     public func estimatedDuration(for habit: Habit) -> TimeInterval {
-        guard case .timer(let style, let duration, let target, let steps) = habit.type else { return 300 }
+        guard case .timer(let style, let duration, let target, let steps, let repeatCount) = habit.type else { return 300 }
         
         switch style {
         case .down, .up:
             return target ?? duration
         case .multiple:
+            let singleDuration: TimeInterval
             if !steps.isEmpty {
-                return steps.reduce(0) { $0 + $1.duration }
+                singleDuration = steps.reduce(0) { $0 + $1.duration }
             } else {
-                return duration
+                singleDuration = duration
             }
+            return singleDuration * Double(repeatCount ?? 1)
         }
     }
 }

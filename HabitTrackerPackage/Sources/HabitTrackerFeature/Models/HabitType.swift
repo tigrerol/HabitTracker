@@ -6,7 +6,7 @@ public enum HabitType: Codable, Hashable, Sendable {
     case task(subtasks: [Subtask])
     
     /// Timer-based habit with flexible timing modes
-    case timer(style: TimerStyle, duration: TimeInterval, target: TimeInterval? = nil, steps: [SequenceStep] = [])
+    case timer(style: TimerStyle, duration: TimeInterval, target: TimeInterval? = nil, steps: [SequenceStep] = [], repeatCount: Int? = nil)
     
     /// External action (app launch, website, shortcut)
     case action(type: ActionType, identifier: String, displayName: String)
@@ -85,7 +85,7 @@ extension HabitType {
         switch self {
         case .task(let subtasks):
             return subtasks.isEmpty ? "Simple task" : "\(subtasks.count) subtasks"
-        case .timer(let style, let duration, let target, let steps):
+        case .timer(let style, let duration, let target, let steps, let repeatCount):
             switch style {
             case .down:
                 return "Timer (\(Int(duration/60))min)"
@@ -98,7 +98,13 @@ extension HabitType {
             case .multiple:
                 if !steps.isEmpty {
                     let totalTime = steps.reduce(0) { $0 + $1.duration }
-                    return "\(steps.count) intervals (\(Int(totalTime/60))min)"
+                    let finalTime = totalTime * Double(repeatCount ?? 1)
+                    let repeats = repeatCount ?? 1
+                    if repeats > 1 {
+                        return "\(steps.count) intervals × \(repeats) (\(Int(finalTime/60))min)"
+                    } else {
+                        return "\(steps.count) intervals (\(Int(totalTime/60))min)"
+                    }
                 } else {
                     return "Multiple timers (\(Int(duration/60))min)"
                 }
@@ -136,7 +142,7 @@ extension HabitType {
         switch self {
         case .task(let subtasks):
             return subtasks.isEmpty ? "checkmark.square" : "list.bullet.rectangle"
-        case .timer(let style, _, _, _):
+        case .timer(let style, _, _, _, _):
             switch style {
             case .down:
                 return "timer"
@@ -173,7 +179,7 @@ extension HabitType {
         switch self {
         case .task:
             return "New Task"
-        case .timer(let style, _, _, _):
+        case .timer(let style, _, _, _, _):
             switch style {
             case .down:
                 return "New Timer"

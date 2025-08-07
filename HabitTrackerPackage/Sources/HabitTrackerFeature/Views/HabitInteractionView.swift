@@ -145,6 +145,7 @@ struct TimerHabitView: View {
     let duration: TimeInterval
     let target: TimeInterval?
     let steps: [SequenceStep]
+    let repeatCount: Int?
     let onComplete: (UUID, TimeInterval?, String?) -> Void
     let isCompleted: Bool
     
@@ -156,14 +157,16 @@ struct TimerHabitView: View {
     
     // For multiple timer style
     @State private var currentStepIndex = 0
+    @State private var currentRound = 0
     @State private var totalElapsed: TimeInterval = 0
     
-    init(habit: Habit, style: TimerStyle, duration: TimeInterval, target: TimeInterval? = nil, steps: [SequenceStep] = [], onComplete: @escaping (UUID, TimeInterval?, String?) -> Void, isCompleted: Bool) {
+    init(habit: Habit, style: TimerStyle, duration: TimeInterval, target: TimeInterval? = nil, steps: [SequenceStep] = [], repeatCount: Int? = nil, onComplete: @escaping (UUID, TimeInterval?, String?) -> Void, isCompleted: Bool) {
         self.habit = habit
         self.style = style
         self.duration = duration
         self.target = target
         self.steps = steps
+        self.repeatCount = repeatCount
         self.onComplete = onComplete
         self.isCompleted = isCompleted
         
@@ -177,6 +180,7 @@ struct TimerHabitView: View {
             // For multiple timers, start with first step duration
             let firstStepDuration = steps.first?.duration ?? duration
             self._timeRemaining = State(initialValue: firstStepDuration)
+            self._currentRound = State(initialValue: 1) // Start at round 1
         }
     }
     
@@ -207,7 +211,16 @@ struct TimerHabitView: View {
             }
         case .multiple:
             if let step = currentStep {
-                return step.duration > 0 ? max(0, min(1, 1.0 - (timeRemaining / step.duration))) : 0
+                // If we have repeats, calculate progress across all rounds
+                if let repeatCount = repeatCount, repeatCount > 1 {
+                    let totalSteps = steps.count * repeatCount
+                    let completedSteps = (currentRound - 1) * steps.count + currentStepIndex
+                    let currentStepProgress = step.duration > 0 ? (1.0 - (timeRemaining / step.duration)) : 0
+                    return totalSteps > 0 ? max(0, min(1, (Double(completedSteps) + currentStepProgress) / Double(totalSteps))) : 0
+                } else {
+                    // Single round progress
+                    return step.duration > 0 ? max(0, min(1, 1.0 - (timeRemaining / step.duration))) : 0
+                }
             } else {
                 return 1.0 // All steps completed
             }
@@ -219,9 +232,15 @@ struct TimerHabitView: View {
             // Step info for multiple timers
             if style == .multiple, let step = currentStep {
                 VStack(spacing: 8) {
-                    Text("\(currentStepIndex + 1) of \(steps.count)")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                    if let repeatCount = repeatCount, repeatCount > 1 {
+                        Text("Round \(currentRound) of \(repeatCount), Step \(currentStepIndex + 1) of \(steps.count)")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    } else {
+                        Text("Step \(currentStepIndex + 1) of \(steps.count)")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
                     
                     Text(step.name)
                         .font(.title2)
@@ -388,19 +407,36 @@ struct TimerHabitView: View {
                         timeRemaining -= 1
                         totalElapsed += 1
                     } else {
-                        // Move to next step - provide feedback for completed timer
+                        // Step completed - provide feedback
                         FeedbackManager.shared.stepCompleted()
                         currentStepIndex += 1
+                        totalElapsed += 1
+                        
                         if currentStepIndex < steps.count {
-                            // Start next timer step
+                            // Start next step in current round
                             timeRemaining = steps[currentStepIndex].duration
-                            totalElapsed += 1
                         } else {
-                            // All steps completed
-                            timer?.invalidate()
-                            FeedbackManager.shared.timerCompleted()
-                            let totalDuration = steps.reduce(0) { $0 + $1.duration }
-                            onComplete(habit.id, totalDuration, "All intervals completed")
+                            // Current round completed
+                            let totalRounds = repeatCount ?? 1
+                            if currentRound < totalRounds {
+                                // Start next round
+                                currentRound += 1
+                                currentStepIndex = 0
+                                timeRemaining = steps[0].duration
+                                
+                                // Provide round completion feedback (stronger than step)
+                                if totalRounds > 1 {
+                                    FeedbackManager.shared.timerCompleted() // Use stronger feedback for round completion
+                                }
+                            } else {
+                                // All rounds completed
+                                timer?.invalidate()
+                                FeedbackManager.shared.timerCompleted()
+                                let singleRoundDuration = steps.reduce(0) { $0 + $1.duration }
+                                let totalDuration = singleRoundDuration * Double(totalRounds)
+                                let message = totalRounds > 1 ? "All \(totalRounds) rounds completed" : "All intervals completed"
+                                onComplete(habit.id, totalDuration, message)
+                            }
                         }
                     }
                 case .up:

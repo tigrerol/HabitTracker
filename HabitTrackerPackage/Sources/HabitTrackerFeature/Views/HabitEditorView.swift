@@ -15,6 +15,7 @@ public struct HabitEditorView: View {
     @State private var timerDuration: TimeInterval = 300
     @State private var timerTarget: TimeInterval? = nil
     @State private var timerSteps: [SequenceStep] = []
+    @State private var timerRepeatCount: Int = 1
     @State private var actionType: ActionType = .app
     @State private var actionIdentifier: String = ""
     @State private var actionDisplayName: String = ""
@@ -44,11 +45,12 @@ public struct HabitEditorView: View {
         
         // Initialize type-specific state
         switch habit.type {
-        case .timer(let style, let duration, let target, let steps):
+        case .timer(let style, let duration, let target, let steps, let repeatCount):
             self._timerStyle = State(initialValue: style)
             self._timerDuration = State(initialValue: duration)
             self._timerTarget = State(initialValue: target)
             self._timerSteps = State(initialValue: steps)
+            self._timerRepeatCount = State(initialValue: repeatCount ?? 1)
         case .action(let type, let identifier, let displayName):
             self._actionType = State(initialValue: type)
             self._actionIdentifier = State(initialValue: identifier)
@@ -253,6 +255,18 @@ public struct HabitEditorView: View {
             
             if timerStyle == .multiple {
                 timerStepsEditor
+                
+                // Repeat count for multiple timers
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Repeat Count")
+                        .font(.headline)
+                    
+                    HStack {
+                        Stepper(value: $timerRepeatCount, in: 1...999) {
+                            Text("\(timerRepeatCount) round\(timerRepeatCount == 1 ? "" : "s")")
+                        }
+                    }
+                }
             } else {
                 timerDurationDisplay
                 timerInputFields
@@ -756,7 +770,7 @@ public struct HabitEditorView: View {
             }
             updatedHabit.type = .task(subtasks: subtasks)
         case .timer:
-            updatedHabit.type = .timer(style: timerStyle, duration: timerDuration, target: timerTarget, steps: timerSteps)
+            updatedHabit.type = .timer(style: timerStyle, duration: timerDuration, target: timerTarget, steps: timerSteps, repeatCount: timerRepeatCount > 1 ? timerRepeatCount : nil)
         case .action:
             updatedHabit.type = .action(type: actionType, identifier: actionIdentifier, displayName: actionDisplayName)
         case .tracking:

@@ -235,7 +235,7 @@ struct HabitQuickAddView: View {
             
             // Add variations
             switch type {
-            case .timer(_, let duration, _, _):
+            case .timer(_, let duration, _, _, _):
                 if duration != 300 {
                     suggestions.append((String(format: String(localized: "HabitQuickAddView.Suggestion.5min", bundle: .module), cleanName), .timer(style: .down, duration: 300)))
                 }
@@ -359,7 +359,7 @@ struct HabitQuickAddView: View {
         switch type {
         case .task:
             return String(localized: "HabitQuickAddView.DefaultName.NewTask", bundle: .module)
-        case .timer(let style, _, _, _):
+        case .timer(let style, _, _, _, _):
             switch style {
             case .down:
                 return String(localized: "HabitQuickAddView.DefaultName.TimedActivity", bundle: .module)

@@ -42,11 +42,12 @@ extension Habit {
         switch type {
         case .task(let subtasks):
             return subtasks.isEmpty ? 60 : TimeInterval(subtasks.count * 45) // 1 minute or 45 seconds per subtask
-        case .timer(let style, let duration, let target, let steps):
+        case .timer(let style, let duration, let target, let steps, let repeatCount):
             // For multiple timers, sum all steps; otherwise use target or duration
             switch style {
             case .multiple:
-                return !steps.isEmpty ? steps.reduce(0) { $0 + $1.duration } : duration
+                let singleDuration = !steps.isEmpty ? steps.reduce(0) { $0 + $1.duration } : duration
+                return singleDuration * Double(repeatCount ?? 1)
             case .down, .up:
                 return target ?? duration
             }

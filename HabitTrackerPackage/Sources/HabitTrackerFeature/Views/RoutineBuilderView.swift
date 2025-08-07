@@ -1100,7 +1100,7 @@ public struct RoutineBuilderView: View {
         switch type {
         case .task:
             return "New Task"
-        case .timer(let style, _, _, _):
+        case .timer(let style, _, _, _, _):
             switch style {
             case .down: return "Timed Activity"
             case .up: return "Rest Period"
