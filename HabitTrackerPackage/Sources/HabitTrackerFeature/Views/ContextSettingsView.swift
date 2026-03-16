@@ -82,8 +82,8 @@ struct ContextSettingsView: View {
                             Label(routineService.routineSelector.currentContext.timeSlot.displayName, 
                                   systemImage: routineService.routineSelector.currentContext.timeSlot.icon)
                             
-                            Label(routineService.routineSelector.currentContext.dayCategory.displayName, 
-                                  systemImage: routineService.routineSelector.currentContext.dayCategory.icon)
+                            Label(routineService.routineSelector.currentContext.dayCategories.map(\.displayName).joined(separator: " + "),
+                                  systemImage: routineService.routineSelector.currentContext.dayCategories.first?.icon ?? "calendar")
                             
                             if routineService.routineSelector.currentContext.location != .unknown {
                                 Label(routineService.routineSelector.currentContext.location.displayName, 
@@ -211,8 +211,9 @@ struct ContextSettingsView: View {
     }
     
     private var dayTypeSummary: String {
-        let currentCategory = DayCategoryManager.shared.getCurrentDayCategory()
-        return String(format: String(localized: "ContextSettingsView.DayTypeSummary", bundle: .module), currentCategory.displayName)
+        let currentCategories = DayCategoryManager.shared.getCurrentDayCategories()
+        let names = currentCategories.map(\.displayName).joined(separator: " + ")
+        return String(format: String(localized: "ContextSettingsView.DayTypeSummary", bundle: .module), names)
     }
     
     private var locationSummary: String {

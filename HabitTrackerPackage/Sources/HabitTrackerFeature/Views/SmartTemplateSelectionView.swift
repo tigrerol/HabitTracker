@@ -169,10 +169,10 @@ struct SmartTemplateSelectionView: View {
             
             // Day indicator
             Label {
-                Text(context.dayCategory.displayName)
+                Text(context.dayCategories.map(\.displayName).joined(separator: " + "))
             } icon: {
-                Image(systemName: context.dayCategory.icon)
-                    .foregroundStyle(context.dayCategory.color)
+                Image(systemName: context.dayCategories.first?.icon ?? "calendar")
+                    .foregroundStyle(context.dayCategories.first?.color ?? .secondary)
             }
             .font(.caption)
             .foregroundStyle(.secondary)

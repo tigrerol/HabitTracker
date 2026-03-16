@@ -431,13 +431,13 @@ public struct ContextCoverageView: View {
     ) -> [RoutineTemplate] {
         return routineService.templates.filter { template in
             guard let rule = template.contextRule else { return false }
-            
+
             // Check time slot match
             let timeSlotMatches = rule.timeSlots.contains(timeSlot)
-            
-            // Check day category match
+
+            // Check day category match (single category for coverage grid)
             let dayCategoryMatches = rule.dayCategoryIds.contains(dayCategory.id)
-            
+
             // Check location match
             let locationMatches: Bool
             switch location {
@@ -446,7 +446,7 @@ public struct ContextCoverageView: View {
             case .custom(let customLocationId):
                 locationMatches = rule.locationIds.contains(customLocationId.uuidString)
             }
-            
+
             return timeSlotMatches && dayCategoryMatches && locationMatches
         }
         .sorted { $0.contextRule?.priority ?? 0 > $1.contextRule?.priority ?? 0 }

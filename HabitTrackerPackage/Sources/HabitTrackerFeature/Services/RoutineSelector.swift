@@ -95,19 +95,19 @@ public final class RoutineSelector {
         lastContextUpdate = now
         
         let timeSlot = TimeSlotManager.shared.getCurrentTimeSlot()
-        let dayCategory = DayCategoryManager.shared.getCurrentDayCategory()
-        
+        let dayCategories = DayCategoryManager.shared.getCurrentDayCategories()
+
         // Use LocationCoordinator's current location directly to avoid race condition
         let coordinatorLocation = locationCoordinator.currentLocationType
-        
+
         print("🗺️ RoutineSelector.updateContext() Debug:")
         print("   - Before update - currentLocationType: \(currentLocationType)")
         print("   - Before update - currentContext.location: \(currentContext.location)")
         print("   - LocationCoordinator.currentLocationType: \(coordinatorLocation)")
-        
+
         self.currentContext = RoutineContext(
             timeSlot: timeSlot,
-            dayCategory: dayCategory,
+            dayCategories: dayCategories,
             location: coordinatorLocation  // Use coordinator's location directly
         )
         
@@ -128,7 +128,8 @@ public final class RoutineSelector {
         await updateContext(force: true)
         
         // Filter templates with context rules and calculate scores
-        print("🔍 RoutineSelector: Current context - Time: \(currentContext.timeSlot.displayName), Day: \(currentContext.dayCategory.displayName), Location: \(currentContext.location.displayName)")
+        let dayCategoryNames = currentContext.dayCategories.map(\.displayName).joined(separator: " + ")
+        print("🔍 RoutineSelector: Current context - Time: \(currentContext.timeSlot.displayName), Day: \(dayCategoryNames), Location: \(currentContext.location.displayName)")
         
         var scoredTemplates: [(template: RoutineTemplate, score: Int)] = []
         
@@ -197,8 +198,8 @@ public final class RoutineSelector {
             score += 10
         }
         
-        // Day category matching (medium weight)
-        if rule.dayCategoryIds.contains(context.dayCategory.id) {
+        // Day category matching (medium weight) - any category match counts
+        if context.dayCategories.contains(where: { rule.dayCategoryIds.contains($0.id) }) {
             score += 5
         }
         
@@ -225,8 +226,8 @@ public final class RoutineSelector {
         // Time slot must match
         guard rule.timeSlots.contains(context.timeSlot) else { return false }
         
-        // Day category must match
-        guard rule.dayCategoryIds.contains(context.dayCategory.id) else { return false }
+        // Day category must match (any of the context's categories)
+        guard context.dayCategories.contains(where: { rule.dayCategoryIds.contains($0.id) }) else { return false }
         
         // Location must match (empty means any location)
         if !rule.locationIds.isEmpty {
@@ -267,12 +268,14 @@ public final class RoutineSelector {
         reasons.append("It's \(context.timeSlot.displayName.lowercased())")
         
         // Day-based reason
-        if context.dayCategory.id == "weekend" {
+        let categoryIds = Set(context.dayCategories.map(\.id))
+        if categoryIds == Set(["weekend"]) {
             reasons.append("it's the weekend")
-        } else if context.dayCategory.id == "weekday" {
+        } else if categoryIds == Set(["weekday"]) {
             reasons.append("it's a weekday")
         } else {
-            reasons.append("it's a \(context.dayCategory.displayName.lowercased()) day")
+            let names = context.dayCategories.map(\.displayName).joined(separator: " & ")
+            reasons.append("it's a \(names.lowercased()) day")
         }
         
         // Location-based reason
