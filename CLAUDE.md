@@ -13,28 +13,36 @@ This is a native **iOS application** built with **Swift 6.1+** and **SwiftUI**. 
 The project follows a **workspace + SPM package** architecture:
 
 ```
-YourApp/
-├── Config/                         # XCConfig build settings
+HabitTracker/
+├── Config/                               # XCConfig build settings + entitlements
 │   ├── Debug.xcconfig
 │   ├── Release.xcconfig
 │   ├── Shared.xcconfig
-│   └── Tests.xcconfig
-├── YourApp.xcworkspace/            # Workspace container
-├── YourApp.xcodeproj/              # App shell (minimal wrapper)
-├── YourApp/                        # App target - just the entry point
+│   ├── Tests.xcconfig
+│   └── HabitTracker.entitlements
+├── HabitTracker.xcworkspace/             # Workspace container (open this)
+├── HabitTracker.xcodeproj/              # App shell (minimal wrapper)
+├── HabitTracker/                         # App target - entry point only
 │   ├── Assets.xcassets/
-│   ├── YourAppApp.swift           # @main entry point only
-│   └── YourApp.xctestplan
-├── YourAppPackage/                 # All features and business logic
+│   ├── HabitTrackerApp.swift            # @main entry point only
+│   └── HabitTracker.xctestplan
+├── HabitTrackerPackage/                  # All features and business logic
 │   ├── Package.swift
-│   ├── Sources/
-│   │   └── YourAppFeature/        # Feature modules
-│   └── Tests/
-│       └── YourAppFeatureTests/   # Swift Testing tests
-└── YourAppUITests/                 # UI automation tests
+│   ├── Sources/HabitTrackerFeature/
+│   │   ├── Components/                  # Reusable UI components
+│   │   ├── LiveActivities/              # ActivityKit infrastructure
+│   │   ├── Managers/                    # DayCategoryManager, LocationCategoryManager
+│   │   ├── Models/                      # Data models (Habit, RoutineTemplate, etc.)
+│   │   ├── Protocols/
+│   │   ├── Services/                    # RoutineService, persistence, location, etc.
+│   │   ├── Utils/                       # Theme, typography, haptics, geometry
+│   │   └── Views/                       # All SwiftUI views
+│   └── Tests/HabitTrackerFeatureTests/
+├── HabitTrackerWatch Watch App/          # watchOS companion
+└── HabitTrackerUITests/                  # UI automation tests
 ```
 
-**Important:** All development work should be done in the **YourAppPackage** Swift Package, not in the app project. The app project is merely a thin wrapper that imports and launches the package features.
+**Important:** All development work should be done in the **HabitTrackerPackage** Swift Package, not in the app project. The app project is a thin wrapper that creates the SwiftData model container and calls `HabitTrackerFeature.morningRoutineView()`.
 
 ## Project Memories
 
