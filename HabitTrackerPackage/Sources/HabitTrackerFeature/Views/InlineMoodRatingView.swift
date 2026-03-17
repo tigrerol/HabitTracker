@@ -48,6 +48,8 @@ struct InlineMoodRatingView: View {
                         }
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel(mood.description)
+                    .accessibilityHint(String(localized: "InlineMoodRatingView.MoodButton.AccessibilityHint", bundle: .module))
                     .disabled(hasRated && selectedMood != mood)
                 }
             }

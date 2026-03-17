@@ -2,34 +2,69 @@ import Foundation
 import CoreLocation
 
 /// Routine context with flexible day categories
+/// Supports multiple day categories per context (e.g. "Weekday" + "Training Day")
 public struct RoutineContext: Codable, Hashable, Sendable {
     public let timeSlot: TimeSlot
-    public let dayCategory: DayCategory
+    public let dayCategories: [DayCategory]
     public let location: LocationType
     public let timestamp: Date
-    
+
+    enum CodingKeys: String, CodingKey {
+        case timeSlot
+        case dayCategories
+        case dayCategory // legacy key for migration
+        case location
+        case timestamp
+    }
+
     public init(
         timeSlot: TimeSlot,
-        dayCategory: DayCategory,
+        dayCategories: [DayCategory],
         location: LocationType,
         timestamp: Date = Date()
     ) {
         self.timeSlot = timeSlot
-        self.dayCategory = dayCategory
+        self.dayCategories = dayCategories
         self.location = location
         self.timestamp = timestamp
     }
-    
+
+    // MARK: - Codable Migration
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        timeSlot = try container.decode(TimeSlot.self, forKey: .timeSlot)
+        location = try container.decode(LocationType.self, forKey: .location)
+        timestamp = try container.decode(Date.self, forKey: .timestamp)
+
+        // Try new format first: dayCategories array
+        if let categories = try? container.decode([DayCategory].self, forKey: .dayCategories) {
+            dayCategories = categories
+        } else {
+            // Fallback: decode old single dayCategory and wrap in array
+            let single = try container.decode(DayCategory.self, forKey: .dayCategory)
+            dayCategories = [single]
+        }
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(timeSlot, forKey: .timeSlot)
+        try container.encode(dayCategories, forKey: .dayCategories)
+        try container.encode(location, forKey: .location)
+        try container.encode(timestamp, forKey: .timestamp)
+    }
+
     /// Create context from current conditions (main actor required)
     @MainActor
     public static func current(location: LocationType = .unknown) -> RoutineContext {
         let now = Date()
         let categoryManager = DayCategoryManager.shared
-        let dayCategory = categoryManager.category(for: now)
-        
+        let dayCategories = categoryManager.categories(for: now)
+
         return RoutineContext(
             timeSlot: TimeSlot.from(date: now),
-            dayCategory: dayCategory,
+            dayCategories: dayCategories,
             location: location,
             timestamp: now
         )
@@ -146,8 +181,8 @@ public struct RoutineContextRule: Codable, Hashable, Sendable {
     @MainActor
     public func matches(_ context: RoutineContext, locationCoordinator: LocationCoordinator) -> Bool {
         let timeMatch = timeSlots.isEmpty || timeSlots.contains(context.timeSlot)
-        let dayMatch = dayCategoryIds.isEmpty || dayCategoryIds.contains(context.dayCategory.id)
-        
+        let dayMatch = dayCategoryIds.isEmpty || context.dayCategories.contains(where: { dayCategoryIds.contains($0.id) })
+
         // Enhanced location matching that handles custom locations
         let locationMatch: Bool
         if locationIds.isEmpty {
@@ -161,48 +196,41 @@ public struct RoutineContextRule: Codable, Hashable, Sendable {
                 locationMatch = locationIds.contains(uuid.uuidString)
             }
         }
-        
+
         return timeMatch && dayMatch && locationMatch
     }
-    
+
     /// Calculate match score (higher is better)
     @MainActor
     public func matchScore(for context: RoutineContext, locationCoordinator: LocationCoordinator) -> Int {
-        guard matches(context, locationCoordinator: locationCoordinator) else { 
-            print("   ❌ No match for timeSlots:\(timeSlots), dayCategories:\(dayCategoryIds), locations:\(locationIds)")
-            return 0 
+        guard matches(context, locationCoordinator: locationCoordinator) else {
+            return 0
         }
-        
+
         var score = priority * 1000 // Base score from priority
-        print("   ✅ Base score (priority \(priority) * 1000): \(score)")
-        
-        // Add points for specific matches (not empty sets)
+
+        // Day category match (highest weight: 300)
+        if !dayCategoryIds.isEmpty && context.dayCategories.contains(where: { dayCategoryIds.contains($0.id) }) {
+            score += 300
+        }
+        // Time slot match (medium weight: 200)
         if !timeSlots.isEmpty && timeSlots.contains(context.timeSlot) {
-            score += 100
-            print("   ✅ Time slot match (\(context.timeSlot)): +100, total: \(score)")
+            score += 200
         }
-        if !dayCategoryIds.isEmpty && dayCategoryIds.contains(context.dayCategory.id) {
-            score += 100
-            print("   ✅ Day category match (\(context.dayCategory.id)): +100, total: \(score)")
-        }
+        // Location match (lowest weight: 100)
         if !locationIds.isEmpty {
-            // Check if current location matches
             switch locationCoordinator.currentExtendedLocationType {
             case .builtin(let locationType):
                 if locationIds.contains(locationType.rawValue) {
                     score += 100
-                    print("   ✅ Location match (\(locationType.rawValue)): +100, total: \(score)")
                 }
             case .custom(let uuid):
                 if locationIds.contains(uuid.uuidString) {
                     score += 100
-                    print("   ✅ Custom location match (\(uuid)): +100, total: \(score)")
                 }
             }
-        } else {
-            print("   ⚪ Location any (empty set): +0, total: \(score)")
         }
-        
+
         return score
     }
 }

@@ -7,7 +7,7 @@
 // ==========================================
 // Test Target Settings (Customizable by scaffold tool)
 // ==========================================
-PRODUCT_BUNDLE_IDENTIFIER = com.example.habittracker
+PRODUCT_BUNDLE_IDENTIFIER = com.pregs.habittracker
 TEST_TARGET_NAME = HabitTracker
 
 // Fix duplicate module name issue

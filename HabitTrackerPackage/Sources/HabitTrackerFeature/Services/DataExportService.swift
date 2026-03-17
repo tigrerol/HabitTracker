@@ -58,16 +58,41 @@ public final class DataExportService {
         return try processImportData(exportData)
     }
     
+    /// Maximum allowed import file size (5 MB)
+    private static let maxImportFileSize: Int = 5 * 1024 * 1024
+
+    /// Maximum allowed number of habits in an import
+    private static let maxImportHabits: Int = 500
+
+    /// Maximum allowed number of routines in an import
+    private static let maxImportRoutines: Int = 100
+
     /// Import data from file URL
     public func importFromFile(_ fileURL: URL) throws -> ImportResult {
+        // Check file size before reading
+        let attributes = try FileManager.default.attributesOfItem(atPath: fileURL.path)
+        if let fileSize = attributes[.size] as? Int, fileSize > Self.maxImportFileSize {
+            throw ImportError.fileTooLarge
+        }
+
         let jsonString = try String(contentsOf: fileURL, encoding: .utf8)
         return try importFromJSON(jsonString)
     }
     
     /// Process imported data and merge with existing data
     private func processImportData(_ importData: ExportData) throws -> ImportResult {
+        // Validate count limits before processing
+        if importData.routines.count > Self.maxImportRoutines {
+            throw ImportError.tooManyRoutines
+        }
+
+        let totalHabits = importData.routines.reduce(0) { $0 + $1.habits.count }
+        if totalHabits > Self.maxImportHabits {
+            throw ImportError.tooManyHabits
+        }
+
         var result = ImportResult()
-        
+
         // Import routines
         var importedRoutines = 0
         var skippedRoutines = 0
@@ -247,7 +272,10 @@ public enum ImportError: LocalizedError {
     case invalidFileFormat
     case decodingFailed
     case incompatibleVersion
-    
+    case fileTooLarge
+    case tooManyRoutines
+    case tooManyHabits
+
     public var errorDescription: String? {
         switch self {
         case .invalidJSON:
@@ -258,6 +286,12 @@ public enum ImportError: LocalizedError {
             return "Failed to decode import data"
         case .incompatibleVersion:
             return "Import file from incompatible app version"
+        case .fileTooLarge:
+            return "Import file exceeds the maximum allowed size of 5 MB"
+        case .tooManyRoutines:
+            return "Import file contains too many routines (maximum 100)"
+        case .tooManyHabits:
+            return "Import file contains too many habits (maximum 500)"
         }
     }
 }

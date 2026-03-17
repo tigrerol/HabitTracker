@@ -238,6 +238,10 @@ struct ToastView: View {
                 onDismiss()
             }
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(toastAccessibilityLabel)
+        .accessibilityHint(toastAccessibilityHint)
+        .accessibilityAddTraits(.isStaticText)
     }
 }
 
@@ -259,7 +263,7 @@ struct ToastContainerView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .allowsHitTesting(false) // Allow touches to pass through to content below
+        .allowsHitTesting(!toastManager.toasts.isEmpty) // Only intercept touches when toasts are visible
         .zIndex(1000) // Ensure toasts appear above all other content
     }
 }
@@ -327,17 +331,17 @@ extension ErrorPresentationService {
 // MARK: - Toast Accessibility
 
 extension ToastView {
-    private var accessibilityLabel: String {
+    private var toastAccessibilityLabel: String {
         var label = "\(toast.type.rawValue): \(toast.message)"
-        if toast.action != nil {
-            label += ". \(toast.action!.title) available."
+        if let action = toast.action {
+            label += ". \(action.title) available."
         }
         return label
     }
-    
-    private var accessibilityHint: String {
-        if toast.action != nil {
-            return "Double tap to \(toast.action!.title.lowercased()). Swipe right to dismiss."
+
+    private var toastAccessibilityHint: String {
+        if let action = toast.action {
+            return "Double tap to \(action.title.lowercased()). Swipe right to dismiss."
         } else {
             return "Swipe right to dismiss."
         }
@@ -351,20 +355,23 @@ extension ToastManager {
     /// Show sample toasts for testing
     public func showSamples() {
         showSuccess("Operation completed successfully!")
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(0.5))
             self.showWarning("This is a warning message", action: ToastAction(title: "Fix") {
                 print("Fix action tapped")
             })
         }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(1.0))
             self.showError("Something went wrong", action: ToastAction(title: "Retry") {
                 print("Retry action tapped")
             })
         }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(1.5))
             self.showInfo("Here's some helpful information")
         }
     }

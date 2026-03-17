@@ -1,4 +1,6 @@
+#if canImport(WatchConnectivity)
 import WatchConnectivity
+#endif
 import Foundation
 
 // MARK: - Data Transfer Objects for Watch Communication
@@ -61,6 +63,7 @@ public struct WatchHabitCompletion: Codable, Sendable {
     }
 }
 
+#if canImport(WatchConnectivity)
 @Observable
 public final class WatchConnectivityManager: NSObject, Sendable, WCSessionDelegate {
     public static let shared = WatchConnectivityManager()
@@ -84,38 +87,36 @@ public final class WatchConnectivityManager: NSObject, Sendable, WCSessionDelega
         
         Task { @MainActor in
             if let error = error {
-                print("WCSession activation failed with error: \(error.localizedDescription)")
+                LoggingService.shared.error("WCSession activation failed: \(error.localizedDescription)", category: .app)
                 return
             }
-            print("WCSession activated with state: \(activationStateValue)")
+            LoggingService.shared.debug("WCSession activated with state: \(activationStateValue)", category: .app)
             isReachable = sessionIsReachable
         }
     }
     
     public nonisolated func sessionDidBecomeInactive(_ session: WCSession) {
         Task { @MainActor in
-            print("WCSession became inactive.")
+            LoggingService.shared.debug("WCSession became inactive", category: .app)
             isReachable = false
         }
     }
-    
+
     public nonisolated func sessionDidDeactivate(_ session: WCSession) {
-        print("WCSession deactivated. Reactivating...")
         WCSession.default.activate()
     }
-    
+
     public nonisolated func sessionReachabilityDidChange(_ session: WCSession) {
         let sessionIsReachable = session.isReachable
-        
+
         Task { @MainActor in
             isReachable = sessionIsReachable
-            print("Watch reachability changed: \(isReachable)")
+            LoggingService.shared.debug("Watch reachability changed: \(isReachable)", category: .app)
         }
     }
-    
+
     public nonisolated func session(_ session: WCSession, didReceiveMessage message: [String : Any]) {
-        // Handle incoming messages from Watch (if any, though plan focuses on Watch receiving)
-        print("Received message from Watch: \(message)")
+        // Handle incoming messages from Watch
     }
     
     public nonisolated func session(_ session: WCSession, didReceiveUserInfo userInfo: [String : Any] = [:]) {
@@ -123,20 +124,20 @@ public final class WatchConnectivityManager: NSObject, Sendable, WCSessionDelega
         let completionData = userInfo["completion"] as? Data
         
         Task { @MainActor in
-            print("Received user info from Watch")
-            
+            LoggingService.shared.debug("Received user info from Watch", category: .app)
+
             // Handle routine completion from watch
             if let completionData = completionData {
                 do {
                     let decoder = JSONDecoder()
                     let watchCompletion = try decoder.decode(WatchRoutineCompletion.self, from: completionData)
-                    
+
                     // Process the received completion
                     await processWatchCompletion(watchCompletion)
-                    
-                    print("Successfully processed routine completion from Watch: \(watchCompletion.routineName)")
+
+                    LoggingService.shared.info("Successfully processed routine completion from Watch: \(watchCompletion.routineName)", category: .app)
                 } catch {
-                    print("Error decoding routine completion from Watch: \(error.localizedDescription)")
+                    LoggingService.shared.error("Error decoding routine completion from Watch: \(error.localizedDescription)", category: .app)
                 }
             }
         }
@@ -150,87 +151,57 @@ public final class WatchConnectivityManager: NSObject, Sendable, WCSessionDelega
         // 2. Update analytics or statistics
         // 3. Trigger notifications or badges
         // 4. Sync with cloud services
-        
-        print("Processing routine completion:")
-        print("- Routine: \(completion.routineName)")
-        print("- Started: \(completion.startedAt)")
-        print("- Completed: \(completion.completedAt?.description ?? "N/A")")
-        print("- Habits completed: \(completion.habitCompletions.filter { !$0.wasSkipped }.count)")
-        print("- Habits skipped: \(completion.habitCompletions.filter { $0.wasSkipped }.count)")
-        
+
         // TODO: Integrate with iOS app's routine tracking system
-        // For now, just log the completion
     }
     
     public nonisolated func session(_ session: WCSession, didReceiveApplicationContext applicationContext: [String : Any]) {
-        // Handle incoming application context from Watch (if any)
-        guard !applicationContext.isEmpty else {
-            print("Received empty application context from Watch - ignoring")
-            return
-        }
-        print("Received application context from Watch: \(applicationContext)")
+        guard !applicationContext.isEmpty else { return }
     }
-    
+
     public nonisolated func session(_ session: WCSession, didFinish fileTransfer: WCSessionFileTransfer, error: Error?) {
-        if let error = error {
-            print("File transfer failed with error: \(error.localizedDescription)")
-            return
-        }
-        print("File transfer finished: \(fileTransfer.file.fileURL.lastPathComponent)")
+        // File transfer completed
     }
     
     // MARK: - Sending Data to Watch
     
     public func sendRoutineDataToWatch(_ routineTemplates: [RoutineTemplate]) {
-        guard WCSession.default.activationState == .activated else {
-            print("WCSession is not activated. Cannot send data.")
-            return
-        }
-        
+        guard WCSession.default.activationState == .activated else { return }
+
         do {
             let encoder = JSONEncoder()
             let routineData = try encoder.encode(routineTemplates)
             let userInfo: [String: Any] = ["routines": routineData]
-            
             WCSession.default.transferUserInfo(userInfo)
-            print("Sent \(routineTemplates.count) routines to Watch.")
         } catch {
-            print("Failed to encode routine data: \(error.localizedDescription)")
+            // Encoding failed silently
         }
     }
-    
+
     func sendSingleRoutineToWatch(_ routine: RoutineTemplate) {
-        guard WCSession.default.activationState == .activated else {
-            print("WCSession is not activated. Cannot send data.")
-            return
-        }
-        
+        guard WCSession.default.activationState == .activated else { return }
+
         do {
             let encoder = JSONEncoder()
             let routineData = try encoder.encode(routine)
             let userInfo: [String: Any] = ["routine": routineData]
-            
             WCSession.default.transferUserInfo(userInfo)
-            print("Sent routine '\(routine.name)' to Watch.")
         } catch {
-            print("Failed to encode routine data: \(error.localizedDescription)")
+            // Encoding failed silently
         }
     }
-    
+
     func requestWatchSync() {
-        guard WCSession.default.activationState == .activated else {
-            print("WCSession is not activated. Cannot request sync.")
-            return
-        }
-        
+        guard WCSession.default.activationState == .activated else { return }
+
         let message: [String: Any] = ["action": "sync_request"]
-        
+
         if WCSession.default.isReachable {
-            WCSession.default.sendMessage(message, replyHandler: nil) { error in
-                print("Failed to send sync request: \(error.localizedDescription)")
+            WCSession.default.sendMessage(message, replyHandler: nil) { _ in
             }
         } else {
             WCSession.default.transferUserInfo(message)
         }
     }
 }
+#endif

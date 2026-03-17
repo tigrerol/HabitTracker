@@ -3,6 +3,7 @@ import SwiftUI
 /// Smart template selection with quick start and template switching
 struct SmartTemplateSelectionView: View {
     @Environment(RoutineService.self) private var routineService
+    @Environment(ThemeManager.self) private var themeManager
     @State private var selectedTemplate: RoutineTemplate?
     @State private var selectionReason: String = ""
     @State private var showingRoutineBuilder = false
@@ -11,6 +12,7 @@ struct SmartTemplateSelectionView: View {
     @State private var showingDeleteAlert = false
     @State private var showingLocationSetup = false
     @State private var showingContextSettings = false
+    @Namespace private var templateTransition
     
     private var timeBasedGreeting: String {
         let hour = Calendar.current.component(.hour, from: Date())
@@ -31,23 +33,16 @@ struct SmartTemplateSelectionView: View {
         NavigationStack {
             VStack(spacing: 24) {
                 headerView
-                
-                if let quickStartTemplate = selectedTemplate {
-                    quickStartSection(quickStartTemplate)
-                }
-                
+
                 allTemplatesSection
             }
             .padding()
+            .background(Theme.background.ignoresSafeArea())
             .navigationTitle(timeBasedGreeting)
             
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button {
-                        showingContextSettings = true
-                    } label: {
-                        Image(systemName: "gearshape")
-                    }
+                    SettingsButton()
                 }
                 
                 ToolbarItem(placement: .confirmationAction) {
@@ -55,6 +50,8 @@ struct SmartTemplateSelectionView: View {
                         showingRoutineBuilder = true
                     } label: {
                         Image(systemName: "plus")
+                            .fontWeight(.semibold)
+                            .foregroundStyle(themeManager.currentAccentColor)
                     }
                 }
             }
@@ -62,37 +59,14 @@ struct SmartTemplateSelectionView: View {
                 buildVersionView
             }
         }
-        .onAppear {
-            selectSmartTemplate()
+        .task(id: selectionTrigger) {
+            await selectSmartTemplate()
         }
         .sheet(isPresented: $showingRoutineBuilder) {
             RoutineBuilderView()
         }
         .sheet(item: $editingTemplate) { template in
             RoutineBuilderView(editingTemplate: template)
-        }
-        .onChange(of: routineService.templates.count) {
-            // Re-select smart template when templates are added/removed
-            selectSmartTemplate()
-        }
-        .onChange(of: routineService.templates) {
-            // Re-select smart template when templates are modified
-            selectSmartTemplate()
-        }
-        .onReceive(routineService.routineSelector.locationCoordinator.$currentLocationType) { newType in
-            // Force UI refresh when location type changes
-            print("🗺️ SmartTemplateView: Location type changed to \(newType), forcing selectSmartTemplate")
-            selectSmartTemplate()
-        }
-        .onReceive(routineService.routineSelector.locationCoordinator.$currentLocation) { location in
-            // Force UI refresh when location coordinates change
-            print("🗺️ SmartTemplateView: Location coordinates changed, has location: \(location != nil)")
-        }
-        // Add explicit observation of the RoutineSelector's context changes
-        .onChange(of: routineService.routineSelector.currentContext.location) { oldValue, newValue in
-            print("🗺️ SmartTemplateView: Context location changed from \(oldValue) to \(newValue)")
-            // Force template re-selection when location context changes
-            selectSmartTemplate()
         }
         .sheet(isPresented: $showingLocationSetup) {
             LocationSetupView()
@@ -105,10 +79,7 @@ struct SmartTemplateSelectionView: View {
             Button(String(localized: "SmartTemplateSelectionView.DeleteAlert.Delete", bundle: .module), role: .destructive) {
                 if let template = templateToDelete {
                     routineService.deleteTemplate(withId: template.id)
-                    // Update selected template if it was deleted
-                    if selectedTemplate?.id == template.id {
-                        selectSmartTemplate()
-                    }
+                    // Template count change triggers .task(id: selectionTrigger) automatically
                 }
             }
         } message: {
@@ -121,9 +92,7 @@ struct SmartTemplateSelectionView: View {
     private var buildVersionView: some View {
         let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "Unknown"
         let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "Unknown"
-        
-        let _ = print("📱 App Version Info - Version: \(version), Build: \(build)")
-        
+
         return Text(String(format: String(localized: "SmartTemplateSelectionView.BuildNumber", bundle: .module), version, build))
             .font(.caption2)
             .foregroundStyle(.secondary)
@@ -152,29 +121,23 @@ struct SmartTemplateSelectionView: View {
         let context = selector.currentContext
         let coordinator = selector.locationCoordinator
         
-        // Debug logging for location state
-        let _ = print("🗺️ SmartTemplateView contextIndicatorView Debug:")
-        let _ = print("   - currentContext.location: \(context.location)")
-        let _ = print("   - locationCoordinator.currentLocationType: \(coordinator.currentLocationType)")
-        let _ = print("   - locationCoordinator.currentExtendedLocationType: \(coordinator.currentExtendedLocationType)")
-        let _ = print("   - locationCoordinator.currentLocation != nil: \(coordinator.currentLocation != nil)")
-        
         return HStack(spacing: 16) {
             // Time indicator
             Label {
                 Text(context.timeSlot.displayName)
             } icon: {
                 Image(systemName: context.timeSlot.icon)
+                    .foregroundStyle(themeManager.currentAccentColor.opacity(0.8))
             }
             .font(.caption)
             .foregroundStyle(.secondary)
             
             // Day indicator
             Label {
-                Text(context.dayCategory.displayName)
+                Text(context.dayCategories.map(\.displayName).joined(separator: " + "))
             } icon: {
-                Image(systemName: context.dayCategory.icon)
-                    .foregroundStyle(context.dayCategory.color)
+                Image(systemName: context.dayCategories.first?.icon ?? "calendar")
+                    .foregroundStyle(context.dayCategories.first?.color ?? .secondary)
             }
             .font(.caption)
             .foregroundStyle(.secondary)
@@ -186,6 +149,7 @@ struct SmartTemplateSelectionView: View {
                     Text(context.location.displayName)
                 } icon: {
                     Image(systemName: context.location.icon)
+                        .foregroundStyle(themeManager.currentAccentColor)
                 }
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -195,6 +159,7 @@ struct SmartTemplateSelectionView: View {
                     Text("Current Location")
                 } icon: {
                     Image(systemName: "location")
+                        .foregroundStyle(themeManager.currentAccentColor.opacity(0.7))
                 }
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -209,7 +174,7 @@ struct SmartTemplateSelectionView: View {
                         Image(systemName: "location.circle")
                     }
                     .font(.caption)
-                    .foregroundStyle(.blue)
+                    .foregroundStyle(themeManager.currentAccentColor)
                 }
                 .buttonStyle(.plain)
             }
@@ -223,83 +188,124 @@ struct SmartTemplateSelectionView: View {
     }
     
     private func quickStartSection(_ template: RoutineTemplate) -> some View {
-        List {
-            VStack(spacing: 12) {
-                HStack {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(String(localized: "SmartTemplateSelectionView.QuickStart", bundle: .module))
-                            .font(.caption)
-                            .fontWeight(.semibold)
-                            .foregroundStyle(.secondary)
-                        
-                        Text(template.name)
-                            .font(.title3)
-                            .fontWeight(.semibold)
-                            .foregroundStyle(.primary)
-                    }
-                    
-                    Spacer()
-                    
-                    Image(systemName: "play.circle.fill")
-                        .font(.system(size: 32))
-                        .foregroundStyle(template.swiftUIColor)
-                }
-                
-                HStack {
-                    Label(String(format: String(localized: "SmartTemplateSelectionView.HabitsCount", bundle: .module), template.activeHabitsCount), systemImage: "list.bullet")
-                    
-                    Spacer()
-                    
+        HStack(spacing: 16) {
+            // Left: text content
+            VStack(alignment: .leading, spacing: 6) {
+                Text(String(localized: "SmartTemplateSelectionView.QuickStart", bundle: .module))
+                    .font(.system(.caption, design: .rounded, weight: .semibold))
+                    .foregroundStyle(themeManager.currentAccentColor)
+                    .tracking(0.5)
+                    .textCase(.uppercase)
+
+                Text(template.name)
+                    .font(.system(.title3, design: .rounded, weight: .bold))
+                    .foregroundStyle(.primary)
+
+                HStack(spacing: 10) {
+                    Label(
+                        String(format: String(localized: "SmartTemplateSelectionView.HabitsCount", bundle: .module), template.activeHabitsCount),
+                        systemImage: "list.bullet"
+                    )
                     Label(template.formattedDuration, systemImage: "clock")
                 }
-                .font(.caption)
+                .font(.system(.caption, design: .rounded))
                 .foregroundStyle(.secondary)
             }
-            .padding()
-            .background(
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(.regularMaterial)
-                    .stroke(template.swiftUIColor.opacity(0.3), lineWidth: 1)
-            )
-            .contentShape(Rectangle())
-            .onTapGesture {
+
+            Spacer()
+
+            // Right: play button
+            ZStack {
+                Circle()
+                    .fill(themeManager.currentAccentColor.opacity(0.12))
+                    .frame(width: 52, height: 52)
+
+                Image(systemName: "play.fill")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(themeManager.currentAccentColor)
+                    .offset(x: 1)
+            }
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 18)
+        .background(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(.regularMaterial)
+                .shadow(color: .black.opacity(0.06), radius: 8, x: 0, y: 4)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(
+                    LinearGradient(
+                        colors: [
+                            themeManager.currentAccentColor.opacity(0.4),
+                            themeManager.currentAccentColor.opacity(0.15)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 1.5
+                )
+        )
+        .contextMenu {
+            Button {
+                editingTemplate = template
+            } label: {
+                Label("Edit Template", systemImage: "pencil")
+            }
+
+            Button(role: .destructive) {
+                templateToDelete = template
+                showingDeleteAlert = true
+            } label: {
+                Label("Delete Template", systemImage: "trash")
+            }
+        }
+        .contentShape(Rectangle())
+        .onTapGesture {
+            withAnimation(AnimationPresets.smoothSpring) {
                 startRoutine(with: template)
             }
-            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                Button(role: .destructive) {
-                    templateToDelete = template
-                    showingDeleteAlert = true
-                } label: {
-                    Label("Delete", systemImage: "trash")
-                }
-            }
-            .swipeActions(edge: .leading, allowsFullSwipe: false) {
-                Button {
-                    editingTemplate = template
-                } label: {
-                    Label("Edit", systemImage: "pencil")
-                }
-                .tint(.orange)
-            }
-            .listRowBackground(Color.clear)
-            .listRowSeparator(.hidden)
-            .listRowInsets(EdgeInsets())
         }
-        .listStyle(.plain)
-        .frame(height: 120) // Fixed height for the quick start card
-        .scrollDisabled(true)
     }
     
     
     private var allTemplatesSection: some View {
         List {
+            // Quick Start Section (only show if there's a selected template)
+            if let quickStartTemplate = selectedTemplate {
+                quickStartSection(quickStartTemplate)
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
+                    .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 16, trailing: 0))
+                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                        Button(role: .destructive) {
+                            templateToDelete = quickStartTemplate
+                            showingDeleteAlert = true
+                        } label: {
+                            Label("Delete", systemImage: "trash")
+                        }
+                    }
+                    .swipeActions(edge: .leading, allowsFullSwipe: false) {
+                        Button {
+                            editingTemplate = quickStartTemplate
+                        } label: {
+                            Label("Edit", systemImage: "pencil")
+                        }
+                        .tint(.orange)
+                    }
+            }
+            
             ForEach(routineService.templates) { template in
                 CompactTemplateCard(
                     template: template,
                     isSelected: selectedTemplate?.id == template.id,
+                    namespace: templateTransition,
                     onTap: {
                         selectedTemplate = template
-                        startRoutine(with: template)
+                        withAnimation(AnimationPresets.smoothSpring) {
+                            startRoutine(with: template)
+                        }
                     },
                     onEdit: {
                         editingTemplate = template
@@ -315,23 +321,28 @@ struct SmartTemplateSelectionView: View {
             }
         }
         .listStyle(.plain)
+        .scrollContentBackground(.hidden)
         .transition(.opacity.combined(with: .scale(scale: 0.95)))
     }
     
-    private func selectSmartTemplate() {
-        Task { @MainActor in
-            // Use smart selection based on context
-            let smartSelection = await routineService.getSmartTemplate()
-            selectedTemplate = smartSelection.template
-            selectionReason = smartSelection.reason
-            
-            // Fallback to default logic if smart selection fails
-            if selectedTemplate == nil {
-                selectedTemplate = routineService.defaultTemplate 
-                                ?? routineService.lastUsedTemplate 
-                                ?? routineService.templates.first
-                selectionReason = ""
-            }
+    private var selectionTrigger: String {
+        let templateIds = routineService.templates.map(\.id.uuidString).joined(separator: ",")
+        let location = String(describing: routineService.routineSelector.currentContext.location)
+        return "\(templateIds)-\(location)"
+    }
+
+    private func selectSmartTemplate() async {
+        // Use smart selection based on context
+        let smartSelection = await routineService.getSmartTemplate()
+        selectedTemplate = smartSelection.template
+        selectionReason = smartSelection.reason
+
+        // Fallback to default logic if smart selection fails
+        if selectedTemplate == nil {
+            selectedTemplate = routineService.defaultTemplate
+                            ?? routineService.lastUsedTemplate
+                            ?? routineService.templates.first
+            selectionReason = ""
         }
     }
     
@@ -349,9 +360,13 @@ struct SmartTemplateSelectionView: View {
 private struct CompactTemplateCard: View {
     let template: RoutineTemplate
     let isSelected: Bool
+    let namespace: Namespace.ID
     let onTap: () -> Void
     let onEdit: () -> Void
     let onDelete: () -> Void
+    
+    @Environment(ThemeManager.self) private var themeManager
+    
     
     var body: some View {
         HStack {
@@ -360,6 +375,11 @@ private struct CompactTemplateCard: View {
                     .font(.subheadline)
                     .fontWeight(.medium)
                     .foregroundStyle(.primary)
+                    .matchedGeometry(
+                        id: .templateTitle(templateId: template.id), 
+                        in: namespace,
+                        isSource: true
+                    )
                 
                 Text("\(String(format: String(localized: "SmartTemplateSelectionView.HabitsCount", bundle: .module), template.activeHabitsCount)) • \(template.formattedDuration)")
                     .font(.caption)
@@ -370,7 +390,24 @@ private struct CompactTemplateCard: View {
             
             Image(systemName: "play.circle.fill")
                 .font(.title2)
-                .foregroundStyle(template.swiftUIColor)
+                .foregroundStyle(
+                    isSelected ? 
+                    LinearGradient(
+                        colors: [themeManager.currentAccentColor, themeManager.currentAccentColor.opacity(0.7)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ) :
+                    LinearGradient(
+                        colors: [themeManager.currentAccentColor.opacity(0.6), themeManager.currentAccentColor.opacity(0.4)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .matchedGeometry(
+                    id: .templatePlayButton(templateId: template.id), 
+                    in: namespace,
+                    isSource: true
+                )
             
             Image(systemName: "chevron.right")
                 .font(.caption2)
@@ -380,9 +417,40 @@ private struct CompactTemplateCard: View {
         .padding(.vertical, 8)
         .background(
             RoundedRectangle(cornerRadius: 8)
-                .fill(.regularMaterial)
+                .fill(
+                    isSelected ? 
+                    LinearGradient(
+                        colors: [
+                            themeManager.currentAccentColor.opacity(0.1),
+                            themeManager.currentAccentColor.opacity(0.05)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ) :
+                    LinearGradient(
+                        colors: [Color.clear, Color.clear],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .background(.regularMaterial)
+                .matchedGeometry(
+                    id: .templateCard(templateId: template.id), 
+                    in: namespace,
+                    isSource: true
+                )
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(
+                    isSelected ? themeManager.currentAccentColor.opacity(0.3) : Color.clear,
+                    lineWidth: isSelected ? 1 : 0
+                )
         )
         .contentShape(Rectangle())
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(template.name), \(template.activeHabitsCount) habits, \(template.formattedDuration)\(isSelected ? ", selected" : "")")
+        .accessibilityAddTraits(.isButton)
         .onTapGesture {
             onTap()
         }

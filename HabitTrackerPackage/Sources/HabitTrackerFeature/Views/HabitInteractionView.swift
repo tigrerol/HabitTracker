@@ -17,30 +17,35 @@ public struct HabitInteractionView: View {
         self.isCompleted = isCompleted
     }
     
+    @ViewBuilder
     public var body: some View {
-        // Use protocol-based handlers for better maintainability
         switch habit.type {
-            case .task(let subtasks):
+            case .task(let subtasks, _):
                 if subtasks.isEmpty {
-                    AnyView(CheckboxHabitHandler().createInteractionView(habit: habit, onComplete: self.onComplete, isCompleted: isCompleted))
+                    AccessibleCheckboxHabitView(habit: habit, onComplete: onComplete, isCompleted: isCompleted)
                 } else {
-                    AnyView(SubtasksHabitHandler().createInteractionView(habit: habit, onComplete: self.onComplete, isCompleted: isCompleted))
+                    SubtasksHabitView(habit: habit, subtasks: subtasks, onComplete: onComplete, isCompleted: isCompleted)
                 }
-                
-            case .timer:
-                AnyView(TimerHabitHandler().createInteractionView(habit: habit, onComplete: self.onComplete, isCompleted: isCompleted))
-                
-            case .action:
-                AnyView(ActionHabitHandler().createInteractionView(habit: habit, onComplete: self.onComplete, isCompleted: isCompleted))
-                
-            case .tracking:
-                AnyView(TrackingHabitHandler().createInteractionView(habit: habit, onComplete: self.onComplete, isCompleted: isCompleted))
-                
-            case .guidedSequence:
-                AnyView(GuidedSequenceHabitHandler().createInteractionView(habit: habit, onComplete: self.onComplete, isCompleted: isCompleted))
-                
+
+            case .timer(let style, let duration, let target, let steps, let repeatCount):
+                TimerHabitView(habit: habit, style: style, duration: duration, target: target, steps: steps, repeatCount: repeatCount, onComplete: onComplete, isCompleted: isCompleted)
+
+            case .action(let type, let identifier, let displayName, _):
+                ActionHabitView(habit: habit, actionType: type, identifier: identifier, displayName: displayName, onComplete: onComplete)
+
+            case .tracking(let trackingType):
+                switch trackingType {
+                case .counter(let items):
+                    AccessibleCounterHabitView(habit: habit, items: items, onComplete: onComplete, isCompleted: isCompleted)
+                case .measurement(let unit, let targetValue):
+                    MeasurementHabitView(habit: habit, unit: unit, targetValue: targetValue, onComplete: onComplete, isCompleted: isCompleted)
+                }
+
+            case .guidedSequence(let steps):
+                GuidedSequenceHabitView(habit: habit, steps: steps, onComplete: onComplete, isCompleted: isCompleted)
+
             case .conditional(let info):
-                AnyView(ConditionalHabitInteractionView(
+                ConditionalHabitInteractionView(
                     habit: habit,
                     conditionalInfo: info,
                     onOptionSelected: { option in
@@ -57,7 +62,7 @@ public struct HabitInteractionView: View {
                             notes: String(localized: "HabitInteractionView.Question.Skipped", bundle: .module)
                         )
                     }
-                ))
+                )
             }
     }
 }
@@ -84,7 +89,8 @@ struct CheckboxHabitView: View {
             } label: {
                 VStack(spacing: AppConstants.Spacing.large) {
                     Image(systemName: isCompleting ? "checkmark.circle.fill" : "circle")
-                        .font(.system(size: AppConstants.FontSizes.extraLargeIcon))
+                        .font(.largeTitle)
+                        .imageScale(.large)
                         .foregroundStyle(isCompleting ? .green : habit.swiftUIColor)
                         .scaleEffect(isCompleting ? 1.2 : 1.0)
                     
@@ -132,7 +138,8 @@ struct CheckboxHabitView: View {
         #endif
         
         // Complete after brief delay for animation
-        DispatchQueue.main.asyncAfter(deadline: .now() + AppConstants.AnimationDurations.habitCompletion) {
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(AppConstants.AnimationDurations.habitCompletion))
             onComplete(habit.id, nil, nil)
         }
     }
@@ -145,6 +152,7 @@ struct TimerHabitView: View {
     let duration: TimeInterval
     let target: TimeInterval?
     let steps: [SequenceStep]
+    let repeatCount: Int?
     let onComplete: (UUID, TimeInterval?, String?) -> Void
     let isCompleted: Bool
     
@@ -152,18 +160,19 @@ struct TimerHabitView: View {
     @State private var timeElapsed: TimeInterval = 0
     @State private var isRunning = false
     @State private var isPaused = false
-    @State private var timer: Timer?
-    
+
     // For multiple timer style
     @State private var currentStepIndex = 0
+    @State private var currentRound = 0
     @State private var totalElapsed: TimeInterval = 0
     
-    init(habit: Habit, style: TimerStyle, duration: TimeInterval, target: TimeInterval? = nil, steps: [SequenceStep] = [], onComplete: @escaping (UUID, TimeInterval?, String?) -> Void, isCompleted: Bool) {
+    init(habit: Habit, style: TimerStyle, duration: TimeInterval, target: TimeInterval? = nil, steps: [SequenceStep] = [], repeatCount: Int? = nil, onComplete: @escaping (UUID, TimeInterval?, String?) -> Void, isCompleted: Bool) {
         self.habit = habit
         self.style = style
         self.duration = duration
         self.target = target
         self.steps = steps
+        self.repeatCount = repeatCount
         self.onComplete = onComplete
         self.isCompleted = isCompleted
         
@@ -177,6 +186,7 @@ struct TimerHabitView: View {
             // For multiple timers, start with first step duration
             let firstStepDuration = steps.first?.duration ?? duration
             self._timeRemaining = State(initialValue: firstStepDuration)
+            self._currentRound = State(initialValue: 1) // Start at round 1
         }
     }
     
@@ -207,7 +217,16 @@ struct TimerHabitView: View {
             }
         case .multiple:
             if let step = currentStep {
-                return step.duration > 0 ? max(0, min(1, 1.0 - (timeRemaining / step.duration))) : 0
+                // If we have repeats, calculate progress across all rounds
+                if let repeatCount = repeatCount, repeatCount > 1 {
+                    let totalSteps = steps.count * repeatCount
+                    let completedSteps = (currentRound - 1) * steps.count + currentStepIndex
+                    let currentStepProgress = step.duration > 0 ? (1.0 - (timeRemaining / step.duration)) : 0
+                    return totalSteps > 0 ? max(0, min(1, (Double(completedSteps) + currentStepProgress) / Double(totalSteps))) : 0
+                } else {
+                    // Single round progress
+                    return step.duration > 0 ? max(0, min(1, 1.0 - (timeRemaining / step.duration))) : 0
+                }
             } else {
                 return 1.0 // All steps completed
             }
@@ -219,9 +238,15 @@ struct TimerHabitView: View {
             // Step info for multiple timers
             if style == .multiple, let step = currentStep {
                 VStack(spacing: 8) {
-                    Text("\(currentStepIndex + 1) of \(steps.count)")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                    if let repeatCount = repeatCount, repeatCount > 1 {
+                        Text("Round \(currentRound) of \(repeatCount), Step \(currentStepIndex + 1) of \(steps.count)")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    } else {
+                        Text("Step \(currentStepIndex + 1) of \(steps.count)")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
                     
                     Text(step.name)
                         .font(.title2)
@@ -234,12 +259,13 @@ struct TimerHabitView: View {
             VStack(spacing: 8) {
                 Text(displayTime.formattedMinutesSeconds)
                     .font(.system(size: 48, weight: .bold, design: .monospaced))
+                    .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                     .foregroundStyle(habit.swiftUIColor)
-                
+
                 ProgressView(value: progressValue)
                     .tint(habit.swiftUIColor)
                     .scaleEffect(y: 3)
-                
+
                 if let target = target, style == .up {
                     Text("Target: \(target.formattedMinutesSeconds)")
                         .font(.caption)
@@ -299,7 +325,7 @@ struct TimerHabitView: View {
                             Image(systemName: "stop.fill")
                                 .font(.headline)
                                 .foregroundStyle(.white)
-                                .frame(width: 50, height: 50)
+                                .frame(minWidth: 50, minHeight: 50)
                                 .background(.red, in: RoundedRectangle(cornerRadius: 12))
                         }
                     }
@@ -318,11 +344,16 @@ struct TimerHabitView: View {
                 }
             }
         }
-        .onDisappear {
-            timer?.invalidate()
+        .task(id: isRunning && !isPaused) {
+            guard isRunning, !isPaused else { return }
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(1))
+                guard !Task.isCancelled else { return }
+                tickTimer()
+            }
         }
     }
-    
+
     @ViewBuilder
     private func quickTimerButton(seconds: TimeInterval, label: String) -> some View {
         Button {
@@ -342,22 +373,19 @@ struct TimerHabitView: View {
     private func startTimer() {
         isRunning = true
         isPaused = false
-        createTimer()
     }
-    
+
     private func pauseTimer() {
         isPaused = true
-        timer?.invalidate()
     }
-    
+
     private func resumeTimer() {
         isPaused = false
-        createTimer()
     }
-    
+
     private func stopTimer() {
-        timer?.invalidate()
-        
+        isRunning = false
+
         let completedDuration: TimeInterval
         switch style {
         case .down:
@@ -367,49 +395,59 @@ struct TimerHabitView: View {
         case .up:
             completedDuration = timeElapsed
         }
-        
+
         onComplete(habit.id, completedDuration, String(localized: "HabitInteractionView.Timer.StoppedEarly", bundle: .module))
     }
-    
-    private func createTimer() {
-        timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
-            Task { @MainActor in
-                switch style {
-                case .down:
-                    if timeRemaining > 0 {
-                        timeRemaining -= 1
-                    } else {
-                        timer?.invalidate()
-                        onComplete(habit.id, duration, nil)
-                    }
-                case .multiple:
-                    if timeRemaining > 0 {
-                        timeRemaining -= 1
-                        totalElapsed += 1
-                    } else {
-                        // Move to next step
-                        currentStepIndex += 1
-                        if currentStepIndex < steps.count {
-                            // Start next timer step
-                            timeRemaining = steps[currentStepIndex].duration
-                            totalElapsed += 1
-                        } else {
-                            // All steps completed
-                            timer?.invalidate()
-                            let totalDuration = steps.reduce(0) { $0 + $1.duration }
-                            onComplete(habit.id, totalDuration, "All intervals completed")
+
+    private func tickTimer() {
+        switch style {
+        case .down:
+            if timeRemaining > 0 {
+                timeRemaining -= 1
+            } else {
+                isRunning = false
+                FeedbackManager.shared.timerCompleted()
+                onComplete(habit.id, duration, nil)
+            }
+        case .multiple:
+            if timeRemaining > 0 {
+                timeRemaining -= 1
+                totalElapsed += 1
+            } else {
+                FeedbackManager.shared.stepCompleted()
+                currentStepIndex += 1
+                totalElapsed += 1
+
+                if currentStepIndex < steps.count {
+                    timeRemaining = steps[currentStepIndex].duration
+                } else {
+                    let totalRounds = repeatCount ?? 1
+                    if currentRound < totalRounds {
+                        currentRound += 1
+                        currentStepIndex = 0
+                        timeRemaining = steps[0].duration
+
+                        if totalRounds > 1 {
+                            FeedbackManager.shared.timerCompleted()
                         }
-                    }
-                case .up:
-                    timeElapsed += 1
-                    timeRemaining = timeElapsed // For display consistency
-                    
-                    // Check if we've reached the target (if set)
-                    if let target = target, timeElapsed >= target {
-                        timer?.invalidate()
-                        onComplete(habit.id, timeElapsed, nil)
+                    } else {
+                        isRunning = false
+                        FeedbackManager.shared.timerCompleted()
+                        let singleRoundDuration = steps.reduce(0) { $0 + $1.duration }
+                        let totalDuration = singleRoundDuration * Double(totalRounds)
+                        let message = totalRounds > 1 ? "All \(totalRounds) rounds completed" : "All intervals completed"
+                        onComplete(habit.id, totalDuration, message)
                     }
                 }
+            }
+        case .up:
+            timeElapsed += 1
+            timeRemaining = timeElapsed
+
+            if let target = target, timeElapsed >= target {
+                isRunning = false
+                FeedbackManager.shared.timerCompleted()
+                onComplete(habit.id, timeElapsed, nil)
             }
         }
     }
@@ -434,7 +472,8 @@ struct AppLaunchHabitView: View {
         VStack(spacing: 24) {
             VStack(spacing: 12) {
                 Image(systemName: isShortcut ? "shortcuts" : "app.badge")
-                    .font(.system(size: 60))
+                    .font(.largeTitle)
+                    .imageScale(.large)
                     .foregroundStyle(habit.swiftUIColor)
                 
                 if hasLaunchedApp {
@@ -489,7 +528,7 @@ struct AppLaunchHabitView: View {
         }
         
         guard let url = URL(string: urlString) else {
-            print("Failed to create URL from: \(urlString)")
+            LoggingService.shared.error("Failed to create URL from: \(urlString)", category: .app)
             return
         }
         
@@ -498,7 +537,7 @@ struct AppLaunchHabitView: View {
         #if canImport(UIKit)
         UIApplication.shared.open(url) { success in
             if !success {
-                print("Failed to open URL: \(urlString)")
+                LoggingService.shared.error("Failed to open URL: \(urlString)", category: .app)
             }
         }
         #endif
@@ -528,7 +567,8 @@ struct WebsiteHabitView: View {
         VStack(spacing: 24) {
             VStack(spacing: 12) {
                 Image(systemName: "safari")
-                    .font(.system(size: 60))
+                    .font(.largeTitle)
+                    .imageScale(.large)
                     .foregroundStyle(habit.swiftUIColor)
                 
                 if hasOpenedWebsite {
@@ -638,7 +678,8 @@ struct ActionHabitView: View {
         VStack(spacing: 24) {
             VStack(spacing: 12) {
                 Image(systemName: iconName)
-                    .font(.system(size: 60))
+                    .font(.largeTitle)
+                    .imageScale(.large)
                     .foregroundStyle(habit.swiftUIColor)
                 
                 if hasPerformedAction {
@@ -700,14 +741,14 @@ struct ActionHabitView: View {
         }
         
         guard let url = URL(string: urlString) else {
-            print("Failed to create URL from: \(urlString)")
+            LoggingService.shared.error("Failed to create URL from: \(urlString)", category: .app)
             return
         }
         
         #if canImport(UIKit)
         UIApplication.shared.open(url) { success in
             if !success {
-                print("Failed to open URL: \(urlString)")
+                LoggingService.shared.error("Failed to open URL: \(urlString)", category: .app)
             }
         }
         #endif
@@ -931,6 +972,7 @@ struct MeasurementHabitView: View {
                 HStack {
                     TextField("0", text: $inputValue)
                         .font(.system(size: 48, weight: .bold, design: .monospaced))
+                        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                         .multilineTextAlignment(.center)
                         #if canImport(UIKit)
                         .keyboardType(.decimalPad)
@@ -951,7 +993,7 @@ struct MeasurementHabitView: View {
             
             Button {
                 if let value = Double(inputValue) {
-                    let notes = targetValue != nil ? "Measured: \(value) \(unit) (target: \(targetValue!))" : "Measured: \(value) \(unit)"
+                    let notes = targetValue.map { "Measured: \(value) \(unit) (target: \($0))" } ?? "Measured: \(value) \(unit)"
                     onComplete(habit.id, nil, notes)
                 }
             } label: {
@@ -985,7 +1027,6 @@ struct GuidedSequenceHabitView: View {
     @State private var timeRemaining: TimeInterval = 0
     @State private var isRunning = false
     @State private var isPaused = false
-    @State private var timer: Timer?
     @State private var totalElapsed: TimeInterval = 0
     
     private var currentStep: SequenceStep? {
@@ -1019,6 +1060,7 @@ struct GuidedSequenceHabitView: View {
                 VStack(spacing: 8) {
                     Text(timeRemaining.formattedMinutesSeconds)
                         .font(.system(size: 48, weight: .bold, design: .monospaced))
+                        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                         .foregroundStyle(habit.swiftUIColor)
                     
                     ProgressView(value: step.duration > 0 ? max(0, min(1, 1.0 - (timeRemaining / step.duration))) : 0)
@@ -1076,7 +1118,8 @@ struct GuidedSequenceHabitView: View {
                 // Completion view
                 VStack(spacing: 16) {
                     Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: 60))
+                        .font(.largeTitle)
+                        .imageScale(.large)
                         .foregroundStyle(.green)
                     
                     Text(String(localized: "HabitInteractionView.Sequence.Complete", bundle: .module))
@@ -1088,6 +1131,7 @@ struct GuidedSequenceHabitView: View {
                         .foregroundStyle(.secondary)
                     
                     Button {
+                        FeedbackManager.shared.timerCompleted()
                         onComplete(habit.id, totalElapsed, "Completed all \(steps.count) steps")
                     } label: {
                         Text(String(localized: "HabitInteractionView.Sequence.Done", bundle: .module))
@@ -1105,54 +1149,47 @@ struct GuidedSequenceHabitView: View {
                 timeRemaining = firstStep.duration
             }
         }
-        .onDisappear {
-            timer?.invalidate()
+        .task(id: isRunning && !isPaused) {
+            guard isRunning, !isPaused else { return }
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(1))
+                guard !Task.isCancelled else { return }
+                if timeRemaining > 0 {
+                    timeRemaining -= 1
+                } else {
+                    FeedbackManager.shared.stepCompleted()
+                    nextStep()
+                }
+            }
         }
     }
-    
+
     private func startStep() {
         isRunning = true
         isPaused = false
-        createTimer()
     }
-    
+
     private func pauseStep() {
         isPaused = true
-        timer?.invalidate()
     }
-    
+
     private func resumeStep() {
         isPaused = false
-        createTimer()
     }
-    
+
     private func nextStep() {
-        timer?.invalidate()
-        
+        isRunning = false
+
         // Add elapsed time
         if let step = currentStep {
             totalElapsed += step.duration - timeRemaining
         }
-        
+
         // Move to next
         currentStepIndex += 1
         if let nextStep = currentStep {
             timeRemaining = nextStep.duration
-            isRunning = false
             isPaused = false
-        }
-    }
-    
-    private func createTimer() {
-        timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
-            Task { @MainActor in
-                if timeRemaining > 0 {
-                    timeRemaining -= 1
-                } else {
-                    // Auto advance to next step
-                    nextStep()
-                }
-            }
         }
     }
 }

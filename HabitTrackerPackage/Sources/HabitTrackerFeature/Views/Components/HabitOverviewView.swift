@@ -4,43 +4,81 @@ import SwiftUI
 struct HabitOverviewView: View {
     let data: RoutineExecutionView.SessionDisplayData
     let onHabitTap: (Int) -> Void
-    
+
+    @Environment(ThemeManager.self) private var themeManager
+
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 12) {
+            HStack(spacing: 8) {
                 ForEach(Array(data.activeHabits.enumerated()), id: \.element.id) { index, habit in
-                    VStack(spacing: 4) {
-                        Circle()
-                            .fill(habitStatusColor(for: habit))
-                            .frame(width: 12, height: 12)
-                        
-                        Text(habit.name)
-                            .font(.caption2)
-                            .lineLimit(1)
-                    }
-                    .id(habit.id) // Force unique view identity for entire VStack
-                    .opacity(index == data.currentHabitIndex ? 1 : 0.6)
-                    .onTapGesture {
+                    let isCompleted = data.completions.contains(where: { $0.habitId == habit.id })
+                    let isCurrent = data.currentHabit?.id == habit.id
+
+                    Button {
                         onHabitTap(index)
+                    } label: {
+                        HStack(spacing: 5) {
+                            // Status icon
+                            Image(systemName: isCompleted ? "checkmark" : habit.type.iconName)
+                                .font(.system(size: 9, weight: .semibold))
+                                .foregroundStyle(
+                                    isCompleted ? .white :
+                                    (isCurrent ? themeManager.currentAccentColor : .secondary)
+                                )
+                                .frame(width: 16, height: 16)
+                                .background(
+                                    Circle()
+                                        .fill(
+                                            isCompleted ? themeManager.currentAccentColor :
+                                            (isCurrent ? themeManager.currentAccentColor.opacity(0.15) :
+                                            Color.primary.opacity(0.06))
+                                        )
+                                )
+
+                            Text(habit.name)
+                                .font(.system(.caption2, design: .rounded, weight: isCurrent ? .semibold : .regular))
+                                .foregroundStyle(isCurrent ? .primary : .secondary)
+                                .lineLimit(1)
+                        }
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(
+                            Capsule()
+                                .fill(
+                                    isCurrent ?
+                                    themeManager.currentAccentColor.opacity(0.08) :
+                                    Color.primary.opacity(0.04)
+                                )
+                                .overlay(
+                                    Capsule()
+                                        .stroke(
+                                            isCurrent ? themeManager.currentAccentColor.opacity(0.25) : Color.clear,
+                                            lineWidth: 1
+                                        )
+                                )
+                        )
                     }
+                    .buttonStyle(.plain)
+                    .id(habit.id)
+                    .accessibilityLabel("\(habit.name), \(habitStatusLabel(for: habit))")
                 }
             }
-            .padding(.horizontal)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
         }
-        .padding()
         .background(.regularMaterial)
     }
-    
-    private func habitStatusColor(for habit: Habit) -> Color {
+
+    private func habitStatusLabel(for habit: Habit) -> String {
         let isCompleted = data.completions.contains(where: { $0.habitId == habit.id })
         let isCurrent = data.currentHabit?.id == habit.id
-        
+
         if isCompleted {
-            return .green
+            return String(localized: "HabitOverviewView.Status.Completed", bundle: .module)
         } else if isCurrent {
-            return habit.swiftUIColor
+            return String(localized: "HabitOverviewView.Status.Current", bundle: .module)
         } else {
-            return .gray.opacity(0.3)
+            return String(localized: "HabitOverviewView.Status.Pending", bundle: .module)
         }
     }
 }

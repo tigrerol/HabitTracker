@@ -211,74 +211,76 @@ struct DayCategoryManagerErrorTests {
     @Test("DayCategoryManager handles invalid dates gracefully")
     @MainActor func testDayCategoryManagerInvalidDates() {
         let manager = DayCategoryManager.shared
-        
+
         // Test with distant past date
         let distantPast = Date.distantPast
-        let pastCategory = manager.category(for: distantPast)
-        #expect(pastCategory.id == "weekday" || pastCategory.id == "weekend")
-        
+        let pastCategories = manager.categories(for: distantPast)
+        #expect(pastCategories.allSatisfy { $0.id == "weekday" || $0.id == "weekend" })
+
         // Test with distant future date
         let distantFuture = Date.distantFuture
-        let futureCategory = manager.category(for: distantFuture)
-        #expect(futureCategory.id == "weekday" || futureCategory.id == "weekend")
-        
+        let futureCategories = manager.categories(for: distantFuture)
+        #expect(futureCategories.allSatisfy { $0.id == "weekday" || $0.id == "weekend" })
+
         // Test with current date (should always work)
         let now = Date()
-        let currentCategory = manager.category(for: now)
-        #expect(currentCategory.id == "weekday" || currentCategory.id == "weekend")
+        let currentCategories = manager.categories(for: now)
+        #expect(currentCategories.allSatisfy { $0.id == "weekday" || $0.id == "weekend" })
     }
-    
+
     @Test("DayCategoryManager handles concurrent access")
     func testDayCategoryManagerConcurrentAccess() async {
         let manager = await DayCategoryManager.shared
-        
+
         // Execute concurrent category requests
-        await withTaskGroup(of: DayCategory.self) { group in
+        await withTaskGroup(of: [DayCategory].self) { group in
             for i in 0..<50 {
                 group.addTask {
                     let date = Date().addingTimeInterval(TimeInterval(i * 86400)) // Different days
                     return await MainActor.run {
-                        manager.category(for: date)
+                        manager.categories(for: date)
                     }
                 }
             }
-            
+
             // Collect all results
-            var categories: [DayCategory] = []
-            for await category in group {
-                categories.append(category)
+            var allCategories: [[DayCategory]] = []
+            for await categories in group {
+                allCategories.append(categories)
             }
-            
+
             // All requests should succeed
-            #expect(categories.count == 50)
-            #expect(categories.allSatisfy { $0.id == "weekday" || $0.id == "weekend" })
+            #expect(allCategories.count == 50)
+            #expect(allCategories.allSatisfy { cats in
+                cats.allSatisfy { $0.id == "weekday" || $0.id == "weekend" }
+            })
         }
     }
-    
+
     @Test("DayCategoryManager handles edge case times")
     @MainActor func testDayCategoryManagerEdgeCases() {
         let manager = DayCategoryManager.shared
         let calendar = Calendar.current
-        
+
         // Test midnight
         var components = calendar.dateComponents([.year, .month, .day], from: Date())
         components.hour = 0
         components.minute = 0
         components.second = 0
-        
+
         if let midnight = calendar.date(from: components) {
-            let category = manager.category(for: midnight)
-            #expect(category.id == "weekday" || category.id == "weekend")
+            let categories = manager.categories(for: midnight)
+            #expect(categories.allSatisfy { $0.id == "weekday" || $0.id == "weekend" })
         }
-        
+
         // Test end of day
         components.hour = 23
         components.minute = 59
         components.second = 59
-        
+
         if let endOfDay = calendar.date(from: components) {
-            let category = manager.category(for: endOfDay)
-            #expect(category.id == "weekday" || category.id == "weekend")
+            let categories = manager.categories(for: endOfDay)
+            #expect(categories.allSatisfy { $0.id == "weekday" || $0.id == "weekend" })
         }
     }
 }

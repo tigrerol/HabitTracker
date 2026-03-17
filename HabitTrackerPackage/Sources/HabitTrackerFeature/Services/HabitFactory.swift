@@ -37,7 +37,7 @@ public enum HabitFactory {
     
     // MARK: - Common URLs
     public enum URLs {
-        public static let workoutSite = URL(string: "https://your-workout-site.com")!
+        public static let workoutSite: URL? = nil
         public static let hackerNews = URL(string: "https://news.ycombinator.com")!
     }
     
@@ -57,7 +57,7 @@ public enum HabitFactory {
     public static func createStrengthTrainingHabit(order: Int) -> Habit {
         Habit(
             name: "Strength Training",
-            type: .action(type: .website, identifier: URLs.workoutSite.absoluteString, displayName: "Workout Site"),
+            type: .task(subtasks: []),
             color: Colors.strength,
             order: order
         )

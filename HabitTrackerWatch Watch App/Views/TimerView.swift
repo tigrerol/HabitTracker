@@ -1,5 +1,6 @@
 import SwiftUI
 import Combine
+import WatchKit
 
 struct TimerView: View {
     let duration: TimeInterval // in seconds
@@ -61,6 +62,8 @@ struct TimerView: View {
                 } else {
                     timer?.cancel()
                     isRunning = false
+                    // Haptic feedback for timer completion on Watch
+                    WKInterfaceDevice.current().play(.success)
                     onTimerComplete()
                 }
             }

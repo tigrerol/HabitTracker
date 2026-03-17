@@ -1,6 +1,8 @@
 import Foundation
 import SwiftUI
 
+#if DEBUG
+
 /// Debug testing interface for @MainActor @Observable services
 @MainActor
 public struct MainActorServiceDebugInterface {
@@ -262,3 +264,5 @@ public struct ObservationTestResult {
     public let averageAccessDuration: Double // milliseconds
     public let observerMetrics: [ObserverMetrics]
 }
+
+#endif

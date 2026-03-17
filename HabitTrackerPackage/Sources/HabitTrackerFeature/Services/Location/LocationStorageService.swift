@@ -64,9 +64,7 @@ public final class LocationStorageService: ObservableObject {
             metadata: [
                 "location_type": type.rawValue,
                 "has_custom_name": String(name != nil),
-                "radius": String(finalRadius),
-                "latitude": String(format: "%.4f", location.coordinate.latitude),
-                "longitude": String(format: "%.4f", location.coordinate.longitude)
+                "radius": String(finalRadius)
             ]
         )
         

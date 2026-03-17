@@ -125,7 +125,7 @@ struct HabitFactoryTests {
         // Check timer durations are reasonable
         let timerHabits = allHabits.filter { $0.type.isTimer }
         for habit in timerHabits {
-            if case .timer(_, let duration, _) = habit.type {
+            if case .timer(_, let duration, _, _, _) = habit.type {
                 #expect(duration > 0)
                 #expect(duration <= 3600) // Max 1 hour
             }

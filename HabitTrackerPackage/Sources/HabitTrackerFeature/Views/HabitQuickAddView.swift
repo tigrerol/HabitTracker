@@ -100,8 +100,20 @@ struct HabitQuickAddView: View {
         }
     }
     
+    // MARK: - Static Regex Patterns
+
+    private static let durationRegex: NSRegularExpression? = try? NSRegularExpression(
+        pattern: #"(\d+)\s*(min|minute|m|hr|hour|h|sec|second|s)"#,
+        options: .caseInsensitive
+    )
+
+    private static let cleanDurationRegex: NSRegularExpression? = try? NSRegularExpression(
+        pattern: #"\s*\d+\s*(min|minute|m|hr|hour|h|sec|second|s)\s*"#,
+        options: .caseInsensitive
+    )
+
     // MARK: - Smart Detection
-    
+
     private func detectHabitType(from text: String) -> HabitType? {
         let lowercased = text.lowercased()
         
@@ -164,9 +176,7 @@ struct HabitQuickAddView: View {
     }
     
     private func extractDuration(from text: String) -> TimeInterval? {
-        let pattern = #"(\d+)\s*(min|minute|m|hr|hour|h|sec|second|s)"#
-        
-        guard let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive),
+        guard let regex = Self.durationRegex,
               let match = regex.firstMatch(in: text, range: NSRange(text.startIndex..., in: text)) else {
             return nil
         }
@@ -235,14 +245,14 @@ struct HabitQuickAddView: View {
             
             // Add variations
             switch type {
-            case .timer(_, let duration, _, _):
+            case .timer(_, let duration, _, _, _):
                 if duration != 300 {
                     suggestions.append((String(format: String(localized: "HabitQuickAddView.Suggestion.5min", bundle: .module), cleanName), .timer(style: .down, duration: 300)))
                 }
                 if duration != 600 {
                     suggestions.append((String(format: String(localized: "HabitQuickAddView.Suggestion.10min", bundle: .module), cleanName), .timer(style: .down, duration: 600)))
                 }
-            case .task(let subtasks):
+            case .task(let subtasks, _):
                 if subtasks.isEmpty {
                     suggestions.append((String(format: String(localized: "HabitQuickAddView.Suggestion.Task", bundle: .module), cleanName), .task(subtasks: [])))
                 }
@@ -258,8 +268,7 @@ struct HabitQuickAddView: View {
         var cleaned = text
         
         // Remove duration indicators
-        let durationPattern = #"\s*\d+\s*(min|minute|m|hr|hour|h|sec|second|s)\s*"#
-        if let regex = try? NSRegularExpression(pattern: durationPattern, options: .caseInsensitive) {
+        if let regex = Self.cleanDurationRegex {
             cleaned = regex.stringByReplacingMatches(in: cleaned, range: NSRange(cleaned.startIndex..., in: cleaned), withTemplate: "")
         }
         
@@ -359,7 +368,7 @@ struct HabitQuickAddView: View {
         switch type {
         case .task:
             return String(localized: "HabitQuickAddView.DefaultName.NewTask", bundle: .module)
-        case .timer(let style, _, _, _):
+        case .timer(let style, _, _, _, _):
             switch style {
             case .down:
                 return String(localized: "HabitQuickAddView.DefaultName.TimedActivity", bundle: .module)
@@ -368,7 +377,7 @@ struct HabitQuickAddView: View {
             case .multiple:
                 return String(localized: "HabitQuickAddView.DefaultName.MultipleTimers", bundle: .module)
             }
-        case .action(let type, _, _):
+        case .action(let type, _, _, _):
             switch type {
             case .app:
                 return String(localized: "HabitQuickAddView.DefaultName.LaunchApp", bundle: .module)

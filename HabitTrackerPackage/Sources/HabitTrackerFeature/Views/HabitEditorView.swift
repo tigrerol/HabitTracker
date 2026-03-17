@@ -15,9 +15,11 @@ public struct HabitEditorView: View {
     @State private var timerDuration: TimeInterval = 300
     @State private var timerTarget: TimeInterval? = nil
     @State private var timerSteps: [SequenceStep] = []
+    @State private var timerRepeatCount: Int = 1
     @State private var actionType: ActionType = .app
     @State private var actionIdentifier: String = ""
     @State private var actionDisplayName: String = ""
+    @State private var actionEstimatedDuration: TimeInterval? = nil
     @State private var trackingStyle: TrackingStyle = .counter
     @State private var counterItems: [String] = []
     @State private var measurementUnit: String = ""
@@ -28,14 +30,13 @@ public struct HabitEditorView: View {
         case measurement = "Measurement"
     }
     @State private var subtasks: [Subtask] = []
+    @State private var taskEstimatedDuration: TimeInterval? = nil
     @State private var sequenceSteps: [SequenceStep] = []
     @FocusState private var isNameFieldFocused: Bool
     
     let onSave: (Habit) -> Void
     
     public init(habit: Habit, onSave: @escaping (Habit) -> Void) {
-        print("🔍 HabitEditorView: init called with habit: \(habit.name), type: \(habit.type)")
-        
         self._habit = State(initialValue: habit)
         self._habitName = State(initialValue: habit.name)
         self._habitColor = State(initialValue: habit.color)
@@ -44,15 +45,17 @@ public struct HabitEditorView: View {
         
         // Initialize type-specific state
         switch habit.type {
-        case .timer(let style, let duration, let target, let steps):
+        case .timer(let style, let duration, let target, let steps, let repeatCount):
             self._timerStyle = State(initialValue: style)
             self._timerDuration = State(initialValue: duration)
             self._timerTarget = State(initialValue: target)
             self._timerSteps = State(initialValue: steps)
-        case .action(let type, let identifier, let displayName):
+            self._timerRepeatCount = State(initialValue: repeatCount ?? 1)
+        case .action(let type, let identifier, let displayName, let estimatedDuration):
             self._actionType = State(initialValue: type)
             self._actionIdentifier = State(initialValue: identifier)
             self._actionDisplayName = State(initialValue: displayName)
+            self._actionEstimatedDuration = State(initialValue: estimatedDuration)
         case .tracking(let trackingType):
             switch trackingType {
             case .counter(let items):
@@ -63,12 +66,9 @@ public struct HabitEditorView: View {
                 self._measurementUnit = State(initialValue: unit)
                 self._measurementTarget = State(initialValue: target)
             }
-        case .task(let tasks):
-            print("🔍 HabitEditorView: init - task with \(tasks.count) subtasks")
-            for (index, task) in tasks.enumerated() {
-                print("🔍 HabitEditorView: init - subtask \(index): '\(task.name)' (id: \(task.id))")
-            }
+        case .task(let tasks, let customDuration):
             self._subtasks = State(initialValue: tasks)
+            self._taskEstimatedDuration = State(initialValue: customDuration)
         case .guidedSequence(let steps):
             self._sequenceSteps = State(initialValue: steps)
         case .conditional:
@@ -78,69 +78,80 @@ public struct HabitEditorView: View {
     }
     
     public var body: some View {
-        let _ = print("🔍 HabitEditorView: body called with habitName: \(habitName)")
-        
         NavigationStack {
             ScrollView {
-                VStack(spacing: 20) {
-                // Basic info
-                VStack(alignment: .leading, spacing: 16) {
-                    Text(String(localized: "HabitEditorView.BasicInformation.Title", bundle: .module))
-                        .font(.headline)
-                        .foregroundStyle(.primary)
-                    
-                    TextField(String(localized: "HabitEditorView.BasicInformation.HabitName.Placeholder", bundle: .module), text: $habitName)
-                        .textFieldStyle(.roundedBorder)
-                        .focused($isNameFieldFocused)
-                    
-                    
-                    // Color picker
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text(String(localized: "HabitEditorView.BasicInformation.Color.Label", bundle: .module))
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                        
-                        HStack(spacing: 12) {
-                            ForEach(["#34C759", "#007AFF", "#FF9500", "#FF3B30", "#AF52DE", "#5AC8FA", "#FFD60A", "#FF2D55"], id: \.self) { color in
-                                Circle()
-                                    .fill(Color(hex: color) ?? .blue)
-                                    .frame(width: 32, height: 32)
-                                    .overlay {
-                                        if habitColor == color {
-                                            Image(systemName: "checkmark")
-                                                .font(.caption)
-                                                .fontWeight(.bold)
-                                                .foregroundStyle(.white)
-                                        }
+                LazyVStack(spacing: 16, pinnedViews: []) {
+                    // Basic Information Card
+                    ModernCard {
+                        VStack(alignment: .leading, spacing: 16) {
+                            Text(String(localized: "HabitEditorView.BasicInformation.Title", bundle: .module))
+                                .customHeadline()
+                            
+                            TextField(String(localized: "HabitEditorView.BasicInformation.HabitName.Placeholder", bundle: .module), text: $habitName)
+                                .textFieldStyle(.roundedBorder)
+                                .focused($isNameFieldFocused)
+                            
+                            // Color picker
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text(String(localized: "HabitEditorView.BasicInformation.Color.Label", bundle: .module))
+                                    .customCaption()
+                                    .foregroundStyle(.secondary)
+                                
+                                HStack(spacing: 12) {
+                                    ForEach(["#34C759", "#007AFF", "#FF9500", "#FF3B30", "#AF52DE", "#5AC8FA", "#FFD60A", "#FF2D55"], id: \.self) { color in
+                                        Circle()
+                                            .fill(Color(hex: color) ?? .blue)
+                                            .frame(width: 32, height: 32)
+                                            .overlay {
+                                                if habitColor == color {
+                                                    Image(systemName: "checkmark")
+                                                        .font(.caption)
+                                                        .fontWeight(.bold)
+                                                        .foregroundStyle(.white)
+                                                }
+                                            }
+                                            .onTapGesture {
+                                                habitColor = color
+                                            }
                                     }
-                                    .onTapGesture {
-                                        habitColor = color
-                                    }
+                                }
                             }
+                        }
+                    }
+                    
+                    // Type-specific settings card
+                    ModernCard {
+                        VStack(alignment: .leading, spacing: 16) {
+                            HStack {
+                                Image(systemName: habit.type.iconName)
+                                    .foregroundColor(Theme.Colors.accentTeal)
+                                Text(habitTypeTitle)
+                                    .customHeadline()
+                            }
+                            
+                            typeSpecificSection
+                        }
+                    }
+                    
+                    // Notes card
+                    ModernCard {
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text(String(localized: "HabitEditorView.BasicInformation.Notes.Title", bundle: .module))
+                                .customHeadline()
+                            
+                            TextField(String(localized: "HabitEditorView.BasicInformation.Notes.Placeholder", bundle: .module), text: $notes, axis: .vertical)
+                                .lineLimit(3...5)
+                                .textFieldStyle(.roundedBorder)
                         }
                     }
                 }
                 .padding()
-                .background(Color.gray.opacity(0.1), in: RoundedRectangle(cornerRadius: 10))
-                
-                // Type-specific settings
-                typeSpecificSection
-                
-                // Notes
-                VStack(alignment: .leading, spacing: 8) {
-                    Text(String(localized: "HabitEditorView.BasicInformation.Notes.Title", bundle: .module))
-                        .font(.headline)
-                    
-                    TextField(String(localized: "HabitEditorView.BasicInformation.Notes.Placeholder", bundle: .module), text: $notes, axis: .vertical)
-                        .lineLimit(2...4)
-                        .textFieldStyle(.roundedBorder)
-                }
-                .padding()
-                .background(Color.gray.opacity(0.1), in: RoundedRectangle(cornerRadius: 10))
-                }
-                .padding()
             }
+            .background(Theme.background.ignoresSafeArea())
             .navigationTitle(String(localized: "HabitEditorView.NavigationTitle", bundle: .module))
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
             
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -168,21 +179,13 @@ public struct HabitEditorView: View {
     
     @ViewBuilder
     private var typeSpecificSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack {
-                Image(systemName: habit.type.iconName)
-                    .foregroundStyle(.blue)
-                Text(habitTypeTitle)
-                    .font(.headline)
-            }
-            
+        Group {
             switch habit.type {
             case .task:
-                let _ = print("typeSpecificSection: showing task")
                 subtasksEditor
+                taskEstimatedDurationSettings
                 
             case .timer:
-                let _ = print("typeSpecificSection: showing unified timer settings")
                 timerSettings
                 
             case .action:
@@ -247,6 +250,18 @@ public struct HabitEditorView: View {
             
             if timerStyle == .multiple {
                 timerStepsEditor
+                
+                // Repeat count for multiple timers
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Repeat Count")
+                        .font(.headline)
+                    
+                    HStack {
+                        Stepper(value: $timerRepeatCount, in: 1...999) {
+                            Text("\(timerRepeatCount) round\(timerRepeatCount == 1 ? "" : "s")")
+                        }
+                    }
+                }
             } else {
                 timerDurationDisplay
                 timerInputFields
@@ -391,19 +406,19 @@ public struct HabitEditorView: View {
         VStack(alignment: .leading, spacing: 12) {
             TextField(String(localized: "HabitEditorView.Action.DisplayName.Placeholder", bundle: .module), text: $actionDisplayName)
                 .textFieldStyle(.roundedBorder)
-            
+
             VStack(alignment: .leading, spacing: 8) {
                 Text(String(localized: "HabitEditorView.Action.Type.Label", bundle: .module))
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                
+
                 Picker(String(localized: "HabitEditorView.Action.Type.Picker.Label", bundle: .module), selection: $actionType) {
                     Text(String(localized: "HabitEditorView.Action.App.Label", bundle: .module)).tag(ActionType.app)
                     Text(String(localized: "HabitEditorView.Action.Website.Label", bundle: .module)).tag(ActionType.website)
                     Text(String(localized: "HabitEditorView.Action.Shortcut.Label", bundle: .module)).tag(ActionType.shortcut)
                 }
                 .pickerStyle(.segmented)
-                
+
                 switch actionType {
                 case .app:
                     VStack(alignment: .leading, spacing: 4) {
@@ -413,12 +428,12 @@ public struct HabitEditorView: View {
                             #endif
                             .autocorrectionDisabled()
                             .textFieldStyle(.roundedBorder)
-                        
+
                         Text(String(localized: "HabitEditorView.Action.URLScheme.Examples", bundle: .module))
                             .font(.caption2)
                             .foregroundStyle(.secondary)
                     }
-                    
+
                 case .website:
                     VStack(alignment: .leading, spacing: 4) {
                         TextField(String(localized: "HabitEditorView.Action.Website.URL.Placeholder", bundle: .module), text: $actionIdentifier)
@@ -428,22 +443,110 @@ public struct HabitEditorView: View {
                             #endif
                             .autocorrectionDisabled()
                             .textFieldStyle(.roundedBorder)
-                        
+
                         Text(String(localized: "HabitEditorView.Action.Website.Instructions", bundle: .module))
                             .font(.caption2)
                             .foregroundStyle(.secondary)
                     }
-                    
+
                 case .shortcut:
                     VStack(alignment: .leading, spacing: 4) {
                         TextField(String(localized: "HabitEditorView.Action.Shortcut.Name.Placeholder", bundle: .module), text: $actionIdentifier)
                             .textFieldStyle(.roundedBorder)
-                        
+
                         Text(String(localized: "HabitEditorView.Action.Shortcut.Instructions", bundle: .module))
                             .font(.caption2)
                             .foregroundStyle(.secondary)
                     }
                 }
+            }
+
+            // Estimated duration
+            actionEstimatedDurationSettings
+        }
+    }
+
+    private var actionEstimatedDurationSettings: some View {
+        estimatedDurationEditor(
+            duration: $actionEstimatedDuration,
+            toggleLabel: String(localized: "HabitEditorView.Action.EstimatedDuration.Toggle", bundle: .module)
+        )
+    }
+
+    private var taskEstimatedDurationSettings: some View {
+        estimatedDurationEditor(
+            duration: $taskEstimatedDuration,
+            toggleLabel: String(localized: "HabitEditorView.Task.EstimatedDuration.Toggle", bundle: .module)
+        )
+    }
+
+    private func estimatedDurationEditor(duration: Binding<TimeInterval?>, toggleLabel: String) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Toggle(
+                toggleLabel,
+                isOn: Binding(
+                    get: { duration.wrappedValue != nil },
+                    set: { enabled in
+                        duration.wrappedValue = enabled ? 300 : nil
+                    }
+                )
+            )
+
+            if let currentDuration = duration.wrappedValue {
+                HStack {
+                    Text(String(localized: "HabitEditorView.Action.EstimatedDuration.Label", bundle: .module))
+                    Spacer()
+                    TextField("min", value: Binding(
+                        get: { Int(currentDuration / 60) },
+                        set: { newMinutes in
+                            duration.wrappedValue = TimeInterval(max(1, newMinutes) * 60)
+                        }
+                    ), format: .number)
+                    .textFieldStyle(.roundedBorder)
+                    .frame(width: 60)
+                    .multilineTextAlignment(.center)
+                    #if os(iOS)
+                    .keyboardType(.numberPad)
+                    #endif
+
+                    Text("min")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach([
+                            (60, "1m"), (120, "2m"), (300, "5m"),
+                            (600, "10m"), (900, "15m"), (1800, "30m")
+                        ], id: \.0) { presetDuration, label in
+                            Button {
+                                withAnimation(.easeInOut(duration: 0.2)) {
+                                    duration.wrappedValue = TimeInterval(presetDuration)
+                                }
+                            } label: {
+                                Text(label)
+                                    .font(.caption)
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 6)
+                                    .background(
+                                        duration.wrappedValue == TimeInterval(presetDuration) ?
+                                        Color.blue.opacity(0.2) : Color.gray.opacity(0.3),
+                                        in: Capsule()
+                                    )
+                                    .foregroundStyle(
+                                        duration.wrappedValue == TimeInterval(presetDuration) ? .blue : .primary
+                                    )
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    .padding(.horizontal, 1)
+                }
+
+                Text(String(localized: "HabitEditorView.Action.EstimatedDuration.Help", bundle: .module))
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
             }
         }
     }
@@ -477,8 +580,7 @@ public struct HabitEditorView: View {
     
     // Subtasks editor
     private var subtasksEditor: some View {
-        let _ = print("🔍 subtasksEditor: Rendering with \(subtasks.count) subtasks")
-        return VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 8) {
             if subtasks.isEmpty {
                 Text(String(localized: "HabitEditorView.Subtasks.NoSubtasks.Message", bundle: .module))
                     .font(.caption)
@@ -491,7 +593,6 @@ public struct HabitEditorView: View {
                             get: { subtask.name },
                             set: { newName in
                                 if let index = subtasks.firstIndex(where: { $0.id == subtask.id }) {
-                                    print("🔍 subtasksEditor: Updating subtask at index \(index) to '\(newName)'")
                                     subtasks[index].name = newName
                                 }
                             }
@@ -500,7 +601,6 @@ public struct HabitEditorView: View {
                         
                         Button {
                             withAnimation {
-                                print("🔍 subtasksEditor: Removing subtask '\(subtask.name)'")
                                 subtasks.removeAll { $0.id == subtask.id }
                             }
                         } label: {
@@ -514,9 +614,7 @@ public struct HabitEditorView: View {
             Button {
                 withAnimation {
                     let newSubtask = Subtask(name: String(localized: "HabitEditorView.Subtasks.NewSubtask.Default", bundle: .module))
-                    print("🔍 subtasksEditor: Adding new subtask with id \(newSubtask.id)")
                     subtasks.append(newSubtask)
-                    print("🔍 subtasksEditor: subtasks.count is now \(subtasks.count)")
                 }
             } label: {
                 Label(String(localized: "HabitEditorView.Subtasks.AddSubtask.Label", bundle: .module), systemImage: "plus.circle.fill")
@@ -592,7 +690,8 @@ public struct HabitEditorView: View {
                         }
                     }
                 ))
-                
+                .textFieldStyle(.roundedBorder)
+
                 timerStepDurationInput(step: step)
                 timerStepDeleteButton(step: step)
             }
@@ -730,11 +829,6 @@ public struct HabitEditorView: View {
     // MARK: - Save
     
     private func saveHabit() {
-        print("🔍 saveHabit: Starting save process")
-        print("🔍 saveHabit: habitName = '\(habitName)'")
-        print("🔍 saveHabit: habit.type = \(habit.type)")
-        print("🔍 saveHabit: subtasks.count = \(subtasks.count)")
-        
         var updatedHabit = habit
         updatedHabit.name = habitName
         updatedHabit.color = habitColor
@@ -744,15 +838,11 @@ public struct HabitEditorView: View {
         // Update type with new values
         switch habit.type {
         case .task:
-            print("🔍 saveHabit: Processing task type with \(subtasks.count) subtasks")
-            for (index, subtask) in subtasks.enumerated() {
-                print("🔍 saveHabit: Subtask \(index): '\(subtask.name)' (id: \(subtask.id))")
-            }
-            updatedHabit.type = .task(subtasks: subtasks)
+            updatedHabit.type = .task(subtasks: subtasks, estimatedDuration: taskEstimatedDuration)
         case .timer:
-            updatedHabit.type = .timer(style: timerStyle, duration: timerDuration, target: timerTarget, steps: timerSteps)
+            updatedHabit.type = .timer(style: timerStyle, duration: timerDuration, target: timerTarget, steps: timerSteps, repeatCount: timerRepeatCount > 1 ? timerRepeatCount : nil)
         case .action:
-            updatedHabit.type = .action(type: actionType, identifier: actionIdentifier, displayName: actionDisplayName)
+            updatedHabit.type = .action(type: actionType, identifier: actionIdentifier, displayName: actionDisplayName, estimatedDuration: actionEstimatedDuration)
         case .tracking:
             switch trackingStyle {
             case .counter:
@@ -767,7 +857,6 @@ public struct HabitEditorView: View {
             break
         }
         
-        print("🔍 saveHabit: Final updatedHabit.type = \(updatedHabit.type)")
         onSave(updatedHabit)
         dismiss()
     }

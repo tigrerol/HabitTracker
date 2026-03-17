@@ -2,6 +2,9 @@ import SwiftUI
 #if canImport(UIKit)
 import UIKit
 #endif
+#if canImport(ActivityKit)
+import ActivityKit
+#endif
 
 /// Example enhanced habit views with comprehensive accessibility support
 /// These demonstrate how to implement accessibility across different habit types
@@ -14,38 +17,68 @@ struct AccessibleCheckboxHabitView: View {
     let isCompleted: Bool
     
     var body: some View {
-        VStack(spacing: 16) {
-            // Checkbox
-            Button {
-                onComplete(habit.id, nil, nil)
-            } label: {
-                HStack(spacing: 12) {
-                    Image(systemName: isCompleted ? "checkmark.circle.fill" : "circle")
-                        .font(.title)
-                        .foregroundStyle(isCompleted ? .green : .secondary)
+        ModernCard(style: isCompleted ? .elevated : .standard) {
+            VStack(spacing: 16) {
+                // Habit Info Header
+                HStack {
+                    Image(systemName: habit.type.iconName)
+                        .font(.title2)
+                        .foregroundColor(habit.swiftUIColor)
+                        .frame(minWidth: 32, minHeight: 32)
+                        .background(
+                            Circle()
+                                .fill(habit.swiftUIColor.opacity(0.1))
+                        )
                     
-                    Text(isCompleted ?
-                         String(localized: "HabitInteractionView.Checkbox.Completed", bundle: .module) :
-                         String(localized: "HabitInteractionView.Checkbox.TapToComplete", bundle: .module))
-                        .font(.headline)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(habit.name)
+                            .customHeadline()
+                            .lineLimit(2)
+                        
+                        Text(habit.type.description)
+                            .customCaption()
+                    }
+                    
+                    Spacer()
                 }
-                .padding()
-                .frame(maxWidth: .infinity)
-                .background(Color.gray.opacity(0.1))
-                .clipShape(RoundedRectangle(cornerRadius: 12))
+                
+                // Checkbox Button
+                Button {
+                    HapticManager.trigger(isCompleted ? .success : .medium)
+                    onComplete(habit.id, nil, nil)
+                } label: {
+                    HStack(spacing: 12) {
+                        Image(systemName: isCompleted ? "checkmark.circle.fill" : "circle")
+                            .font(.title)
+                            .foregroundStyle(isCompleted ? Theme.Colors.accentGreen : Theme.secondaryText)
+                        
+                        Text(isCompleted ?
+                             String(localized: "HabitInteractionView.Checkbox.Completed", bundle: .module) :
+                             String(localized: "HabitInteractionView.Checkbox.TapToComplete", bundle: .module))
+                            .customSubheadline()
+                            .foregroundColor(isCompleted ? Theme.Colors.accentGreen : Theme.text)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 16)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(isCompleted ? Theme.Colors.accentGreen.opacity(0.1) : Color.gray.opacity(0.05))
+                    )
+                }
+                .accessibilityButton(
+                    identifier: AccessibilityConfiguration.Identifiers.completeHabitButton(habitId: habit.id),
+                    label: AccessibilityConfiguration.Labels.checkboxHabit(
+                        habitName: habit.name,
+                        isCompleted: isCompleted
+                    ),
+                    hint: AccessibilityConfiguration.Hints.doubleTapToComplete,
+                    traits: AccessibilityConfiguration.habitCardTraits
+                )
+                .disabled(isCompleted)
+                .buttonStyle(ScaleButtonStyle())
+                .sensoryFeedback(.selection, trigger: isCompleted)
             }
-            .accessibilityButton(
-                identifier: AccessibilityConfiguration.Identifiers.completeHabitButton(habitId: habit.id),
-                label: AccessibilityConfiguration.Labels.checkboxHabit(
-                    habitName: habit.name,
-                    isCompleted: isCompleted
-                ),
-                hint: AccessibilityConfiguration.Hints.doubleTapToComplete,
-                traits: AccessibilityConfiguration.habitCardTraits
-            )
-            .disabled(isCompleted)
         }
-        .padding()
     }
 }
 
@@ -73,6 +106,7 @@ struct AccessibleTimerHabitView: View {
             // Timer display
             Text(timeRemaining.formattedDuration)
                 .font(.system(size: 48, weight: .bold, design: .monospaced))
+                .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                 .foregroundStyle(timeRemaining <= 30 ? .red : .primary)
                 .accessibilityLabel("Time remaining: \(timeRemaining.formattedAccessibleDuration)")
                 .accessibilityAddTraits(.updatesFrequently)
@@ -112,25 +146,22 @@ struct AccessibleTimerHabitView: View {
                     traits: AccessibilityConfiguration.timerButtonTraits
                 )
                 
-                // Complete early button (only show when running)
-                if isRunning {
-                    Button {
-                        completeEarly()
-                    } label: {
-                        Text("Complete")
-                            .font(.headline)
-                            .foregroundStyle(.white)
-                            .padding(.vertical, 12)
-                            .padding(.horizontal, 24)
-                            .background(Color.blue)
-                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                    
+                    // Complete early button (only show when running)
+                    if isRunning {
+                        IconButton(
+                            icon: "checkmark.circle.fill",
+                            title: "Complete",
+                            style: .secondary
+                        ) {
+                            completeEarly()
+                        }
+                        .accessibilityButton(
+                            identifier: AccessibilityConfiguration.Identifiers.completeHabitButton(habitId: habit.id),
+                            label: AccessibilityConfiguration.Labels.completeHabitButton(habitName: habit.name),
+                            hint: AccessibilityConfiguration.Hints.doubleTapToComplete
+                        )
                     }
-                    .accessibilityButton(
-                        identifier: AccessibilityConfiguration.Identifiers.completeHabitButton(habitId: habit.id),
-                        label: AccessibilityConfiguration.Labels.completeHabitButton(habitName: habit.name),
-                        hint: AccessibilityConfiguration.Hints.doubleTapToComplete
-                    )
-                }
             }
         }
         .padding()
@@ -142,6 +173,22 @@ struct AccessibleTimerHabitView: View {
     private func startTimer() {
         isRunning = true
         startTime = Date()
+        
+        // Haptic feedback for timer start
+        HapticManager.trigger(.medium)
+        
+        // Start Live Activity if available
+        #if canImport(ActivityKit)
+        if #available(iOS 16.1, *) {
+            Task {
+                await LiveActivityManager.shared.startTimerActivity(
+                    for: habit,
+                    duration: defaultDuration,
+                    startTime: Date()
+                )
+            }
+        }
+        #endif
         
         // Announce start to VoiceOver
         #if canImport(UIKit)
@@ -155,6 +202,21 @@ struct AccessibleTimerHabitView: View {
             Task { @MainActor in
                 if timeRemaining > 0 {
                     timeRemaining -= 1
+                    
+                    // Update Live Activity every 5 seconds or when near completion
+                    let currentProgress = 1.0 - (timeRemaining / defaultDuration)
+                    if Int(timeRemaining) % 5 == 0 || timeRemaining <= 30 {
+                        #if canImport(ActivityKit)
+                        if #available(iOS 16.1, *) {
+                            await LiveActivityManager.shared.updateTimerActivity(
+                                for: habit.id.uuidString,
+                                currentProgress: currentProgress,
+                                timeRemaining: timeRemaining,
+                                isRunning: true
+                            )
+                        }
+                        #endif
+                    }
                 } else {
                     timerFinished()
                 }
@@ -166,6 +228,24 @@ struct AccessibleTimerHabitView: View {
         isRunning = false
         timer?.invalidate()
         timer = nil
+        
+        // Haptic feedback for timer pause
+        HapticManager.trigger(.light)
+        
+        // Update Live Activity to paused state
+        #if canImport(ActivityKit)
+        if #available(iOS 16.1, *) {
+            Task {
+                let currentProgress = 1.0 - (timeRemaining / defaultDuration)
+                await LiveActivityManager.shared.updateTimerActivity(
+                    for: habit.id.uuidString,
+                    currentProgress: currentProgress,
+                    timeRemaining: timeRemaining,
+                    isRunning: false
+                )
+            }
+        }
+        #endif
         
         // Announce pause to VoiceOver
         #if canImport(UIKit)
@@ -189,9 +269,18 @@ struct AccessibleTimerHabitView: View {
         let actualDuration = startTime?.timeIntervalSinceNow.magnitude ?? defaultDuration
         
         // Provide completion feedback
-        #if canImport(UIKit)
-        let impactFeedback = UIImpactFeedbackGenerator(style: .heavy)
-        impactFeedback.impactOccurred()
+        HapticManager.trigger(.success)
+        
+        // Complete Live Activity
+        #if canImport(ActivityKit)
+        if #available(iOS 16.1, *) {
+            Task {
+                await LiveActivityManager.shared.completeTimerActivity(
+                    for: habit.id.uuidString,
+                    actualDuration: actualDuration
+                )
+            }
+        }
         #endif
         
         // Announce completion to VoiceOver
@@ -212,6 +301,21 @@ struct AccessibleTimerHabitView: View {
         let actualDuration = startTime?.timeIntervalSinceNow.magnitude ?? (defaultDuration - timeRemaining)
         stopTimer()
         isRunning = false
+        
+        // Haptic feedback for early completion
+        HapticManager.trigger(.success)
+        
+        // Complete Live Activity
+        #if canImport(ActivityKit)
+        if #available(iOS 16.1, *) {
+            Task {
+                await LiveActivityManager.shared.completeTimerActivity(
+                    for: habit.id.uuidString,
+                    actualDuration: actualDuration
+                )
+            }
+        }
+        #endif
         
         // Announce early completion
         #if canImport(UIKit)

@@ -1,0 +1,68 @@
+import SwiftUI
+
+// MARK: - Typography ViewModifiers
+
+public struct CustomTitleModifier: ViewModifier {
+    public func body(content: Content) -> some View {
+        content
+            .font(.system(.largeTitle, design: .rounded, weight: .bold))
+            .foregroundStyle(Theme.text)
+            .tracking(-0.5)
+    }
+}
+
+public struct CustomHeadlineModifier: ViewModifier {
+    public func body(content: Content) -> some View {
+        content
+            .font(.system(.headline, design: .rounded, weight: .semibold))
+            .foregroundStyle(Theme.text)
+    }
+}
+
+public struct CustomSubheadlineModifier: ViewModifier {
+    public func body(content: Content) -> some View {
+        content
+            .font(.system(.subheadline, design: .rounded, weight: .medium))
+            .foregroundStyle(Theme.text)
+    }
+}
+
+public struct CustomBodyModifier: ViewModifier {
+    public func body(content: Content) -> some View {
+        content
+            .font(.system(.body, design: .rounded))
+            .foregroundStyle(Theme.text)
+    }
+}
+
+public struct CustomCaptionModifier: ViewModifier {
+    public func body(content: Content) -> some View {
+        content
+            .font(.system(.caption, design: .rounded))
+            .foregroundStyle(Theme.secondaryText)
+    }
+}
+
+// MARK: - View Extensions
+
+extension View {
+    public func customTitle() -> some View {
+        self.modifier(CustomTitleModifier())
+    }
+    
+    public func customHeadline() -> some View {
+        self.modifier(CustomHeadlineModifier())
+    }
+    
+    public func customSubheadline() -> some View {
+        self.modifier(CustomSubheadlineModifier())
+    }
+    
+    public func customBody() -> some View {
+        self.modifier(CustomBodyModifier())
+    }
+    
+    public func customCaption() -> some View {
+        self.modifier(CustomCaptionModifier())
+    }
+}

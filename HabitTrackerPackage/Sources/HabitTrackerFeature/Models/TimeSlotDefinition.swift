@@ -265,7 +265,7 @@ public final class TimeSlotManager: ObservableObject, @unchecked Sendable {
                     }
                 }
             } catch {
-                print("Failed to load custom time slots: \(error)")
+                LoggingService.shared.error("Failed to load custom time slots: \(error.localizedDescription)", category: .app)
                 queue.sync {
                     timeSlots = TimeSlotDefinition.defaults
                 }
@@ -279,7 +279,7 @@ public final class TimeSlotManager: ObservableObject, @unchecked Sendable {
             do {
                 try await persistenceService.save(slotsToSave, forKey: timeSlotsKey)
             } catch {
-                print("Failed to save custom time slots: \(error)")
+                LoggingService.shared.error("Failed to save custom time slots: \(error.localizedDescription)", category: .app)
             }
         }
     }

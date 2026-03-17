@@ -138,7 +138,6 @@ public final class SwiftDataPersistenceService: PersistenceServiceProtocol, @unc
         do {
             return try modelContext.fetch(descriptor)
         } catch {
-            print("Failed to fetch persisted templates: \(error)")
             return []
         }
     }
@@ -239,7 +238,6 @@ public final class SwiftDataPersistenceService: PersistenceServiceProtocol, @unc
         do {
             return try modelContext.fetch(descriptor)
         } catch {
-            print("Failed to fetch persisted mood ratings: \(error)")
             return []
         }
     }

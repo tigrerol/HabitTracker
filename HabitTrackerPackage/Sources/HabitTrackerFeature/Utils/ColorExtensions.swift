@@ -8,14 +8,14 @@ extension Color {
     init?(hex: String) {
         let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
         var int: UInt64 = 0
-        
-        // Check if the scanner was successful
-        guard Scanner(string: hex).scanHexInt64(&int) else {
+
+        // Ensure hex string is not empty before scanning
+        guard !hex.isEmpty else {
             return nil
         }
-        
-        // Ensure hex string is not empty
-        guard !hex.isEmpty else {
+
+        // Check if the scanner was successful
+        guard Scanner(string: hex).scanHexInt64(&int) else {
             return nil
         }
         
@@ -49,6 +49,20 @@ extension Color {
             blue: blue,
             opacity: opacity
         )
+    }
+
+    /// Convert a Color to its 6-character uppercase hex string
+    public func toHex() -> String? {
+        let uiColor = UIColor(self)
+        var red: CGFloat = 0
+        var green: CGFloat = 0
+        var blue: CGFloat = 0
+        var alpha: CGFloat = 0
+        guard uiColor.getRed(&red, green: &green, blue: &blue, alpha: &alpha) else { return nil }
+        let r = Int(red * 255)
+        let g = Int(green * 255)
+        let b = Int(blue * 255)
+        return String(format: "%06X", (r << 16) | (g << 8) | b)
     }
 }
 
@@ -96,4 +110,64 @@ public struct ColorUtils {
         let blue: Float
         let opacity: Float
     }
+}
+
+// MARK: - Modern Theme System
+
+public struct Theme {
+    
+    // MARK: - Color Palette
+    public struct Colors {
+        // Primary Backgrounds
+        public static let primaryBackground = Color(hex: "EDE3CE") ?? .clear     // Warm sand linen (Sunstone)
+        public static let darkPrimaryBackground = Color(hex: "0C1B2E") ?? .clear // Midnight navy (Slate)
+
+        // Card Backgrounds
+        public static let cardBackground = Color(hex: "FAF3E4") ?? .white        // Warm parchment (Sunstone)
+        public static let darkCardBackground = Color(hex: "162840") ?? .clear    // Deep navy surface (Slate)
+
+        // Accent Colors - Choose one as primary
+        public static let accentTeal = Color(hex: "2B8C84") ?? .clear      // WCAG AA compliant teal
+        public static let accentOrange = Color(hex: "F56565") ?? .clear    // Warm alerts
+        public static let accentRed = Color(hex: "E53E3E") ?? .clear       // Error states
+        public static let accentLavender = Color(hex: "9F7AEA") ?? .clear  // Soothing secondary
+        public static let accentGreen = Color(hex: "48BB78") ?? .clear     // Success states
+
+        // Text Colors
+        public static let primaryText = Color.black
+        public static let darkPrimaryText = Color.white
+        public static let secondaryText = Color.gray
+        public static let darkSecondaryText = Color(hex: "A0AEC0") ?? .clear
+    }
+    
+    // MARK: - Dynamic Colors (Auto Light/Dark Mode)
+    public static func dynamicColor(light: Color, dark: Color) -> Color {
+        return Color(UIColor { traits in
+            traits.userInterfaceStyle == .dark ? UIColor(dark) : UIColor(light)
+        })
+    }
+    
+    // Semantic Colors
+    public static let background = dynamicColor(
+        light: Colors.primaryBackground,
+        dark: Colors.darkPrimaryBackground
+    )
+    
+    public static let cardBackground = dynamicColor(
+        light: Colors.cardBackground,
+        dark: Colors.darkCardBackground
+    )
+    
+    public static let text = dynamicColor(
+        light: Colors.primaryText,
+        dark: Colors.darkPrimaryText
+    )
+    
+    public static let secondaryText = dynamicColor(
+        light: Colors.secondaryText,
+        dark: Colors.darkSecondaryText
+    )
+    
+    // Primary accent - will be overridden by ThemeManager
+    public static let accent = Colors.accentTeal
 }

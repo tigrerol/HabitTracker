@@ -38,17 +38,13 @@ public final class RoutineSelector {
         locationCoordinator.setLocationUpdateCallback { [weak self] locationType, extendedLocationType in
             guard let self = self else { return }
             
-            print("🗺️ RoutineSelector: Location update received - \(locationType), \(extendedLocationType)")
-            
             // Check if location actually changed to avoid unnecessary updates
             guard self.currentLocationType != locationType || self.currentExtendedLocationType != extendedLocationType else {
-                print("🗺️ RoutineSelector: Location unchanged, skipping context update")
                 return
             }
             
             // Only update if location updates are enabled
             guard self.shouldUpdateLocation else {
-                print("🗺️ RoutineSelector: Location updates disabled, only caching location")
                 self.currentLocationType = locationType
                 self.currentExtendedLocationType = extendedLocationType
                 return
@@ -57,13 +53,8 @@ public final class RoutineSelector {
             self.currentLocationType = locationType
             self.currentExtendedLocationType = extendedLocationType
             
-            print("🗺️ RoutineSelector: Updated currentLocationType to \(self.currentLocationType)")
-            
             // Apply throttling to location-triggered context updates too
             await self.updateContext()
-            
-            print("🗺️ RoutineSelector: Context updated - location is now \(self.currentContext.location)")
-            print("🗺️ RoutineSelector: Final verification - currentLocationType is \(self.currentLocationType)")
         }
         
         await locationCoordinator.startUpdatingLocation()
@@ -95,28 +86,19 @@ public final class RoutineSelector {
         lastContextUpdate = now
         
         let timeSlot = TimeSlotManager.shared.getCurrentTimeSlot()
-        let dayCategory = DayCategoryManager.shared.getCurrentDayCategory()
-        
+        let dayCategories = DayCategoryManager.shared.getCurrentDayCategories()
+
         // Use LocationCoordinator's current location directly to avoid race condition
         let coordinatorLocation = locationCoordinator.currentLocationType
-        
-        print("🗺️ RoutineSelector.updateContext() Debug:")
-        print("   - Before update - currentLocationType: \(currentLocationType)")
-        print("   - Before update - currentContext.location: \(currentContext.location)")
-        print("   - LocationCoordinator.currentLocationType: \(coordinatorLocation)")
-        
+
         self.currentContext = RoutineContext(
             timeSlot: timeSlot,
-            dayCategory: dayCategory,
+            dayCategories: dayCategories,
             location: coordinatorLocation  // Use coordinator's location directly
         )
         
         // Update our cached value to match
         self.currentLocationType = coordinatorLocation
-        
-        print("   - After update - currentContext.location: \(currentContext.location)")
-        print("   - After update - currentLocationType: \(currentLocationType)")
-        print("   - Verification - context location matches coordinator: \(currentContext.location == coordinatorLocation)")
     }
     
     /// Select the best routine template based on current context
@@ -127,24 +109,16 @@ public final class RoutineSelector {
         
         await updateContext(force: true)
         
-        // Filter templates with context rules and calculate scores
-        print("🔍 RoutineSelector: Current context - Time: \(currentContext.timeSlot.displayName), Day: \(currentContext.dayCategory.displayName), Location: \(currentContext.location.displayName)")
-        
         var scoredTemplates: [(template: RoutineTemplate, score: Int)] = []
         
         for template in templates {
             guard let rule = template.contextRule else {
-                // Templates without rules get a base score of 1
-                print("🔍 Template '\(template.name)': No context rule, score = 1")
                 scoredTemplates.append((template, 1))
                 continue
             }
             
             let score = await calculateMatchScore(for: rule, context: currentContext)
-            let matches = await checkRuleMatches(rule, context: currentContext)
-            print("🔍 Template '\(template.name)': matches=\(matches), score=\(score)")
-            print("   - TimeSlots: \(rule.timeSlots), DayCategories: \(rule.dayCategoryIds), Priority: \(rule.priority)")
-            
+
             if score > 0 {
                 scoredTemplates.append((template, score))
             }
@@ -152,12 +126,7 @@ public final class RoutineSelector {
         
         // Sort by score (highest first)
         let sorted = scoredTemplates.sorted { $0.score > $1.score }
-        
-        print("🔍 RoutineSelector: Sorted templates by score:")
-        for (index, scoredTemplate) in sorted.enumerated() {
-            print("   \(index + 1). '\(scoredTemplate.template.name)' - Score: \(scoredTemplate.score)")
-        }
-        
+
         // Get the best match
         guard let best = sorted.first else {
             return handleNoMatchingTemplate(from: templates)
@@ -189,34 +158,34 @@ public final class RoutineSelector {
     }
     
     /// Calculate match score for a context rule
+    /// Priority: Day Category (15) > Time (10) > Location (5)
     private func calculateMatchScore(for rule: RoutineContextRule, context: RoutineContext) async -> Int {
         var score = 0
-        
-        // Time slot matching (highest weight)
+
+        // Day category matching (highest weight)
+        if context.dayCategories.contains(where: { rule.dayCategoryIds.contains($0.id) }) {
+            score += 15
+        }
+
+        // Time slot matching (medium weight)
         if rule.timeSlots.contains(context.timeSlot) {
             score += 10
         }
-        
-        // Day category matching (medium weight)
-        if rule.dayCategoryIds.contains(context.dayCategory.id) {
-            score += 5
-        }
-        
-        // Location matching (medium weight)
+
+        // Location matching (lowest weight)
         if rule.locationIds.isEmpty {
             // Empty location IDs means "any location" - give small bonus
             score += 1
         } else {
-            // Check if current location matches any of the rule's locations
             let locationMatches = await checkLocationMatches(rule: rule, context: context)
             if locationMatches {
                 score += 5
             }
         }
-        
-        // Priority bonus (low weight)
+
+        // Priority bonus
         score += rule.priority
-        
+
         return score
     }
     
@@ -225,8 +194,8 @@ public final class RoutineSelector {
         // Time slot must match
         guard rule.timeSlots.contains(context.timeSlot) else { return false }
         
-        // Day category must match
-        guard rule.dayCategoryIds.contains(context.dayCategory.id) else { return false }
+        // Day category must match (any of the context's categories)
+        guard context.dayCategories.contains(where: { rule.dayCategoryIds.contains($0.id) }) else { return false }
         
         // Location must match (empty means any location)
         if !rule.locationIds.isEmpty {
@@ -267,12 +236,14 @@ public final class RoutineSelector {
         reasons.append("It's \(context.timeSlot.displayName.lowercased())")
         
         // Day-based reason
-        if context.dayCategory.id == "weekend" {
+        let categoryIds = Set(context.dayCategories.map(\.id))
+        if categoryIds == Set(["weekend"]) {
             reasons.append("it's the weekend")
-        } else if context.dayCategory.id == "weekday" {
+        } else if categoryIds == Set(["weekday"]) {
             reasons.append("it's a weekday")
         } else {
-            reasons.append("it's a \(context.dayCategory.displayName.lowercased()) day")
+            let names = context.dayCategories.map(\.displayName).joined(separator: " & ")
+            reasons.append("it's a \(names.lowercased()) day")
         }
         
         // Location-based reason
