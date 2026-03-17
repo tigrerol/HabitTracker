@@ -37,8 +37,6 @@ public struct HabitEditorView: View {
     let onSave: (Habit) -> Void
     
     public init(habit: Habit, onSave: @escaping (Habit) -> Void) {
-        print("🔍 HabitEditorView: init called with habit: \(habit.name), type: \(habit.type)")
-        
         self._habit = State(initialValue: habit)
         self._habitName = State(initialValue: habit.name)
         self._habitColor = State(initialValue: habit.color)
@@ -69,10 +67,6 @@ public struct HabitEditorView: View {
                 self._measurementTarget = State(initialValue: target)
             }
         case .task(let tasks, let customDuration):
-            print("🔍 HabitEditorView: init - task with \(tasks.count) subtasks")
-            for (index, task) in tasks.enumerated() {
-                print("🔍 HabitEditorView: init - subtask \(index): '\(task.name)' (id: \(task.id))")
-            }
             self._subtasks = State(initialValue: tasks)
             self._taskEstimatedDuration = State(initialValue: customDuration)
         case .guidedSequence(let steps):
@@ -84,8 +78,6 @@ public struct HabitEditorView: View {
     }
     
     public var body: some View {
-        let _ = print("🔍 HabitEditorView: body called with habitName: \(habitName)")
-        
         NavigationStack {
             ScrollView {
                 LazyVStack(spacing: 16, pinnedViews: []) {
@@ -190,12 +182,10 @@ public struct HabitEditorView: View {
         Group {
             switch habit.type {
             case .task:
-                let _ = print("typeSpecificSection: showing task")
                 subtasksEditor
                 taskEstimatedDurationSettings
                 
             case .timer:
-                let _ = print("typeSpecificSection: showing unified timer settings")
                 timerSettings
                 
             case .action:
@@ -590,8 +580,7 @@ public struct HabitEditorView: View {
     
     // Subtasks editor
     private var subtasksEditor: some View {
-        let _ = print("🔍 subtasksEditor: Rendering with \(subtasks.count) subtasks")
-        return VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 8) {
             if subtasks.isEmpty {
                 Text(String(localized: "HabitEditorView.Subtasks.NoSubtasks.Message", bundle: .module))
                     .font(.caption)
@@ -604,7 +593,6 @@ public struct HabitEditorView: View {
                             get: { subtask.name },
                             set: { newName in
                                 if let index = subtasks.firstIndex(where: { $0.id == subtask.id }) {
-                                    print("🔍 subtasksEditor: Updating subtask at index \(index) to '\(newName)'")
                                     subtasks[index].name = newName
                                 }
                             }
@@ -613,7 +601,6 @@ public struct HabitEditorView: View {
                         
                         Button {
                             withAnimation {
-                                print("🔍 subtasksEditor: Removing subtask '\(subtask.name)'")
                                 subtasks.removeAll { $0.id == subtask.id }
                             }
                         } label: {
@@ -627,9 +614,7 @@ public struct HabitEditorView: View {
             Button {
                 withAnimation {
                     let newSubtask = Subtask(name: String(localized: "HabitEditorView.Subtasks.NewSubtask.Default", bundle: .module))
-                    print("🔍 subtasksEditor: Adding new subtask with id \(newSubtask.id)")
                     subtasks.append(newSubtask)
-                    print("🔍 subtasksEditor: subtasks.count is now \(subtasks.count)")
                 }
             } label: {
                 Label(String(localized: "HabitEditorView.Subtasks.AddSubtask.Label", bundle: .module), systemImage: "plus.circle.fill")
@@ -844,11 +829,6 @@ public struct HabitEditorView: View {
     // MARK: - Save
     
     private func saveHabit() {
-        print("🔍 saveHabit: Starting save process")
-        print("🔍 saveHabit: habitName = '\(habitName)'")
-        print("🔍 saveHabit: habit.type = \(habit.type)")
-        print("🔍 saveHabit: subtasks.count = \(subtasks.count)")
-        
         var updatedHabit = habit
         updatedHabit.name = habitName
         updatedHabit.color = habitColor
@@ -858,10 +838,6 @@ public struct HabitEditorView: View {
         // Update type with new values
         switch habit.type {
         case .task:
-            print("🔍 saveHabit: Processing task type with \(subtasks.count) subtasks")
-            for (index, subtask) in subtasks.enumerated() {
-                print("🔍 saveHabit: Subtask \(index): '\(subtask.name)' (id: \(subtask.id))")
-            }
             updatedHabit.type = .task(subtasks: subtasks, estimatedDuration: taskEstimatedDuration)
         case .timer:
             updatedHabit.type = .timer(style: timerStyle, duration: timerDuration, target: timerTarget, steps: timerSteps, repeatCount: timerRepeatCount > 1 ? timerRepeatCount : nil)
@@ -881,7 +857,6 @@ public struct HabitEditorView: View {
             break
         }
         
-        print("🔍 saveHabit: Final updatedHabit.type = \(updatedHabit.type)")
         onSave(updatedHabit)
         dismiss()
     }

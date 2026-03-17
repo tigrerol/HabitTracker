@@ -72,7 +72,7 @@ public struct RoutineExecutionView: View {
             }
             .navigationTitle(sessionData?.templateName ?? String(localized: "RoutineExecutionView.NavigationTitle", bundle: .module))
             .toolbar {
-                if sessionData != nil && !sessionData!.isCompleted {
+                if let session = sessionData, !session.isCompleted {
                     ToolbarItem(placement: .topBarTrailing) {
                         Button("Cancel") {
                             showingCancelAlert = true
@@ -154,6 +154,7 @@ public struct RoutineExecutionView: View {
                         refreshSessionData()
                     }
                 )
+                .id(currentHabit.id)
                 .gesture(
                     DragGesture()
                         .onEnded { value in

@@ -64,37 +64,6 @@ public final class ErrorRecoveryHandlers {
         )
     }
     
-    // MARK: - Network Error Recovery
-    
-    /// Handle network connectivity errors
-    public static func handleNetworkError(_ error: NetworkError) async {
-        let recoveryActions = [
-            ErrorPresentationService.RecoveryActionButton(
-                action: .retry,
-                label: "Retry",
-                style: .primary,
-                handler: {
-                    // Retry logic would be implemented by the calling code
-                    LoggingService.shared.info("User requested network retry", category: .network)
-                }
-            ),
-            ErrorPresentationService.RecoveryActionButton(
-                action: .checkInternet,
-                label: "Check Wi-Fi",
-                style: .secondary,
-                handler: {
-                    await openWifiSettings()
-                }
-            )
-        ]
-        
-        ErrorPresentationService.shared.present(
-            error,
-            style: error.severity == .high ? .alert : .snackbar,
-            customRecoveryActions: recoveryActions
-        )
-    }
-    
     // MARK: - Data Error Recovery
     
     /// Handle data corruption errors

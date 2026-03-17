@@ -83,16 +83,14 @@ public final class DayCategoryManager: Sendable {
             do {
                 if let loadedSettings = try await persistenceService.load(DayCategorySettings.self, forKey: PersistenceKeys.dayCategorySettings) {
                     settings = loadedSettings
-                    print("✅ Loaded day category settings from persistence")
                     return
                 }
             } catch {
-                print("❌ Failed to load day category settings: \(error)")
+                LoggingService.shared.error("Failed to load day category settings: \(error.localizedDescription)", category: .app)
             }
 
             // Fallback to defaults
             settings = .default
-            print("🆕 Using default day category settings")
         }
     }
 
@@ -101,7 +99,7 @@ public final class DayCategoryManager: Sendable {
             do {
                 try await persistenceService.save(settings, forKey: PersistenceKeys.dayCategorySettings)
             } catch {
-                print("❌ Failed to save day category settings: \(error)")
+                LoggingService.shared.error("Failed to save day category settings: \(error.localizedDescription)", category: .app)
             }
         }
     }

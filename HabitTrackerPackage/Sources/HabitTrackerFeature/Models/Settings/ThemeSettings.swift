@@ -47,11 +47,11 @@ public final class ThemeManager {
         ("Red", Theme.Colors.accentRed),
         ("Lavender", Theme.Colors.accentLavender),
         ("Green", Theme.Colors.accentGreen),
-        ("Blue", Color(hex: "3182CE")!),
-        ("Pink", Color(hex: "ED64A6")!),
-        ("Purple", Color(hex: "805AD5")!),
-        ("Yellow", Color(hex: "ECC94B")!),
-        ("Indigo", Color(hex: "5A67D8")!)
+        ("Blue", Color(hex: "3182CE") ?? .clear),
+        ("Pink", Color(hex: "ED64A6") ?? .clear),
+        ("Purple", Color(hex: "805AD5") ?? .clear),
+        ("Yellow", Color(hex: "B8860B") ?? .clear),
+        ("Indigo", Color(hex: "5A67D8") ?? .clear)
     ]
     
     // MARK: - Initialization

@@ -82,11 +82,13 @@ public struct MoodRatingView: View {
                         .padding(.vertical, 8)
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel(mood.description)
+                    .accessibilityHint(String(localized: "MoodRatingView.MoodButton.AccessibilityHint", bundle: .module))
                 }
             }
         }
     }
-    
+
     private var notesSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(String(localized: "MoodRatingView.Notes.Label", bundle: .module))

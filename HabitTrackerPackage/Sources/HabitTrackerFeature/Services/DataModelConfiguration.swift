@@ -1,12 +1,14 @@
 import Foundation
 import SwiftData
 
-/// Configuration for the SwiftData model container
-public enum DataModelConfiguration {
-    
-    /// Create the model container with all required models
-    public static func createModelContainer() throws -> ModelContainer {
-        let schema = Schema([
+// MARK: - Schema Versioning
+
+/// Baseline schema version (v1) — all current @Model types
+public enum SchemaV1: VersionedSchema {
+    public static let versionIdentifier: Schema.Version = Schema.Version(1, 0, 0)
+
+    public static var models: [any PersistentModel.Type] {
+        [
             PersistedHabit.self,
             PersistedRoutineTemplate.self,
             PersistedRoutineSession.self,
@@ -14,34 +16,61 @@ public enum DataModelConfiguration {
             PersistedMoodRating.self,
             PersistedSavedLocation.self,
             PersistedCustomLocation.self
-        ])
-        
+        ]
+    }
+}
+
+/// Migration plan — add new schema versions and migration stages here
+public enum HabitTrackerMigrationPlan: SchemaMigrationPlan {
+    public static var schemas: [any VersionedSchema.Type] {
+        [SchemaV1.self]
+    }
+
+    public static var stages: [MigrationStage] {
+        [] // No migrations yet — SchemaV1 is the baseline
+    }
+}
+
+/// Configuration for the SwiftData model container
+public enum DataModelConfiguration {
+
+    /// All model types used in the schema
+    static let allModelTypes: [any PersistentModel.Type] = [
+        PersistedHabit.self,
+        PersistedRoutineTemplate.self,
+        PersistedRoutineSession.self,
+        PersistedHabitCompletion.self,
+        PersistedMoodRating.self,
+        PersistedSavedLocation.self,
+        PersistedCustomLocation.self
+    ]
+
+    /// Create the model container with schema versioning and migration plan
+    public static func createModelContainer() throws -> ModelContainer {
+        let schema = Schema(allModelTypes)
+
         let modelConfiguration = ModelConfiguration(
             schema: schema,
             isStoredInMemoryOnly: false,
-            cloudKitDatabase: .none // Can be changed to .automatic for CloudKit sync
+            cloudKitDatabase: .none
         )
-        
-        return try ModelContainer(for: schema, configurations: [modelConfiguration])
+
+        return try ModelContainer(
+            for: schema,
+            migrationPlan: HabitTrackerMigrationPlan.self,
+            configurations: [modelConfiguration]
+        )
     }
-    
+
     /// Create a model container for testing (in-memory)
     public static func createTestModelContainer() throws -> ModelContainer {
-        let schema = Schema([
-            PersistedHabit.self,
-            PersistedRoutineTemplate.self,
-            PersistedRoutineSession.self,
-            PersistedHabitCompletion.self,
-            PersistedMoodRating.self,
-            PersistedSavedLocation.self,
-            PersistedCustomLocation.self
-        ])
-        
+        let schema = Schema(allModelTypes)
+
         let modelConfiguration = ModelConfiguration(
             schema: schema,
-            isStoredInMemoryOnly: true // In-memory for testing
+            isStoredInMemoryOnly: true
         )
-        
+
         return try ModelContainer(for: schema, configurations: [modelConfiguration])
     }
     
@@ -55,7 +84,7 @@ public enum DataModelConfiguration {
         // Migrate routine templates
         if let templates = try await userDefaultsService.load([RoutineTemplate].self, forKey: PersistenceKeys.routineTemplates) {
             try await persistenceService.save(templates, forKey: PersistenceKeys.routineTemplates)
-            print("✅ Migrated \(templates.count) routine templates to SwiftData")
+            LoggingService.shared.info("Migrated \(templates.count) routine templates to SwiftData", category: .app)
         }
         
         // Migrate location data (from UserDefaults keys used by LocationService)
@@ -71,12 +100,12 @@ public enum DataModelConfiguration {
                 savedLocations: savedLocations,
                 customLocations: customLocations
             )
-            print("✅ Migrated location data to SwiftData")
+            LoggingService.shared.info("Migrated location data to SwiftData", category: .app)
         }
         
         // Mark migration as complete
         UserDefaults.standard.set(true, forKey: "HasMigratedToSwiftData")
-        print("✅ Migration to SwiftData completed")
+        LoggingService.shared.info("Migration to SwiftData completed", category: .app)
     }
     
     /// Check if migration from UserDefaults has been completed

@@ -1,19 +1,19 @@
-import ActivityKit
+@preconcurrency import ActivityKit
 import SwiftUI
 import Foundation
 
 /// Manages Live Activities for timer habits
-@available(iOS 16.1, *)
 @MainActor
-public class LiveActivityManager: ObservableObject {
-    
+@Observable
+public final class LiveActivityManager {
+
     // MARK: - Singleton
-    
+
     public static let shared = LiveActivityManager()
-    
+
     // MARK: - Properties
-    
-    @Published public private(set) var activeActivities: [String: Activity<TimerActivityAttributes>] = [:]
+
+    public private(set) var activeActivities: [String: Activity<TimerActivityAttributes>] = [:]
     
     private init() {
         // Load existing activities on init
@@ -33,7 +33,7 @@ public class LiveActivityManager: ObservableObject {
         
         // Check if Live Activities are supported
         guard ActivityAuthorizationInfo().areActivitiesEnabled else {
-            print("Live Activities are not enabled")
+            LoggingService.shared.warning("Live Activities are not enabled", category: .app)
             return
         }
         
@@ -59,10 +59,10 @@ public class LiveActivityManager: ObservableObject {
             )
             
             activeActivities[habit.id.uuidString] = activity
-            print("Started Live Activity for habit: \(habit.name)")
+            LoggingService.shared.info("Started Live Activity for habit: \(habit.name)", category: .app)
             
         } catch {
-            print("Failed to start Live Activity: \(error)")
+            LoggingService.shared.error("Failed to start Live Activity: \(error.localizedDescription)", category: .app)
         }
     }
     
@@ -93,12 +93,7 @@ public class LiveActivityManager: ObservableObject {
         
         // Re-fetch the activity right before the await to avoid data race
         guard let activityToUpdate = activeActivities[habitId] else { return }
-        
-        do {
-            await activityToUpdate.update(updatedContent)
-        } catch {
-            print("Failed to update Live Activity: \(error)")
-        }
+        await activityToUpdate.update(updatedContent)
     }
     
     /// Complete a timer habit and end its Live Activity
@@ -137,15 +132,12 @@ public class LiveActivityManager: ObservableObject {
             activeActivities.removeValue(forKey: habitId)
             
         } catch {
-            print("Failed to complete Live Activity: \(error)")
+            LoggingService.shared.error("Failed to complete Live Activity: \(error.localizedDescription)", category: .app)
         }
     }
     
     /// End a Live Activity for a specific habit
     public func endActivity(for habitId: String) async {
-        guard let activity = activeActivities[habitId] else { return }
-        
-        // Re-fetch the activity right before the await to avoid data race
         guard let activityToEnd = activeActivities[habitId] else { return }
         await activityToEnd.end(nil, dismissalPolicy: .default)
         activeActivities.removeValue(forKey: habitId)
@@ -199,9 +191,3 @@ extension Color {
 
 // MARK: - ActivityAuthorizationInfo Extension
 
-@available(iOS 16.1, *)
-extension ActivityAuthorizationInfo {
-    var areActivitiesEnabled: Bool {
-        return self.areActivitiesEnabled
-    }
-}

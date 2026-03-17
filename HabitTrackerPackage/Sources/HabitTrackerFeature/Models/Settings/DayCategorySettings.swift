@@ -53,10 +53,11 @@ public struct DayCategorySettings: Codable, Sendable {
         weekdayCategories[weekday] = categoryIds
     }
 
-    /// Add a custom category
+    /// Add or update a category (updates if ID already exists)
     public mutating func addCustomCategory(_ category: DayCategory) {
-        // Prevent duplicate IDs
-        if !customCategories.contains(where: { $0.id == category.id }) {
+        if let index = customCategories.firstIndex(where: { $0.id == category.id }) {
+            customCategories[index] = category
+        } else {
             customCategories.append(category)
         }
     }
@@ -113,7 +114,7 @@ public struct DayCategorySettings: Codable, Sendable {
         let summaryParts = categoryGroups.map { categoryName, weekdays in
             let dayNames = weekdays.map(\.shortName).joined(separator: ", ")
             return "\(categoryName): \(dayNames)"
-        }
+        }.sorted()
 
         return summaryParts.joined(separator: " • ")
     }

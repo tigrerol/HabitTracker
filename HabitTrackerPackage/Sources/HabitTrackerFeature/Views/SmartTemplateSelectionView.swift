@@ -76,19 +76,10 @@ struct SmartTemplateSelectionView: View {
             // Re-select smart template when templates are modified
             selectSmartTemplate()
         }
-        .onReceive(routineService.routineSelector.locationCoordinator.$currentLocationType) { newType in
-            // Force UI refresh when location type changes
-            print("🗺️ SmartTemplateView: Location type changed to \(newType), forcing selectSmartTemplate")
+        .onReceive(routineService.routineSelector.locationCoordinator.$currentLocationType) { _ in
             selectSmartTemplate()
         }
-        .onReceive(routineService.routineSelector.locationCoordinator.$currentLocation) { location in
-            // Force UI refresh when location coordinates change
-            print("🗺️ SmartTemplateView: Location coordinates changed, has location: \(location != nil)")
-        }
-        // Add explicit observation of the RoutineSelector's context changes
-        .onChange(of: routineService.routineSelector.currentContext.location) { oldValue, newValue in
-            print("🗺️ SmartTemplateView: Context location changed from \(oldValue) to \(newValue)")
-            // Force template re-selection when location context changes
+        .onChange(of: routineService.routineSelector.currentContext.location) { _, _ in
             selectSmartTemplate()
         }
         .sheet(isPresented: $showingLocationSetup) {
@@ -118,9 +109,7 @@ struct SmartTemplateSelectionView: View {
     private var buildVersionView: some View {
         let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "Unknown"
         let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "Unknown"
-        
-        let _ = print("📱 App Version Info - Version: \(version), Build: \(build)")
-        
+
         return Text(String(format: String(localized: "SmartTemplateSelectionView.BuildNumber", bundle: .module), version, build))
             .font(.caption2)
             .foregroundStyle(.secondary)
@@ -148,13 +137,6 @@ struct SmartTemplateSelectionView: View {
         let selector = routineService.routineSelector
         let context = selector.currentContext
         let coordinator = selector.locationCoordinator
-        
-        // Debug logging for location state
-        let _ = print("🗺️ SmartTemplateView contextIndicatorView Debug:")
-        let _ = print("   - currentContext.location: \(context.location)")
-        let _ = print("   - locationCoordinator.currentLocationType: \(coordinator.currentLocationType)")
-        let _ = print("   - locationCoordinator.currentExtendedLocationType: \(coordinator.currentExtendedLocationType)")
-        let _ = print("   - locationCoordinator.currentLocation != nil: \(coordinator.currentLocation != nil)")
         
         return HStack(spacing: 16) {
             // Time indicator

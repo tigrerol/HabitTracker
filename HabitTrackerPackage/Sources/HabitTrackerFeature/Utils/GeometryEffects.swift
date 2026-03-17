@@ -103,8 +103,8 @@ extension View {
     }
     
     /// Apply hero animation with smooth spring transition
-    public func heroTransition() -> some View {
-        self.animation(.spring(response: 0.6, dampingFraction: 0.8), value: UUID())
+    public func heroTransition<V: Equatable>(value: V) -> some View {
+        self.animation(.spring(response: 0.6, dampingFraction: 0.8), value: value)
     }
     
     /// Apply card elevation animation for interactive elements

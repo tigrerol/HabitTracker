@@ -245,7 +245,7 @@ struct ContextSettingsView: View {
                 }
             } catch {
                 // Handle error - could show an alert
-                print("Export failed: \(error)")
+                LoggingService.shared.error("Export failed: \(error.localizedDescription)", category: .app)
             }
         }
     }
@@ -269,7 +269,7 @@ struct ContextSettingsView: View {
                 importResult = errorResult
                 showingImportResult = true
             }
-            print("Import failed: \(error)")
+            LoggingService.shared.error("Import failed: \(error.localizedDescription)", category: .app)
         }
     }
     

@@ -67,7 +67,7 @@ public struct ConditionalHabitInteractionView: View {
             .padding(.bottom, AppConstants.Padding.extraLarge)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.white)
+        .background(Color(.systemBackground))
     }
     
     private func selectOption(_ option: ConditionalOption) {
@@ -77,7 +77,8 @@ public struct ConditionalHabitInteractionView: View {
         selectedOption = option
         
         // Add a small delay for visual feedback
-        DispatchQueue.main.asyncAfter(deadline: .now() + AppConstants.AnimationDurations.standard) {
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(AppConstants.AnimationDurations.standard))
             onOptionSelected(option)
         }
     }

@@ -278,37 +278,6 @@ struct ValidationErrorTests {
     }
 }
 
-@Suite("UI Error Tests")
-struct UIErrorTests {
-    
-    @Test("UIError has correct properties")
-    func testUIErrorProperties() {
-        let error = UIError.viewRenderingFailed(viewName: "RoutineView")
-        
-        #expect(error.category == .technical)
-        #expect(error.severity == .low)
-        #expect(error.shouldLog == true)
-        #expect(error.technicalDetails.contains("RoutineView"))
-    }
-    
-    @Test("UIError navigation failure includes destination")
-    func testNavigationFailureError() {
-        let error = UIError.navigationFailed(destination: "SettingsView")
-        
-        #expect(error.userMessage.contains("Navigation"))
-        #expect(error.technicalDetails.contains("SettingsView"))
-        #expect(error.recoveryActions.contains(.retry))
-    }
-    
-    @Test("UIError image loading failure includes image name")
-    func testImageLoadingFailureError() {
-        let error = UIError.imageLoadingFailed(imageName: "habit-icon")
-        
-        #expect(error.technicalDetails.contains("habit-icon"))
-        #expect(error.recoveryActions.contains(.ignore))
-    }
-}
-
 @Suite("Result Extension Tests")
 struct ResultExtensionTests {
     

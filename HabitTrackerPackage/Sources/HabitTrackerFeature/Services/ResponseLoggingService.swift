@@ -82,7 +82,7 @@ public final class ResponseLoggingService: Sendable {
             try await persistenceService.save(responses, forKey: responsesKey)
         } catch {
             // Log error but don't crash
-            print("Failed to save conditional responses: \(error)")
+            LoggingService.shared.error("Failed to save conditional responses: \(error.localizedDescription)", category: .app)
         }
     }
 }

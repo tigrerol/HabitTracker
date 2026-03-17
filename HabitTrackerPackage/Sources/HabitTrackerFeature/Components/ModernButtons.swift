@@ -35,11 +35,11 @@ public struct PrimaryButton: View {
                 }
             }
             .frame(maxWidth: .infinity)
-            .frame(height: 50)
+            .frame(minHeight: 50)
             .background(
                 Capsule()
                     .fill(
-                        isEnabled ? 
+                        isEnabled ?
                         LinearGradient(
                             colors: [
                                 themeManager.currentAccentColor,
@@ -82,7 +82,7 @@ public struct SecondaryButton: View {
                 .customSubheadline()
                 .foregroundColor(themeManager.currentAccentColor)
                 .frame(maxWidth: .infinity)
-                .frame(height: 50)
+                .frame(minHeight: 50)
                 .background(
                     Capsule()
                         .fill(themeManager.currentAccentColor.opacity(0.1))
@@ -135,7 +135,7 @@ public struct IconButton: View {
         }) {
             HStack(spacing: 8) {
                 Image(systemName: icon)
-                    .font(.system(size: 16, weight: .semibold))
+                    .font(.subheadline.weight(.semibold))
                 
                 if let title = title {
                     Text(title)
@@ -195,9 +195,9 @@ public struct FloatingActionButton: View {
             action()
         }) {
             Image(systemName: icon)
-                .font(.system(size: 24, weight: .semibold))
+                .font(.title2.weight(.semibold))
                 .foregroundColor(.white)
-                .frame(width: 56, height: 56)
+                .frame(minWidth: 56, minHeight: 56)
                 .background(
                     Circle()
                         .fill(

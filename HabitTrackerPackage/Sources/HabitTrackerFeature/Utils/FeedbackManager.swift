@@ -15,33 +15,26 @@ public final class FeedbackManager {
     
     /// Provides haptic and acoustic feedback for timer completion
     public func timerCompleted() {
-        print("Timer completed - providing feedback")
-        
         // Haptic feedback - success pattern
         #if canImport(UIKit)
         let notificationFeedback = UINotificationFeedbackGenerator()
         notificationFeedback.prepare()
         notificationFeedback.notificationOccurred(.success)
-        print("Haptic feedback triggered")
         #endif
-        
+
         // Acoustic feedback using AudioServicesPlaySystemSound
         #if os(iOS)
         // Play system sound - 1016 is completion, 1013 is SMS received
         AudioServicesPlaySystemSound(SystemSoundID(1016))
-        print("System sound played")
         #endif
     }
-    
+
     /// Provides lighter haptic feedback for step completions
     public func stepCompleted() {
-        print("Step completed - providing light feedback")
-        
         #if canImport(UIKit)
         let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
         impactFeedback.prepare()
         impactFeedback.impactOccurred()
-        print("Step haptic feedback triggered")
         #endif
         
         // Light system sound for steps

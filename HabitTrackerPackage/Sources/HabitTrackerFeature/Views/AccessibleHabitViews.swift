@@ -24,7 +24,7 @@ struct AccessibleCheckboxHabitView: View {
                     Image(systemName: habit.type.iconName)
                         .font(.title2)
                         .foregroundColor(habit.swiftUIColor)
-                        .frame(width: 32, height: 32)
+                        .frame(minWidth: 32, minHeight: 32)
                         .background(
                             Circle()
                                 .fill(habit.swiftUIColor.opacity(0.1))
@@ -106,6 +106,7 @@ struct AccessibleTimerHabitView: View {
             // Timer display
             Text(timeRemaining.formattedDuration)
                 .font(.system(size: 48, weight: .bold, design: .monospaced))
+                .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                 .foregroundStyle(timeRemaining <= 30 ? .red : .primary)
                 .accessibilityLabel("Time remaining: \(timeRemaining.formattedAccessibleDuration)")
                 .accessibilityAddTraits(.updatesFrequently)

@@ -67,16 +67,14 @@ public final class LocationCategoryManager: Sendable {
             do {
                 if let loadedSettings = try await persistenceService.load(LocationCategorySettings.self, forKey: PersistenceKeys.locationCategorySettings) {
                     settings = loadedSettings
-                    print("✅ Loaded location category settings from persistence")
                     return
                 }
             } catch {
-                print("❌ Failed to load location category settings: \(error)")
+                LoggingService.shared.error("Failed to load location category settings: \(error.localizedDescription)", category: .app)
             }
-            
+
             // Fallback to defaults
             settings = .default
-            print("🆕 Using default location category settings")
         }
     }
     
@@ -85,7 +83,7 @@ public final class LocationCategoryManager: Sendable {
             do {
                 try await persistenceService.save(settings, forKey: PersistenceKeys.locationCategorySettings)
             } catch {
-                print("❌ Failed to save location category settings: \(error)")
+                LoggingService.shared.error("Failed to save location category settings: \(error.localizedDescription)", category: .app)
             }
         }
     }

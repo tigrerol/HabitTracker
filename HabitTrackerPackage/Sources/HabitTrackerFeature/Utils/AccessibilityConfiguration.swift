@@ -92,65 +92,47 @@ public enum AccessibilityConfiguration {
     
     public enum Labels {
         public static func progressBar(completed: Int, total: Int) -> String {
-            String(localized: "Accessibility.ProgressBar.Label", bundle: .module)
-                .replacingOccurrences(of: "%d", with: "\(completed)")
-                .replacingOccurrences(of: "%d", with: "\(total)")
+            String(format: String(localized: "Accessibility.ProgressBar.Label", bundle: .module), completed, total)
         }
-        
+
         public static func habitCard(habitName: String, habitType: String) -> String {
-            String(localized: "Accessibility.HabitCard.Label", bundle: .module)
-                .replacingOccurrences(of: "%@", with: habitName)
-                .replacingOccurrences(of: "%@", with: habitType)
+            String(format: String(localized: "Accessibility.HabitCard.Label", bundle: .module), habitName, habitType)
         }
-        
+
         public static func completeHabitButton(habitName: String) -> String {
-            String(localized: "Accessibility.CompleteHabit.Label", bundle: .module)
-                .replacingOccurrences(of: "%@", with: habitName)
+            String(format: String(localized: "Accessibility.CompleteHabit.Label", bundle: .module), habitName)
         }
-        
+
         public static func skipHabitButton(habitName: String) -> String {
-            String(localized: "Accessibility.SkipHabit.Label", bundle: .module)
-                .replacingOccurrences(of: "%@", with: habitName)
+            String(format: String(localized: "Accessibility.SkipHabit.Label", bundle: .module), habitName)
         }
-        
+
         public static func timerButton(habitName: String, isRunning: Bool) -> String {
             if isRunning {
-                return String(localized: "Accessibility.StopTimer.Label", bundle: .module)
-                    .replacingOccurrences(of: "%@", with: habitName)
+                return String(format: String(localized: "Accessibility.StopTimer.Label", bundle: .module), habitName)
             } else {
-                return String(localized: "Accessibility.StartTimer.Label", bundle: .module)
-                    .replacingOccurrences(of: "%@", with: habitName)
+                return String(format: String(localized: "Accessibility.StartTimer.Label", bundle: .module), habitName)
             }
         }
-        
+
         public static func checkboxHabit(habitName: String, isCompleted: Bool) -> String {
-            let status = isCompleted ? 
+            let status = isCompleted ?
                 String(localized: "Accessibility.Checkbox.Completed", bundle: .module) :
                 String(localized: "Accessibility.Checkbox.NotCompleted", bundle: .module)
-            
-            return String(localized: "Accessibility.Checkbox.Label", bundle: .module)
-                .replacingOccurrences(of: "%@", with: habitName)
-                .replacingOccurrences(of: "%@", with: status)
+
+            return String(format: String(localized: "Accessibility.Checkbox.Label", bundle: .module), habitName, status)
         }
-        
+
         public static func counterHabit(habitName: String, itemName: String, count: Int) -> String {
-            String(localized: "Accessibility.Counter.Label", bundle: .module)
-                .replacingOccurrences(of: "%@", with: habitName)
-                .replacingOccurrences(of: "%@", with: itemName)
-                .replacingOccurrences(of: "%d", with: "\(count)")
+            String(format: String(localized: "Accessibility.Counter.Label", bundle: .module), habitName, itemName, count)
         }
-        
+
         public static func routineTemplate(templateName: String, habitsCount: Int, duration: String) -> String {
-            String(localized: "Accessibility.Template.Label", bundle: .module)
-                .replacingOccurrences(of: "%@", with: templateName)
-                .replacingOccurrences(of: "%d", with: "\(habitsCount)")
-                .replacingOccurrences(of: "%@", with: duration)
+            String(format: String(localized: "Accessibility.Template.Label", bundle: .module), templateName, habitsCount, duration)
         }
-        
+
         public static func conditionalOption(optionText: String, resultCount: Int) -> String {
-            String(localized: "Accessibility.ConditionalOption.Label", bundle: .module)
-                .replacingOccurrences(of: "%@", with: optionText)
-                .replacingOccurrences(of: "%d", with: "\(resultCount)")
+            String(format: String(localized: "Accessibility.ConditionalOption.Label", bundle: .module), optionText, resultCount)
         }
     }
     
@@ -180,30 +162,23 @@ public enum AccessibilityConfiguration {
     
     public enum Announcements {
         public static func habitCompleted(habitName: String) -> String {
-            String(localized: "Accessibility.Announcement.HabitCompleted", bundle: .module)
-                .replacingOccurrences(of: "%@", with: habitName)
+            String(format: String(localized: "Accessibility.Announcement.HabitCompleted", bundle: .module), habitName)
         }
-        
+
         public static func habitSkipped(habitName: String) -> String {
-            String(localized: "Accessibility.Announcement.HabitSkipped", bundle: .module)
-                .replacingOccurrences(of: "%@", with: habitName)
+            String(format: String(localized: "Accessibility.Announcement.HabitSkipped", bundle: .module), habitName)
         }
         
         public static func routineCompleted(templateName: String, duration: String) -> String {
-            String(localized: "Accessibility.Announcement.RoutineCompleted", bundle: .module)
-                .replacingOccurrences(of: "%@", with: templateName)
-                .replacingOccurrences(of: "%@", with: duration)
+            String(format: String(localized: "Accessibility.Announcement.RoutineCompleted", bundle: .module), templateName, duration)
         }
-        
+
         public static func timerStarted(habitName: String) -> String {
-            String(localized: "Accessibility.Announcement.TimerStarted", bundle: .module)
-                .replacingOccurrences(of: "%@", with: habitName)
+            String(format: String(localized: "Accessibility.Announcement.TimerStarted", bundle: .module), habitName)
         }
-        
+
         public static func timerStopped(habitName: String, duration: String) -> String {
-            String(localized: "Accessibility.Announcement.TimerStopped", bundle: .module)
-                .replacingOccurrences(of: "%@", with: habitName)
-                .replacingOccurrences(of: "%@", with: duration)
+            String(format: String(localized: "Accessibility.Announcement.TimerStopped", bundle: .module), habitName, duration)
         }
         
         public static let routinePaused = String(localized: "Accessibility.Announcement.RoutinePaused", bundle: .module)
@@ -267,7 +242,8 @@ extension View {
     public func announceAccessibilityChange(_ announcement: String) -> some View {
         #if canImport(UIKit)
         self.onReceive(NotificationCenter.default.publisher(for: UIAccessibility.announcementDidFinishNotification)) { _ in
-            DispatchQueue.main.asyncAfter(deadline: .now() + AppConstants.AnimationDurations.accessibilityDelay) {
+            Task { @MainActor in
+                try? await Task.sleep(for: .seconds(AppConstants.AnimationDurations.accessibilityDelay))
                 UIAccessibility.post(notification: .announcement, argument: announcement)
             }
         }

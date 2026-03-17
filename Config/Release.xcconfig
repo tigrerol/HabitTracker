@@ -4,5 +4,7 @@
 
 #include "Shared.xcconfig"
 
-// No additional release-specific overrides needed
-// All release settings use Xcode project defaults
+// Release-specific optimizations
+SWIFT_OPTIMIZATION_LEVEL = -O
+ENABLE_TESTABILITY = NO
+SWIFT_COMPILATION_MODE = wholemodule

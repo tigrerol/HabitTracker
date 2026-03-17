@@ -65,22 +65,16 @@ public struct ConditionalHabitEditorView: View {
                         saveHabit()
                     }
                     .disabled(!isValid)
-                    .onAppear {
-                        print("🔍 Save button: isValid = \(isValid), question = '\(question)', options.count = \(options.count)")
-                    }
                 }
             }
             .sheet(item: $selectedOptionForBuilder) { option in
-                let _ = print("🔍 Sheet: selectedOptionForBuilder triggered for option: \(option.text)")
                 if let index = options.firstIndex(where: { $0.id == option.id }) {
-                    let _ = print("🔍 Sheet: Found option at index \(index), showing PathBuilderView")
                     PathBuilderView(
                         option: optionBinding(for: index),
                         habitLibrary: habitLibrary,
                         existingConditionalDepth: existingConditionalDepth + 1
                     )
                 } else {
-                    let _ = print("🔍 Sheet: Could not find option in current list")
                     VStack {
                         Text(String(localized: "ConditionalHabitEditorView.Error.OptionNotFound", bundle: .module))
                             .foregroundStyle(.red)
@@ -143,12 +137,6 @@ public struct ConditionalHabitEditorView: View {
     private var habitDetailsSection: some View {
         Section(String(localized: "ConditionalHabitEditorView.HabitDetails.Section", bundle: .module)) {
             TextField(String(localized: "ConditionalHabitEditorView.Question.Placeholder", bundle: .module), text: $question)
-                .onAppear {
-                    print("🔍 ConditionalHabitEditorView: question = '\(question)', isValid = \(isValid)")
-                }
-                .onChange(of: question) { oldValue, newValue in
-                    print("🔍 ConditionalHabitEditorView: question changed from '\(oldValue)' to '\(newValue)', isValid = \(isValid)")
-                }
             colorPickerView
         }
     }
@@ -487,7 +475,6 @@ struct PathBuilderView: View {
                     habitLibrary: habitLibrary,
                     existingConditionalDepth: existingConditionalDepth,
                     onSelect: { habit in
-                        print("🔍 PathBuilderView: onSelect called with habit - name: '\(habit.name)', type: \(habit.type)")
                         // Create a copy of the habit with new ID
                         let newHabit = Habit(
                             id: UUID(), // New ID for the copy
@@ -499,9 +486,7 @@ struct PathBuilderView: View {
                             order: habits.count,
                             isActive: habit.isActive
                         )
-                        print("🔍 PathBuilderView: Created new habit copy - name: '\(newHabit.name)', type: \(newHabit.type)")
                         habits.append(newHabit)
-                        print("🔍 PathBuilderView: habits.count is now \(habits.count)")
                         saveChanges()
                     }
                 )
@@ -533,7 +518,6 @@ struct HabitRow: View {
     }
     
     var body: some View {
-        let _ = print("🔍 HabitRow: Displaying habit - name: '\(habit.name)', type: \(habit.type), description: '\(habit.type.description)'")
         HStack {
             Circle()
                 .fill(Color(hex: habit.color) ?? .blue)
@@ -545,11 +529,9 @@ struct HabitRow: View {
                     .textFieldStyle(.plain)
                     .onSubmit {
                         habit.name = habitName
-                        print("🔍 HabitRow: Updated habit name to '\(habitName)'")
                     }
                     .onChange(of: habitName) { _, newName in
                         habit.name = newName
-                        print("🔍 HabitRow: Changed habit name to '\(newName)'")
                     }
                 
                 Text(habit.type.description.isEmpty ? "EMPTY DESCRIPTION" : habit.type.description)
@@ -624,9 +606,7 @@ struct HabitPickerView: View {
                         // Hide conditional if at max depth
                         if !(category == .conditional && existingConditionalDepth >= 2) {
                             Button {
-                                print("🔍 HabitPickerView: Button tapped for category: \(category)")
                                 selectedTypeForSheet = category
-                                print("🔍 HabitPickerView: selectedTypeForSheet set to: \(selectedTypeForSheet?.displayName ?? "nil")")
                             } label: {
                                 Label(category.displayName, systemImage: category.iconName)
                             }
@@ -668,7 +648,6 @@ struct HabitPickerView: View {
                 }
             }
             .sheet(item: $selectedTypeForSheet) { type in
-                let _ = print("🔍 HabitPickerView: Sheet presenting with type: \(type)")
                 habitEditorView(for: type)
             }
         }
@@ -694,9 +673,7 @@ struct HabitPickerView: View {
             }
         case .timer:
             let timerHabit = Habit(name: String(localized: "ConditionalHabitEditorView.NewTimer.DefaultName", bundle: .module), type: .timer(style: .down, duration: 300))
-            let _ = print("🔍 HabitPickerView: Creating timer habit - name: '\(timerHabit.name)', type: \(timerHabit.type)")
             HabitEditorView(habit: timerHabit) { habit in
-                print("🔍 HabitPickerView: Timer habit saved - name: '\(habit.name)', type: \(habit.type)")
                 onSelect(habit)
                 dismiss()
             }

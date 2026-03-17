@@ -105,25 +105,25 @@ public struct Theme {
     // MARK: - Color Palette
     public struct Colors {
         // Primary Backgrounds
-        public static let primaryBackground = Color(hex: "F7F7F7")!     // Off-white
-        public static let darkPrimaryBackground = Color(hex: "1A202C")! // Deep blue-grey
-        
+        public static let primaryBackground = Color(hex: "F7F7F7") ?? .clear     // Off-white
+        public static let darkPrimaryBackground = Color(hex: "1A202C") ?? .clear // Deep blue-grey
+
         // Card Backgrounds
         public static let cardBackground = Color.white
-        public static let darkCardBackground = Color(hex: "2D3748")!    // Lighter dark
-        
+        public static let darkCardBackground = Color(hex: "2D3748") ?? .clear    // Lighter dark
+
         // Accent Colors - Choose one as primary
-        public static let accentTeal = Color(hex: "4FD1C5")!      // Energetic primary
-        public static let accentOrange = Color(hex: "F56565")!    // Warm alerts
-        public static let accentRed = Color(hex: "E53E3E")!       // Error states
-        public static let accentLavender = Color(hex: "9F7AEA")!  // Soothing secondary
-        public static let accentGreen = Color(hex: "48BB78")!     // Success states
-        
+        public static let accentTeal = Color(hex: "2B8C84") ?? .clear      // WCAG AA compliant teal
+        public static let accentOrange = Color(hex: "F56565") ?? .clear    // Warm alerts
+        public static let accentRed = Color(hex: "E53E3E") ?? .clear       // Error states
+        public static let accentLavender = Color(hex: "9F7AEA") ?? .clear  // Soothing secondary
+        public static let accentGreen = Color(hex: "48BB78") ?? .clear     // Success states
+
         // Text Colors
         public static let primaryText = Color.black
         public static let darkPrimaryText = Color.white
         public static let secondaryText = Color.gray
-        public static let darkSecondaryText = Color(hex: "A0AEC0")!
+        public static let darkSecondaryText = Color(hex: "A0AEC0") ?? .clear
     }
     
     // MARK: - Dynamic Colors (Auto Light/Dark Mode)

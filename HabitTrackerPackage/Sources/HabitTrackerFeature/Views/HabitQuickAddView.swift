@@ -100,8 +100,20 @@ struct HabitQuickAddView: View {
         }
     }
     
+    // MARK: - Static Regex Patterns
+
+    private static let durationRegex: NSRegularExpression? = try? NSRegularExpression(
+        pattern: #"(\d+)\s*(min|minute|m|hr|hour|h|sec|second|s)"#,
+        options: .caseInsensitive
+    )
+
+    private static let cleanDurationRegex: NSRegularExpression? = try? NSRegularExpression(
+        pattern: #"\s*\d+\s*(min|minute|m|hr|hour|h|sec|second|s)\s*"#,
+        options: .caseInsensitive
+    )
+
     // MARK: - Smart Detection
-    
+
     private func detectHabitType(from text: String) -> HabitType? {
         let lowercased = text.lowercased()
         
@@ -164,9 +176,7 @@ struct HabitQuickAddView: View {
     }
     
     private func extractDuration(from text: String) -> TimeInterval? {
-        let pattern = #"(\d+)\s*(min|minute|m|hr|hour|h|sec|second|s)"#
-        
-        guard let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive),
+        guard let regex = Self.durationRegex,
               let match = regex.firstMatch(in: text, range: NSRange(text.startIndex..., in: text)) else {
             return nil
         }
@@ -258,8 +268,7 @@ struct HabitQuickAddView: View {
         var cleaned = text
         
         // Remove duration indicators
-        let durationPattern = #"\s*\d+\s*(min|minute|m|hr|hour|h|sec|second|s)\s*"#
-        if let regex = try? NSRegularExpression(pattern: durationPattern, options: .caseInsensitive) {
+        if let regex = Self.cleanDurationRegex {
             cleaned = regex.stringByReplacingMatches(in: cleaned, range: NSRange(cleaned.startIndex..., in: cleaned), withTemplate: "")
         }
         

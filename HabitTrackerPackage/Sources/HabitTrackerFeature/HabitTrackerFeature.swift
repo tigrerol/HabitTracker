@@ -26,7 +26,6 @@ public struct HabitTrackerFeature {
     
     // MARK: - Live Activities
     #if canImport(ActivityKit)
-    @available(iOS 16.1, *)
     @MainActor
     public static var liveActivityManager: LiveActivityManager {
         LiveActivityManager.shared

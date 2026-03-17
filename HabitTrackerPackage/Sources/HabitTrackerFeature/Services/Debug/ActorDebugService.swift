@@ -1,5 +1,7 @@
 import Foundation
 
+#if DEBUG
+
 /// Debug service for monitoring and testing actor-based services
 @MainActor
 @Observable
@@ -124,3 +126,5 @@ public struct ActorDebugInfo {
     public let recentLogs: [DebugLogEntry]
     public let lastActivity: Date?
 }
+
+#endif
