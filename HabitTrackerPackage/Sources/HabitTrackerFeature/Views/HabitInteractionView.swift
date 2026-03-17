@@ -20,7 +20,7 @@ public struct HabitInteractionView: View {
     public var body: some View {
         // Use protocol-based handlers for better maintainability
         switch habit.type {
-            case .task(let subtasks):
+            case .task(let subtasks, _):
                 if subtasks.isEmpty {
                     AnyView(CheckboxHabitHandler().createInteractionView(habit: habit, onComplete: self.onComplete, isCompleted: isCompleted))
                 } else {

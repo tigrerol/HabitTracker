@@ -242,7 +242,7 @@ struct HabitQuickAddView: View {
                 if duration != 600 {
                     suggestions.append((String(format: String(localized: "HabitQuickAddView.Suggestion.10min", bundle: .module), cleanName), .timer(style: .down, duration: 600)))
                 }
-            case .task(let subtasks):
+            case .task(let subtasks, _):
                 if subtasks.isEmpty {
                     suggestions.append((String(format: String(localized: "HabitQuickAddView.Suggestion.Task", bundle: .module), cleanName), .task(subtasks: [])))
                 }
@@ -368,7 +368,7 @@ struct HabitQuickAddView: View {
             case .multiple:
                 return String(localized: "HabitQuickAddView.DefaultName.MultipleTimers", bundle: .module)
             }
-        case .action(let type, _, _):
+        case .action(let type, _, _, _):
             switch type {
             case .app:
                 return String(localized: "HabitQuickAddView.DefaultName.LaunchApp", bundle: .module)

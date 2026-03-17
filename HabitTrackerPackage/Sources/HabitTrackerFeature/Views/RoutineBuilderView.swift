@@ -1106,7 +1106,7 @@ public struct RoutineBuilderView: View {
             case .up: return "Rest Period"
             case .multiple: return "Multiple Timers"
             }
-        case .action(let type, _, _):
+        case .action(let type, _, _, _):
             switch type {
             case .app:
                 return "Launch App"
@@ -2263,20 +2263,20 @@ struct ExpandableHabitRow: View {
     
     private var hasExpandableContent: Bool {
         switch habit.type {
-        case .task(let subtasks):
+        case .task(let subtasks, _):
             return !subtasks.isEmpty
         default:
             return false
         }
     }
-    
+
     @ViewBuilder
     private var expandableContent: some View {
         VStack(alignment: .leading, spacing: 12) {
             switch habit.type {
             case .conditional(let info):
                 conditionalOptionsContent(info: info)
-            case .task(let subtasks):
+            case .task(let subtasks, _):
                 if !subtasks.isEmpty {
                     subtasksContent(subtasks: subtasks)
                 }
@@ -2420,27 +2420,27 @@ struct ExpandableHabitRow: View {
     }
     
     private func addSubtask() {
-        guard case .task(var subtasks) = habit.type else { return }
-        
+        guard case .task(var subtasks, let duration) = habit.type else { return }
+
         let newSubtask = Subtask(name: "New subtask")
         subtasks.append(newSubtask)
-        habit.type = .task(subtasks: subtasks)
+        habit.type = .task(subtasks: subtasks, estimatedDuration: duration)
     }
-    
+
     private func removeSubtask(at index: Int) {
-        guard case .task(var subtasks) = habit.type else { return }
+        guard case .task(var subtasks, let duration) = habit.type else { return }
         guard index < subtasks.count else { return }
-        
+
         subtasks.remove(at: index)
-        habit.type = .task(subtasks: subtasks)
+        habit.type = .task(subtasks: subtasks, estimatedDuration: duration)
     }
-    
+
     private func updateSubtaskName(at index: Int, newName: String) {
-        guard case .task(var subtasks) = habit.type else { return }
+        guard case .task(var subtasks, let duration) = habit.type else { return }
         guard index < subtasks.count else { return }
-        
+
         subtasks[index].name = newName
-        habit.type = .task(subtasks: subtasks)
+        habit.type = .task(subtasks: subtasks, estimatedDuration: duration)
     }
 }
 

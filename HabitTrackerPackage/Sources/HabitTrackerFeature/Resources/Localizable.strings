@@ -66,6 +66,12 @@
 "HabitEditorView.Action.Website.Instructions" = "Enter the full URL including https://";
 "HabitEditorView.Action.Shortcut.Name.Placeholder" = "Shortcut Name";
 "HabitEditorView.Action.Shortcut.Instructions" = "Enter the exact name of your shortcut";
+"HabitEditorView.Action.EstimatedDuration.Toggle" = "Custom Estimated Duration";
+"HabitEditorView.Action.EstimatedDuration.Label" = "Duration";
+"HabitEditorView.Action.EstimatedDuration.Help" = "Used to calculate total routine time";
+
+/* HabitEditorView - Task Estimated Duration */
+"HabitEditorView.Task.EstimatedDuration.Toggle" = "Custom Estimated Duration";
 
 /* HabitEditorView - Measurement Settings */
 "HabitEditorView.Measurement.Unit.Placeholder" = "Unit (kg, lbs, bpm, etc.)";

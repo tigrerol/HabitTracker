@@ -3,13 +3,13 @@ import Foundation
 /// Represents different types of habits in the morning routine
 public enum HabitType: Codable, Hashable, Sendable {
     /// Task completion with optional subtasks
-    case task(subtasks: [Subtask])
+    case task(subtasks: [Subtask], estimatedDuration: TimeInterval? = nil)
     
     /// Timer-based habit with flexible timing modes
     case timer(style: TimerStyle, duration: TimeInterval, target: TimeInterval? = nil, steps: [SequenceStep] = [], repeatCount: Int? = nil)
     
     /// External action (app launch, website, shortcut)
-    case action(type: ActionType, identifier: String, displayName: String)
+    case action(type: ActionType, identifier: String, displayName: String, estimatedDuration: TimeInterval? = nil)
     
     /// Tracking-based habit (measurements, counters, supplements)
     case tracking(TrackingType)
@@ -83,7 +83,7 @@ extension HabitType {
     /// Human-readable description of the habit type
     public var description: String {
         switch self {
-        case .task(let subtasks):
+        case .task(let subtasks, _):
             return subtasks.isEmpty ? "Simple task" : "\(subtasks.count) subtasks"
         case .timer(let style, let duration, let target, let steps, let repeatCount):
             switch style {
@@ -109,7 +109,7 @@ extension HabitType {
                     return "Multiple timers (\(Int(duration/60))min)"
                 }
             }
-        case .action(let type, _, let displayName):
+        case .action(let type, _, let displayName, _):
             switch type {
             case .app:
                 return "Launch \(displayName)"
@@ -140,7 +140,7 @@ extension HabitType {
     /// Icon name for the habit type
     public var iconName: String {
         switch self {
-        case .task(let subtasks):
+        case .task(let subtasks, _):
             return subtasks.isEmpty ? "checkmark.square" : "list.bullet.rectangle"
         case .timer(let style, _, _, _, _):
             switch style {
@@ -151,7 +151,7 @@ extension HabitType {
             case .multiple:
                 return "timer.circle"
             }
-        case .action(let type, _, _):
+        case .action(let type, _, _, _):
             switch type {
             case .app:
                 return "app.badge"
@@ -188,7 +188,7 @@ extension HabitType {
             case .multiple:
                 return "Multiple Timers"
             }
-        case .action(let type, _, _):
+        case .action(let type, _, _, _):
             switch type {
             case .app:
                 return "Launch App"

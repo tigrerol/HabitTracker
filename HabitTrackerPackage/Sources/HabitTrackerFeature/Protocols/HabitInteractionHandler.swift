@@ -66,7 +66,7 @@ public struct CheckboxHabitHandler: HabitInteractionHandler {
     }
     
     public func canHandle(habit: Habit) -> Bool {
-        if case .task(let subtasks) = habit.type, subtasks.isEmpty {
+        if case .task(let subtasks, _) = habit.type, subtasks.isEmpty {
             return true
         }
         return false
@@ -88,7 +88,7 @@ public struct SubtasksHabitHandler: HabitInteractionHandler {
         isCompleted: Bool
     ) -> AnyView {
         switch habit.type {
-        case .task(let subtasks):
+        case .task(let subtasks, _):
             return AnyView(SubtasksHabitView(habit: habit, subtasks: subtasks, onComplete: onComplete, isCompleted: isCompleted))
         default:
             return AnyView(Text("Invalid habit type for SubtasksHabitHandler"))
@@ -96,14 +96,14 @@ public struct SubtasksHabitHandler: HabitInteractionHandler {
     }
     
     public func canHandle(habit: Habit) -> Bool {
-        if case .task(let subtasks) = habit.type, !subtasks.isEmpty {
+        if case .task(let subtasks, _) = habit.type, !subtasks.isEmpty {
             return true
         }
         return false
     }
     
     public func estimatedDuration(for habit: Habit) -> TimeInterval {
-        guard case .task(let subtasks) = habit.type else { return 60 }
+        guard case .task(let subtasks, _) = habit.type else { return 60 }
         return TimeInterval(subtasks.count * 45) // 45 seconds per subtask
     }
 }
@@ -163,7 +163,7 @@ public struct ActionHabitHandler: HabitInteractionHandler {
         isCompleted: Bool
     ) -> AnyView {
         switch habit.type {
-        case .action(let type, let identifier, let displayName):
+        case .action(let type, let identifier, let displayName, _):
             return AnyView(ActionHabitView(habit: habit, actionType: type, identifier: identifier, displayName: displayName, onComplete: onComplete))
         default:
             return AnyView(Text("Invalid habit type for ActionHabitHandler"))
@@ -178,7 +178,8 @@ public struct ActionHabitHandler: HabitInteractionHandler {
     }
     
     public func estimatedDuration(for habit: Habit) -> TimeInterval {
-        guard case .action(let type, _, _) = habit.type else { return 300 }
+        guard case .action(let type, _, _, let customDuration) = habit.type else { return 300 }
+        if let customDuration { return customDuration }
         switch type {
         case .app:
             return 300 // 5 minutes default for app launch
