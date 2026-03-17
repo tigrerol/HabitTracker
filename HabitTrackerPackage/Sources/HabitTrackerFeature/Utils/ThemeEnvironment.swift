@@ -1,31 +1,15 @@
 import SwiftUI
 
-// MARK: - Theme Environment Key
-
-private struct ThemeManagerKey: EnvironmentKey {
-    static let defaultValue: ThemeManager? = nil
-}
-
-extension EnvironmentValues {
-    @MainActor
-    public var themeManager: ThemeManager {
-        get { 
-            self[ThemeManagerKey.self] ?? ThemeManager.shared
-        }
-        set { self[ThemeManagerKey.self] = newValue }
-    }
-}
-
 // MARK: - Dynamic Theme View
 
 public struct DynamicThemeView<Content: View>: View {
     @State private var themeManager = ThemeManager.shared
     private let content: Content
-    
+
     public init(@ViewBuilder content: () -> Content) {
         self.content = content()
     }
-    
+
     public var body: some View {
         content
             .environment(themeManager)
@@ -41,7 +25,7 @@ extension View {
     public func dynamicAccentColor() -> some View {
         modifier(DynamicAccentColorModifier())
     }
-    
+
     /// Wrap content with dynamic theme environment
     public func withDynamicTheme() -> some View {
         DynamicThemeView {
@@ -53,8 +37,8 @@ extension View {
 // MARK: - Dynamic Accent Color Modifier
 
 struct DynamicAccentColorModifier: ViewModifier {
-    @Environment(\.themeManager) private var themeManager
-    
+    @Environment(ThemeManager.self) private var themeManager
+
     func body(content: Content) -> some View {
         content
             .accentColor(themeManager.currentAccentColor)
@@ -64,13 +48,13 @@ struct DynamicAccentColorModifier: ViewModifier {
 // MARK: - Theme-Aware Button Styles
 
 public struct DynamicPrimaryButtonStyle: ButtonStyle {
-    @Environment(\.themeManager) private var themeManager
-    
+    @Environment(ThemeManager.self) private var themeManager
+
     public init() {}
-    
+
     public func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .foregroundColor(.white)
+            .foregroundStyle(.white)
             .padding(.horizontal, 20)
             .padding(.vertical, 12)
             .background(themeManager.currentAccentColor)
@@ -81,13 +65,13 @@ public struct DynamicPrimaryButtonStyle: ButtonStyle {
 }
 
 public struct DynamicSecondaryButtonStyle: ButtonStyle {
-    @Environment(\.themeManager) private var themeManager
-    
+    @Environment(ThemeManager.self) private var themeManager
+
     public init() {}
-    
+
     public func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .foregroundColor(themeManager.currentAccentColor)
+            .foregroundStyle(themeManager.currentAccentColor)
             .padding(.horizontal, 20)
             .padding(.vertical, 12)
             .background(
@@ -104,20 +88,20 @@ public struct DynamicSecondaryButtonStyle: ButtonStyle {
 public struct DynamicProgressView: View {
     let progress: Double
     let height: CGFloat
-    @Environment(\.themeManager) private var themeManager
-    
+    @Environment(ThemeManager.self) private var themeManager
+
     public init(progress: Double, height: CGFloat = 8) {
         self.progress = progress
         self.height = height
     }
-    
+
     public var body: some View {
         GeometryReader { geometry in
             ZStack(alignment: .leading) {
                 Capsule()
                     .fill(Color.gray.opacity(0.2))
                     .frame(height: height)
-                
+
                 Capsule()
                     .fill(themeManager.currentAccentColor)
                     .frame(width: geometry.size.width * progress, height: height)

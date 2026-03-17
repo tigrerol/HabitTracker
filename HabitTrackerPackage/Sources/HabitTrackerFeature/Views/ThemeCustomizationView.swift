@@ -4,12 +4,15 @@ import SwiftUI
 
 public struct ThemeCustomizationView: View {
     @Environment(\.dismiss) private var dismiss
-    @State private var selectedTheme: AppTheme = ThemeManager.shared.currentTheme
+    @Environment(ThemeManager.self) private var themeManager
+    @State private var selectedTheme: AppTheme?
     @State private var appearScale = false
 
-    private let themeManager = ThemeManager.shared
-
     public init() {}
+
+    private var effectiveTheme: AppTheme {
+        selectedTheme ?? themeManager.currentTheme
+    }
 
     public var body: some View {
         NavigationStack {
@@ -30,7 +33,7 @@ public struct ThemeCustomizationView: View {
                             ForEach(themeManager.availableThemes, id: \.rawValue) { theme in
                                 ThemePreviewCard(
                                     theme: theme,
-                                    isSelected: selectedTheme == theme
+                                    isSelected: effectiveTheme == theme
                                 ) {
                                     withAnimation(.spring(response: 0.4, dampingFraction: 0.75)) {
                                         selectedTheme = theme
@@ -55,14 +58,14 @@ public struct ThemeCustomizationView: View {
                 VStack(spacing: 0) {
                     Divider()
                     Button {
-                        themeManager.updateTheme(selectedTheme)
+                        themeManager.updateTheme(effectiveTheme)
                         HapticManager.trigger(.success)
                         dismiss()
                     } label: {
                         HStack(spacing: 8) {
                             Image(systemName: "checkmark.circle.fill")
                                 .font(.headline)
-                            Text("Apply \(selectedTheme.displayName)")
+                            Text("Apply \(effectiveTheme.displayName)")
                                 .font(.system(.headline, design: .rounded, weight: .semibold))
                         }
                         .foregroundStyle(.white)
@@ -73,8 +76,8 @@ public struct ThemeCustomizationView: View {
                                 .fill(
                                     LinearGradient(
                                         colors: [
-                                            selectedTheme.accentColor,
-                                            selectedTheme.accentColor.opacity(0.8)
+                                            effectiveTheme.accentColor,
+                                            effectiveTheme.accentColor.opacity(0.8)
                                         ],
                                         startPoint: .topLeading,
                                         endPoint: .bottomTrailing
@@ -82,6 +85,7 @@ public struct ThemeCustomizationView: View {
                                 )
                         )
                     }
+                    .accessibilityHint("Changes the app appearance and closes this screen")
                     .buttonStyle(ScaleButtonStyle())
                     .padding(.horizontal, 20)
                     .padding(.vertical, 16)
@@ -102,7 +106,6 @@ public struct ThemeCustomizationView: View {
                 }
             }
             .onAppear {
-                selectedTheme = themeManager.currentTheme
                 withAnimation { appearScale = true }
             }
         }
@@ -119,6 +122,7 @@ private struct ThemePreviewCard: View {
     var body: some View {
         Button(action: onTap) {
             VStack(spacing: 0) {
+
                 // Mini app preview
                 themePreview
                     .frame(height: 200)
@@ -188,6 +192,7 @@ private struct ThemePreviewCard: View {
                 y: isSelected ? 6 : 3
             )
         }
+        .accessibilityLabel("\(theme.displayName) theme, \(theme.modeLabel), \(theme.tagline)\(isSelected ? ", currently selected" : "")")
         .buttonStyle(ScaleButtonStyle())
     }
 
@@ -320,13 +325,13 @@ private struct ThemePreviewCard: View {
                 Image(systemName: "forward.fill")
                     .font(.system(size: 8, weight: .semibold))
             }
-            .foregroundStyle(Color.orange.opacity(0.8))
+            .foregroundStyle(theme.accentColor.opacity(0.8))
             .padding(.horizontal, 10)
             .padding(.vertical, 6)
             .background(
                 Capsule()
-                    .fill(Color.orange.opacity(0.08))
-                    .overlay(Capsule().stroke(Color.orange.opacity(0.2), lineWidth: 1))
+                    .fill(theme.accentColor.opacity(0.08))
+                    .overlay(Capsule().stroke(theme.accentColor.opacity(0.2), lineWidth: 1))
             )
         }
     }

@@ -5,7 +5,7 @@ struct RoutineCompletionView: View {
     let data: RoutineExecutionView.SessionDisplayData
     let onComplete: () -> Void
 
-    @Environment(\.themeManager) private var themeManager
+    @Environment(ThemeManager.self) private var themeManager
 
     var body: some View {
         VStack(spacing: AppConstants.Spacing.extraLarge) {

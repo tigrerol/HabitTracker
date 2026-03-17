@@ -6,7 +6,7 @@ struct RoutineNavigationControlsView: View {
     let onPrevious: () -> Void
     let onSkip: () -> Void
 
-    @Environment(\.themeManager) private var themeManager
+    @Environment(ThemeManager.self) private var themeManager
 
     var body: some View {
         HStack(spacing: AppConstants.Spacing.large) {

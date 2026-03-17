@@ -3,7 +3,7 @@ import SwiftUI
 /// Smart template selection with quick start and template switching
 struct SmartTemplateSelectionView: View {
     @Environment(RoutineService.self) private var routineService
-    @Environment(\.themeManager) private var themeManager
+    @Environment(ThemeManager.self) private var themeManager
     @State private var selectedTemplate: RoutineTemplate?
     @State private var selectionReason: String = ""
     @State private var showingRoutineBuilder = false
@@ -12,7 +12,6 @@ struct SmartTemplateSelectionView: View {
     @State private var showingDeleteAlert = false
     @State private var showingLocationSetup = false
     @State private var showingContextSettings = false
-    @State private var interactionState = InteractionState()
     @Namespace private var templateTransition
     
     private var timeBasedGreeting: String {
@@ -60,28 +59,14 @@ struct SmartTemplateSelectionView: View {
                 buildVersionView
             }
         }
-        .onAppear {
-            selectSmartTemplate()
+        .task(id: selectionTrigger) {
+            await selectSmartTemplate()
         }
         .sheet(isPresented: $showingRoutineBuilder) {
             RoutineBuilderView()
         }
         .sheet(item: $editingTemplate) { template in
             RoutineBuilderView(editingTemplate: template)
-        }
-        .onChange(of: routineService.templates.count) {
-            // Re-select smart template when templates are added/removed
-            selectSmartTemplate()
-        }
-        .onChange(of: routineService.templates) {
-            // Re-select smart template when templates are modified
-            selectSmartTemplate()
-        }
-        .onReceive(routineService.routineSelector.locationCoordinator.$currentLocationType) { _ in
-            selectSmartTemplate()
-        }
-        .onChange(of: routineService.routineSelector.currentContext.location) { _, _ in
-            selectSmartTemplate()
         }
         .sheet(isPresented: $showingLocationSetup) {
             LocationSetupView()
@@ -94,10 +79,7 @@ struct SmartTemplateSelectionView: View {
             Button(String(localized: "SmartTemplateSelectionView.DeleteAlert.Delete", bundle: .module), role: .destructive) {
                 if let template = templateToDelete {
                     routineService.deleteTemplate(withId: template.id)
-                    // Update selected template if it was deleted
-                    if selectedTemplate?.id == template.id {
-                        selectSmartTemplate()
-                    }
+                    // Template count change triggers .task(id: selectionTrigger) automatically
                 }
             }
         } message: {
@@ -319,7 +301,6 @@ struct SmartTemplateSelectionView: View {
                     template: template,
                     isSelected: selectedTemplate?.id == template.id,
                     namespace: templateTransition,
-                    interactionState: interactionState,
                     onTap: {
                         selectedTemplate = template
                         withAnimation(AnimationPresets.smoothSpring) {
@@ -344,20 +325,24 @@ struct SmartTemplateSelectionView: View {
         .transition(.opacity.combined(with: .scale(scale: 0.95)))
     }
     
-    private func selectSmartTemplate() {
-        Task { @MainActor in
-            // Use smart selection based on context
-            let smartSelection = await routineService.getSmartTemplate()
-            selectedTemplate = smartSelection.template
-            selectionReason = smartSelection.reason
-            
-            // Fallback to default logic if smart selection fails
-            if selectedTemplate == nil {
-                selectedTemplate = routineService.defaultTemplate 
-                                ?? routineService.lastUsedTemplate 
-                                ?? routineService.templates.first
-                selectionReason = ""
-            }
+    private var selectionTrigger: String {
+        let templateIds = routineService.templates.map(\.id.uuidString).joined(separator: ",")
+        let location = String(describing: routineService.routineSelector.currentContext.location)
+        return "\(templateIds)-\(location)"
+    }
+
+    private func selectSmartTemplate() async {
+        // Use smart selection based on context
+        let smartSelection = await routineService.getSmartTemplate()
+        selectedTemplate = smartSelection.template
+        selectionReason = smartSelection.reason
+
+        // Fallback to default logic if smart selection fails
+        if selectedTemplate == nil {
+            selectedTemplate = routineService.defaultTemplate
+                            ?? routineService.lastUsedTemplate
+                            ?? routineService.templates.first
+            selectionReason = ""
         }
     }
     
@@ -376,12 +361,11 @@ private struct CompactTemplateCard: View {
     let template: RoutineTemplate
     let isSelected: Bool
     let namespace: Namespace.ID
-    let interactionState: InteractionState
     let onTap: () -> Void
     let onEdit: () -> Void
     let onDelete: () -> Void
     
-    @Environment(\.themeManager) private var themeManager
+    @Environment(ThemeManager.self) private var themeManager
     
     
     var body: some View {
@@ -464,6 +448,9 @@ private struct CompactTemplateCard: View {
                 )
         )
         .contentShape(Rectangle())
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(template.name), \(template.activeHabitsCount) habits, \(template.formattedDuration)\(isSelected ? ", selected" : "")")
+        .accessibilityAddTraits(.isButton)
         .onTapGesture {
             onTap()
         }

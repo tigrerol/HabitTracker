@@ -8,14 +8,14 @@ extension Color {
     init?(hex: String) {
         let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
         var int: UInt64 = 0
-        
-        // Check if the scanner was successful
-        guard Scanner(string: hex).scanHexInt64(&int) else {
+
+        // Ensure hex string is not empty before scanning
+        guard !hex.isEmpty else {
             return nil
         }
-        
-        // Ensure hex string is not empty
-        guard !hex.isEmpty else {
+
+        // Check if the scanner was successful
+        guard Scanner(string: hex).scanHexInt64(&int) else {
             return nil
         }
         
@@ -52,7 +52,7 @@ extension Color {
     }
 
     /// Convert a Color to its 6-character uppercase hex string
-    func toHex() -> String? {
+    public func toHex() -> String? {
         let uiColor = UIColor(self)
         var red: CGFloat = 0
         var green: CGFloat = 0

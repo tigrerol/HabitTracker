@@ -5,7 +5,7 @@ struct RoutineProgressHeaderView: View {
     let data: RoutineExecutionView.SessionDisplayData
     let namespace: Namespace.ID
 
-    @Environment(\.themeManager) private var themeManager
+    @Environment(ThemeManager.self) private var themeManager
 
     var body: some View {
         VStack(spacing: 12) {

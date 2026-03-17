@@ -5,7 +5,7 @@ struct HabitOverviewView: View {
     let data: RoutineExecutionView.SessionDisplayData
     let onHabitTap: (Int) -> Void
 
-    @Environment(\.themeManager) private var themeManager
+    @Environment(ThemeManager.self) private var themeManager
 
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {

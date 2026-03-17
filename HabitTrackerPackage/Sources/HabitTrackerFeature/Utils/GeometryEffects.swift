@@ -228,7 +228,7 @@ public struct AnimatedCard<Content: View>: View {
     let isPressed: Bool
     let onTap: (() -> Void)?
     
-    @Environment(\.themeManager) private var themeManager
+    @Environment(ThemeManager.self) private var themeManager
     
     public init(
         geometryID: GeometryEffectID? = nil,

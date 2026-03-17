@@ -6,7 +6,7 @@ public struct CustomTitleModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content
             .font(.system(.largeTitle, design: .rounded, weight: .bold))
-            .foregroundColor(Theme.text)
+            .foregroundStyle(Theme.text)
             .tracking(-0.5)
     }
 }
@@ -15,7 +15,7 @@ public struct CustomHeadlineModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content
             .font(.system(.headline, design: .rounded, weight: .semibold))
-            .foregroundColor(Theme.text)
+            .foregroundStyle(Theme.text)
     }
 }
 
@@ -23,7 +23,7 @@ public struct CustomSubheadlineModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content
             .font(.system(.subheadline, design: .rounded, weight: .medium))
-            .foregroundColor(Theme.text)
+            .foregroundStyle(Theme.text)
     }
 }
 
@@ -31,7 +31,7 @@ public struct CustomBodyModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content
             .font(.system(.body, design: .rounded))
-            .foregroundColor(Theme.text)
+            .foregroundStyle(Theme.text)
     }
 }
 
@@ -39,7 +39,7 @@ public struct CustomCaptionModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content
             .font(.system(.caption, design: .rounded))
-            .foregroundColor(Theme.secondaryText)
+            .foregroundStyle(Theme.secondaryText)
     }
 }
 

@@ -4,7 +4,7 @@ import SwiftUI
 
 public struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.themeManager) private var themeManager
+    @Environment(ThemeManager.self) private var themeManager
     @State private var showingThemeCustomization = false
     @State private var showingContextSettings = false
     
@@ -36,7 +36,7 @@ public struct SettingsView: View {
 
                                 Text(themeManager.currentTheme.displayName + " · " + themeManager.currentTheme.modeLabel)
                                     .customCaption()
-                                    .foregroundColor(.secondary)
+                                    .foregroundStyle(.secondary)
                             }
 
                             Spacer()
@@ -52,7 +52,7 @@ public struct SettingsView: View {
                             
                             Image(systemName: "chevron.right")
                                 .font(.caption)
-                                .foregroundColor(.secondary)
+                                .foregroundStyle(.secondary)
                         }
                         .contentShape(Rectangle())
                     }
@@ -82,14 +82,14 @@ public struct SettingsView: View {
                                 
                                 Text("Time slots, day types, and locations")
                                     .customCaption()
-                                    .foregroundColor(.secondary)
+                                    .foregroundStyle(.secondary)
                             }
                             
                             Spacer()
                             
                             Image(systemName: "chevron.right")
                                 .font(.caption)
-                                .foregroundColor(.secondary)
+                                .foregroundStyle(.secondary)
                         }
                         .contentShape(Rectangle())
                     }
@@ -113,9 +113,9 @@ public struct SettingsView: View {
                             Text("HabitTracker")
                                 .customSubheadline()
                             
-                            Text("Version 1.0")
+                            Text("Version \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "—") (\(Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "—"))")
                                 .customCaption()
-                                .foregroundColor(.secondary)
+                                .foregroundStyle(.secondary)
                         }
                         
                         Spacer()

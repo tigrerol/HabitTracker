@@ -7,7 +7,7 @@ public struct PrimaryButton: View {
     let action: () -> Void
     let isEnabled: Bool
     let isLoading: Bool
-    @Environment(\.themeManager) private var themeManager
+    @Environment(ThemeManager.self) private var themeManager
     
     public init(_ title: String, isEnabled: Bool = true, isLoading: Bool = false, action: @escaping () -> Void) {
         self.title = title
@@ -31,7 +31,7 @@ public struct PrimaryButton: View {
                 } else {
                     Text(title)
                         .customSubheadline()
-                        .foregroundColor(.white)
+                        .foregroundStyle(.white)
                 }
             }
             .frame(maxWidth: .infinity)
@@ -66,7 +66,7 @@ public struct PrimaryButton: View {
 public struct SecondaryButton: View {
     let title: String
     let action: () -> Void
-    @Environment(\.themeManager) private var themeManager
+    @Environment(ThemeManager.self) private var themeManager
     
     public init(_ title: String, action: @escaping () -> Void) {
         self.title = title
@@ -80,7 +80,7 @@ public struct SecondaryButton: View {
         }) {
             Text(title)
                 .customSubheadline()
-                .foregroundColor(themeManager.currentAccentColor)
+                .foregroundStyle(themeManager.currentAccentColor)
                 .frame(maxWidth: .infinity)
                 .frame(minHeight: 50)
                 .background(
@@ -113,7 +113,7 @@ public struct IconButton: View {
     let title: String?
     let action: () -> Void
     let style: ButtonStyle
-    @Environment(\.themeManager) private var themeManager
+    @Environment(ThemeManager.self) private var themeManager
     
     public enum ButtonStyle {
         case primary
@@ -144,7 +144,7 @@ public struct IconButton: View {
             }
             .padding(.horizontal, title != nil ? 16 : 12)
             .padding(.vertical, 12)
-            .foregroundColor(foregroundColor)
+            .foregroundStyle(foregroundColor)
             .background(background)
         }
         .buttonStyle(ScaleButtonStyle())
@@ -182,7 +182,7 @@ public struct IconButton: View {
 public struct FloatingActionButton: View {
     let icon: String
     let action: () -> Void
-    @Environment(\.themeManager) private var themeManager
+    @Environment(ThemeManager.self) private var themeManager
     
     public init(icon: String, action: @escaping () -> Void) {
         self.icon = icon
@@ -196,7 +196,7 @@ public struct FloatingActionButton: View {
         }) {
             Image(systemName: icon)
                 .font(.title2.weight(.semibold))
-                .foregroundColor(.white)
+                .foregroundStyle(.white)
                 .frame(minWidth: 56, minHeight: 56)
                 .background(
                     Circle()
@@ -243,7 +243,7 @@ public struct BounceButtonStyle: ButtonStyle {
 public struct AnimatedToggle: View {
     @Binding var isOn: Bool
     let label: String
-    @Environment(\.themeManager) private var themeManager
+    @Environment(ThemeManager.self) private var themeManager
     
     public init(_ label: String, isOn: Binding<Bool>) {
         self.label = label

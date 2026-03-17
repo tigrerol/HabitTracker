@@ -6,7 +6,7 @@ public struct ModernCard<Content: View>: View {
     let content: Content
     let style: CardStyle
     
-    @Environment(\.themeManager) private var themeManager
+    @Environment(ThemeManager.self) private var themeManager
     
     public enum CardStyle {
         case standard
@@ -109,7 +109,9 @@ public struct HabitCard: View {
     let habit: Habit
     let isSelected: Bool
     let onTap: () -> Void
-    
+
+    @Environment(ThemeManager.self) private var themeManager
+
     public init(habit: Habit, isSelected: Bool = false, onTap: @escaping () -> Void) {
         self.habit = habit
         self.isSelected = isSelected
@@ -123,7 +125,7 @@ public struct HabitCard: View {
                     // Habit Icon
                     Image(systemName: habit.type.iconName)
                         .font(.title2)
-                        .foregroundColor(habit.swiftUIColor)
+                        .foregroundStyle(habit.swiftUIColor)
                         .frame(width: 32, height: 32)
                         .background(
                             Circle()
@@ -145,7 +147,7 @@ public struct HabitCard: View {
                     // Selection Indicator
                     if isSelected {
                         Image(systemName: "checkmark.circle.fill")
-                            .foregroundColor(Theme.Colors.accentTeal)
+                            .foregroundStyle(themeManager.currentAccentColor)
                             .font(.title3)
                     }
                 }

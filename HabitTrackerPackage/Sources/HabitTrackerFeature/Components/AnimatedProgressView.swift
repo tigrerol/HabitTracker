@@ -7,7 +7,7 @@ public struct AnimatedCircularProgress: View {
     let size: CGFloat
     let lineWidth: CGFloat
     let accentColor: Color?
-    @Environment(\.themeManager) private var themeManager
+    @Environment(ThemeManager.self) private var themeManager
     
     public init(progress: Double, size: CGFloat = 60, lineWidth: CGFloat = 6, accentColor: Color? = nil) {
         self.progress = progress
@@ -44,7 +44,7 @@ public struct AnimatedCircularProgress: View {
             // Progress Text
             Text("\(Int(progress * 100))%")
                 .font(.system(.caption, design: .rounded, weight: .medium))
-                .foregroundColor(effectiveAccentColor)
+                .foregroundStyle(effectiveAccentColor)
         }
         .frame(width: size, height: size)
     }
@@ -56,7 +56,7 @@ public struct AnimatedLinearProgress: View {
     let progress: Double
     let height: CGFloat
     let accentColor: Color?
-    @Environment(\.themeManager) private var themeManager
+    @Environment(ThemeManager.self) private var themeManager
     
     public init(progress: Double, height: CGFloat = 8, accentColor: Color? = nil) {
         self.progress = progress
@@ -97,7 +97,7 @@ public struct AnimatedRingProgress: View {
     let lineWidth: CGFloat
     let primaryColor: Color?
     let secondaryColor: Color?
-    @Environment(\.themeManager) private var themeManager
+    @Environment(ThemeManager.self) private var themeManager
     
     public init(
         progress: Double,
@@ -156,11 +156,11 @@ public struct AnimatedRingProgress: View {
             VStack(spacing: 2) {
                 Text("\(Int(progress * 100))")
                     .font(.system(.title2, design: .rounded, weight: .bold))
-                    .foregroundColor(effectivePrimaryColor)
+                    .foregroundStyle(effectivePrimaryColor)
                 
                 Text("%")
                     .font(.system(.caption, design: .rounded))
-                    .foregroundColor(Color.gray)
+                    .foregroundStyle(Color.gray)
             }
         }
         .frame(width: size, height: size)
@@ -173,7 +173,7 @@ public struct AnimatedStepProgress: View {
     let currentStep: Int
     let totalSteps: Int
     let accentColor: Color?
-    @Environment(\.themeManager) private var themeManager
+    @Environment(ThemeManager.self) private var themeManager
     
     public init(currentStep: Int, totalSteps: Int, accentColor: Color? = nil) {
         self.currentStep = currentStep

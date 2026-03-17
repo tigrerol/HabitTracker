@@ -6,7 +6,7 @@ struct CurrentHabitView: View {
     let data: RoutineExecutionView.SessionDisplayData
     let onComplete: (UUID, TimeInterval?, String?) -> Void
 
-    @Environment(\.themeManager) private var themeManager
+    @Environment(ThemeManager.self) private var themeManager
 
     var body: some View {
         VStack(spacing: AppConstants.Spacing.extraLarge) {

@@ -1,5 +1,4 @@
 import SwiftUI
-import SwiftData
 
 // MARK: - App Theme
 
@@ -82,29 +81,6 @@ public enum AppTheme: String, CaseIterable, Sendable {
     }
 }
 
-// MARK: - Theme Settings Model
-
-@Model
-public final class ThemeSettings {
-    // MARK: - Properties
-
-    public var accentColorHex: String
-    public var lastModified: Date
-
-    // MARK: - Initialization
-
-    public init(accentColorHex: String = "C4702B") {
-        self.accentColorHex = accentColorHex
-        self.lastModified = Date()
-    }
-
-    // MARK: - Computed Properties
-
-    public var accentColor: Color {
-        Color(hex: accentColorHex) ?? AppTheme.sunstone.accentColor
-    }
-}
-
 // MARK: - Theme Manager
 
 @MainActor
@@ -120,9 +96,6 @@ public final class ThemeManager {
     public private(set) var currentAccentColor: Color = AppTheme.sunstone.accentColor
     public var preferredColorScheme: ColorScheme { currentTheme.preferredColorScheme }
 
-    private var settings: ThemeSettings?
-    private var modelContext: ModelContext?
-
     // MARK: - Available Themes
 
     public let availableThemes: [AppTheme] = AppTheme.allCases
@@ -135,26 +108,13 @@ public final class ThemeManager {
 
     // MARK: - Public Methods
 
-    public func setup(with context: ModelContext) {
-        self.modelContext = context
-        loadThemeSettings()
-    }
-
     public func updateTheme(_ theme: AppTheme) {
         currentTheme = theme
         currentAccentColor = theme.accentColor
-        saveAccentColor(theme.accentHex)
-    }
-
-    /// Legacy method — kept for compatibility; resolves to nearest theme
-    public func updateAccentColor(_ color: Color) {
-        if let hex = color.toHex() {
-            updateAccentColor(hex: hex)
-        }
+        UserDefaults.standard.set(theme.accentHex, forKey: "accentColorHex")
     }
 
     public func updateAccentColor(hex: String) {
-        // Map hex to the nearest theme or default to sunstone
         let matched = AppTheme.allCases.first { $0.accentHex.lowercased() == hex.lowercased() }
         updateTheme(matched ?? .sunstone)
     }
@@ -162,43 +122,11 @@ public final class ThemeManager {
     // MARK: - Private Methods
 
     private func loadThemeSettings() {
-        // Try to load from ModelContext first
-        if let context = modelContext {
-            let descriptor = FetchDescriptor<ThemeSettings>()
-            if let existingSettings = try? context.fetch(descriptor).first {
-                settings = existingSettings
-                resolveTheme(from: existingSettings.accentColorHex)
-                return
-            }
-        }
-
-        // Fallback to UserDefaults
         if let savedHex = UserDefaults.standard.string(forKey: "accentColorHex") {
-            resolveTheme(from: savedHex)
+            let matched = AppTheme.allCases.first { $0.accentHex.lowercased() == savedHex.lowercased() }
+            currentTheme = matched ?? .sunstone
+            currentAccentColor = currentTheme.accentColor
         }
-    }
-
-    private func resolveTheme(from hex: String) {
-        let matched = AppTheme.allCases.first { $0.accentHex.lowercased() == hex.lowercased() }
-        currentTheme = matched ?? .sunstone
-        currentAccentColor = currentTheme.accentColor
-    }
-
-    private func saveAccentColor(_ hex: String) {
-        UserDefaults.standard.set(hex, forKey: "accentColorHex")
-
-        guard let context = modelContext else { return }
-
-        if let existingSettings = settings {
-            existingSettings.accentColorHex = hex
-            existingSettings.lastModified = Date()
-        } else {
-            let newSettings = ThemeSettings(accentColorHex: hex)
-            context.insert(newSettings)
-            settings = newSettings
-        }
-
-        try? context.save()
     }
 }
 
