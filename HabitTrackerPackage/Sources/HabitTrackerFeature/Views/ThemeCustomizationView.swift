@@ -1,38 +1,95 @@
 import SwiftUI
 
-// MARK: - Theme Customization View
+// MARK: - Theme Selection View
 
 public struct ThemeCustomizationView: View {
     @Environment(\.dismiss) private var dismiss
-    @State private var selectedColor: Color = ThemeManager.shared.currentAccentColor
-    @State private var showingPreview = false
-    @State private var interactionState = InteractionState()
-    @Namespace private var colorTransition
-    
+    @State private var selectedTheme: AppTheme = ThemeManager.shared.currentTheme
+    @State private var appearScale = false
+
     private let themeManager = ThemeManager.shared
-    
+
     public init() {}
-    
+
     public var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(spacing: 24) {
-                    // Preview Section
-                    previewSection
-                    
-                    // Color Grid
-                    colorSelectionGrid
-                    
-                    // Custom Color Picker (iOS 16+)
-                    customColorPicker
-                    
-                    // Apply Button
-                    applyButton
+            VStack(spacing: 0) {
+                ScrollView {
+                    VStack(spacing: 32) {
+                        // Header description
+                        VStack(spacing: 6) {
+                            Text("Choose a look that fits your moment.")
+                                .font(.system(.subheadline, design: .rounded))
+                                .foregroundStyle(.secondary)
+                                .multilineTextAlignment(.center)
+                        }
+                        .padding(.top, 8)
+
+                        // Theme cards
+                        VStack(spacing: 16) {
+                            ForEach(themeManager.availableThemes, id: \.rawValue) { theme in
+                                ThemePreviewCard(
+                                    theme: theme,
+                                    isSelected: selectedTheme == theme
+                                ) {
+                                    withAnimation(.spring(response: 0.4, dampingFraction: 0.75)) {
+                                        selectedTheme = theme
+                                        HapticManager.trigger(.selection)
+                                    }
+                                }
+                                .scaleEffect(appearScale ? 1.0 : 0.96)
+                                .opacity(appearScale ? 1.0 : 0)
+                                .animation(
+                                    .spring(response: 0.5, dampingFraction: 0.8)
+                                    .delay(theme == .sunstone ? 0.05 : 0.12),
+                                    value: appearScale
+                                )
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 24)
                 }
-                .padding()
+
+                // Apply button pinned at bottom
+                VStack(spacing: 0) {
+                    Divider()
+                    Button {
+                        themeManager.updateTheme(selectedTheme)
+                        HapticManager.trigger(.success)
+                        dismiss()
+                    } label: {
+                        HStack(spacing: 8) {
+                            Image(systemName: "checkmark.circle.fill")
+                                .font(.headline)
+                            Text("Apply \(selectedTheme.displayName)")
+                                .font(.system(.headline, design: .rounded, weight: .semibold))
+                        }
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 16)
+                        .background(
+                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                .fill(
+                                    LinearGradient(
+                                        colors: [
+                                            selectedTheme.accentColor,
+                                            selectedTheme.accentColor.opacity(0.8)
+                                        ],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
+                                )
+                        )
+                    }
+                    .buttonStyle(ScaleButtonStyle())
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 16)
+                }
+                .background(.regularMaterial)
             }
             .background(Theme.background.ignoresSafeArea())
-            .navigationTitle("Customize Theme")
+            .navigationTitle("Theme")
             #if os(iOS)
             .navigationBarTitleDisplayMode(.large)
             #endif
@@ -41,233 +98,237 @@ public struct ThemeCustomizationView: View {
                     Button("Cancel") {
                         dismiss()
                     }
+                    .foregroundStyle(.secondary)
                 }
             }
-        }
-    }
-    
-    // MARK: - Preview Section
-    
-    private var previewSection: some View {
-        ModernCard(style: .elevated) {
-            VStack(spacing: 20) {
-                Text("Preview")
-                    .customHeadline()
-                
-                // Sample UI Elements
-                VStack(spacing: 16) {
-                    // Habit Card Preview
-                    HStack {
-                        Circle()
-                            .fill(selectedColor.opacity(0.2))
-                            .frame(width: 40, height: 40)
-                            .overlay(
-                                Image(systemName: "timer")
-                                    .foregroundColor(selectedColor)
-                            )
-                        
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("Morning Meditation")
-                                .customSubheadline()
-                            Text("5 minutes • Timer")
-                                .customCaption()
-                                .foregroundColor(.secondary)
-                        }
-                        
-                        Spacer()
-                        
-                        Circle()
-                            .stroke(selectedColor, lineWidth: 2)
-                            .frame(width: 24, height: 24)
-                    }
-                    .padding()
-                    .background(Theme.cardBackground)
-                    .cornerRadius(12)
-                    
-                    // Buttons Preview
-                    HStack(spacing: 12) {
-                        Button {
-                            HapticManager.trigger(.light)
-                        } label: {
-                            Text("Primary")
-                                .customSubheadline()
-                                .foregroundColor(.white)
-                                .padding(.horizontal, 20)
-                                .padding(.vertical, 10)
-                                .background(selectedColor)
-                                .cornerRadius(20)
-                        }
-                        
-                        Button {
-                            HapticManager.trigger(.light)
-                        } label: {
-                            Text("Secondary")
-                                .customSubheadline()
-                                .foregroundColor(selectedColor)
-                                .padding(.horizontal, 20)
-                                .padding(.vertical, 10)
-                                .background(
-                                    Capsule()
-                                        .stroke(selectedColor, lineWidth: 2)
-                                )
-                        }
-                    }
-                    
-                    // Progress Bar Preview
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Progress")
-                            .customCaption()
-                            .foregroundColor(.secondary)
-                        
-                        GeometryReader { geometry in
-                            ZStack(alignment: .leading) {
-                                Capsule()
-                                    .fill(Color.gray.opacity(0.2))
-                                    .frame(height: 8)
-                                
-                                Capsule()
-                                    .fill(selectedColor)
-                                    .frame(width: geometry.size.width * 0.65, height: 8)
-                            }
-                        }
-                        .frame(height: 8)
-                    }
-                }
-                .animation(.spring(response: 0.3, dampingFraction: 0.8), value: selectedColor)
+            .onAppear {
+                selectedTheme = themeManager.currentTheme
+                withAnimation { appearScale = true }
             }
         }
-    }
-    
-    // MARK: - Color Selection Grid
-    
-    private var colorSelectionGrid: some View {
-        ModernCard {
-            VStack(alignment: .leading, spacing: 16) {
-                Text("Choose Accent Color")
-                    .customHeadline()
-                
-                LazyVGrid(columns: [
-                    GridItem(.flexible()),
-                    GridItem(.flexible()),
-                    GridItem(.flexible()),
-                    GridItem(.flexible()),
-                    GridItem(.flexible())
-                ], spacing: 16) {
-                    ForEach(themeManager.availableColors, id: \.name) { item in
-                        ColorSelectionButton(
-                            color: item.color,
-                            isSelected: selectedColor.description == item.color.description,
-                            namespace: colorTransition,
-                            interactionState: interactionState,
-                            action: {
-                                withAnimation(AnimationPresets.smoothSpring) {
-                                    selectedColor = item.color
-                                    HapticManager.trigger(.selection)
-                                }
-                            }
-                        )
-                    }
-                }
-            }
-        }
-    }
-    
-    // MARK: - Custom Color Picker
-    
-    private var customColorPicker: some View {
-        ModernCard {
-            VStack(alignment: .leading, spacing: 12) {
-                Text("Custom Color")
-                    .customHeadline()
-                
-                ColorPicker("Pick any color", selection: $selectedColor)
-                    .labelsHidden()
-                    .frame(height: 44)
-                    .background(
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(Color.gray.opacity(0.1))
-                    )
-            }
-        }
-    }
-    
-    // MARK: - Apply Button
-    
-    private var applyButton: some View {
-        PrimaryButton("Apply Theme") {
-            applyTheme()
-        }
-        .padding(.top)
-    }
-    
-    // MARK: - Actions
-    
-    private func applyTheme() {
-        themeManager.updateAccentColor(selectedColor)
-        HapticManager.trigger(.success)
-        dismiss()
     }
 }
 
-// MARK: - Color Selection Button
+// MARK: - Theme Preview Card
 
-struct ColorSelectionButton: View {
-    let color: Color
+private struct ThemePreviewCard: View {
+    let theme: AppTheme
     let isSelected: Bool
-    let namespace: Namespace.ID
-    let interactionState: InteractionState
-    let action: () -> Void
-    
-    private var colorId: String {
-        color.description
-    }
-    
-    private var isPressed: Bool {
-        interactionState.isPressed(colorId)
-    }
-    
+    let onTap: () -> Void
+
     var body: some View {
-        Button(action: action) {
-            Circle()
-                .fill(color)
-                .frame(width: 50, height: 50)
-                .matchedGeometry(
-                    id: isSelected ? GeometryEffectID.selectedColor : GeometryEffectID.colorPicker,
-                    in: namespace,
-                    isSource: isSelected
-                )
-                .overlay(
-                    Circle()
-                        .stroke(Color.white, lineWidth: 3)
-                        .opacity(isSelected ? 1 : 0)
-                        .scaleEffect(isSelected ? 1.0 : 0.8)
-                )
-                .overlay(
-                    Circle()
-                        .stroke(color.opacity(0.3), lineWidth: isSelected ? 4 : 0)
-                        .frame(width: 58, height: 58)
-                        .scaleEffect(isSelected ? 1.0 : 0.9)
-                )
-                .shadow(
-                    color: color.opacity(isPressed ? 0.5 : 0.3), 
-                    radius: isSelected ? 12 : (isPressed ? 6 : 4), 
-                    x: 0, 
-                    y: isPressed ? 1 : 2
-                )
-                .scaleEffect(isSelected ? 1.1 : (isPressed ? 0.95 : 1.0))
-                .animation(AnimationPresets.quickSpring, value: isSelected)
-                .animation(AnimationPresets.quickSpring, value: isPressed)
+        Button(action: onTap) {
+            VStack(spacing: 0) {
+                // Mini app preview
+                themePreview
+                    .frame(height: 200)
+                    .clipped()
+
+                // Label row
+                HStack(spacing: 12) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(theme.displayName)
+                            .font(.system(.headline, design: .rounded, weight: .bold))
+                            .foregroundStyle(.primary)
+
+                        Text(theme.tagline)
+                            .font(.system(.caption, design: .rounded))
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Spacer()
+
+                    HStack(spacing: 8) {
+                        // Mode badge
+                        Text(theme.modeLabel)
+                            .font(.system(.caption2, design: .rounded, weight: .semibold))
+                            .foregroundStyle(theme.accentColor)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(
+                                Capsule()
+                                    .fill(theme.accentColor.opacity(0.12))
+                            )
+
+                        // Selection indicator
+                        ZStack {
+                            Circle()
+                                .stroke(
+                                    isSelected ? theme.accentColor : Color.primary.opacity(0.2),
+                                    lineWidth: isSelected ? 2 : 1.5
+                                )
+                                .frame(width: 24, height: 24)
+
+                            if isSelected {
+                                Circle()
+                                    .fill(theme.accentColor)
+                                    .frame(width: 14, height: 14)
+                                    .transition(.scale.combined(with: .opacity))
+                            }
+                        }
+                        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
+                    }
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 14)
+                .background(Theme.cardBackground)
+            }
+            .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    .stroke(
+                        isSelected ? theme.accentColor : Color.primary.opacity(0.08),
+                        lineWidth: isSelected ? 2 : 1
+                    )
+            )
+            .shadow(
+                color: isSelected ? theme.accentColor.opacity(0.15) : Color.black.opacity(0.06),
+                radius: isSelected ? 16 : 8,
+                x: 0,
+                y: isSelected ? 6 : 3
+            )
         }
-        .buttonStyle(.plain)
-        .simultaneousGesture(
-            DragGesture(minimumDistance: 0)
-                .onChanged { _ in
-                    interactionState.setPressed(colorId, isPressed: true)
+        .buttonStyle(ScaleButtonStyle())
+    }
+
+    // MARK: - Mini App Preview
+
+    @ViewBuilder
+    private var themePreview: some View {
+        ZStack {
+            // Background
+            theme.previewBackground
+
+            VStack(spacing: 10) {
+                // Progress header simulation
+                previewProgressBar
+
+                // Current habit simulation
+                previewHabitCard
+
+                // Nav controls simulation
+                previewNavControls
+            }
+            .padding(14)
+        }
+    }
+
+    private var previewProgressBar: some View {
+        VStack(spacing: 6) {
+            // Progress track
+            ZStack(alignment: .leading) {
+                Capsule()
+                    .fill(theme.previewTextPrimary.opacity(0.08))
+                    .frame(height: 4)
+
+                Capsule()
+                    .fill(
+                        LinearGradient(
+                            colors: [theme.accentColor, theme.accentColor.opacity(0.7)],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
+                    .frame(width: 120, height: 4)
+            }
+
+            HStack {
+                Text("3 of 5")
+                    .font(.system(size: 10, design: .rounded))
+                    .foregroundStyle(theme.previewTextSecondary)
+                Spacer()
+                HStack(spacing: 3) {
+                    Image(systemName: "timer")
+                        .font(.system(size: 8))
+                        .foregroundStyle(theme.previewTextSecondary)
+                    Text("4:12")
+                        .font(.system(size: 10, weight: .semibold, design: .rounded))
+                        .foregroundStyle(theme.previewTextPrimary)
                 }
-                .onEnded { _ in
-                    interactionState.setPressed(colorId, isPressed: false)
-                }
+            }
+        }
+        .padding(10)
+        .background(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(theme.previewSurface)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .stroke(theme.accentColor.opacity(0.12), lineWidth: 1)
+                )
         )
+    }
+
+    private var previewHabitCard: some View {
+        HStack(spacing: 10) {
+            // Icon circle
+            ZStack {
+                Circle()
+                    .fill(theme.accentColor.opacity(0.1))
+                    .frame(width: 36, height: 36)
+                Circle()
+                    .fill(theme.accentColor.opacity(0.15))
+                    .frame(width: 28, height: 28)
+                Image(systemName: "timer")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(theme.accentColor)
+            }
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text("Morning Meditation")
+                    .font(.system(size: 13, weight: .bold, design: .rounded))
+                    .foregroundStyle(theme.previewTextPrimary)
+                    .lineLimit(1)
+
+                Text("5:00 remaining")
+                    .font(.system(size: 10, design: .rounded))
+                    .foregroundStyle(theme.previewTextSecondary)
+            }
+
+            Spacer()
+        }
+        .padding(12)
+        .background(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(theme.previewSurface)
+        )
+    }
+
+    private var previewNavControls: some View {
+        HStack {
+            // Previous button
+            HStack(spacing: 4) {
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 8, weight: .semibold))
+                Text("Previous")
+                    .font(.system(size: 10, design: .rounded))
+            }
+            .foregroundStyle(theme.previewTextPrimary.opacity(0.6))
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(
+                Capsule()
+                    .fill(theme.previewSurface)
+                    .overlay(Capsule().stroke(theme.previewTextPrimary.opacity(0.1), lineWidth: 1))
+            )
+
+            Spacer()
+
+            // Skip button
+            HStack(spacing: 4) {
+                Text("Skip")
+                    .font(.system(size: 10, design: .rounded))
+                Image(systemName: "forward.fill")
+                    .font(.system(size: 8, weight: .semibold))
+            }
+            .foregroundStyle(Color.orange.opacity(0.8))
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(
+                Capsule()
+                    .fill(Color.orange.opacity(0.08))
+                    .overlay(Capsule().stroke(Color.orange.opacity(0.2), lineWidth: 1))
+            )
+        }
     }
 }
 
@@ -275,4 +336,5 @@ struct ColorSelectionButton: View {
 
 #Preview {
     ThemeCustomizationView()
+        .withDynamicTheme()
 }

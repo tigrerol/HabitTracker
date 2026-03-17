@@ -31,25 +31,19 @@ public struct SettingsView: View {
                                 .frame(width: 24)
                             
                             VStack(alignment: .leading, spacing: 2) {
-                                Text("Theme Colors")
+                                Text("Appearance")
                                     .customSubheadline()
-                                
-                                Text("Customize accent colors")
+
+                                Text(themeManager.currentTheme.displayName + " · " + themeManager.currentTheme.modeLabel)
                                     .customCaption()
                                     .foregroundColor(.secondary)
                             }
-                            
+
                             Spacer()
-                            
-                            // Current color preview
+
+                            // Current theme accent swatch
                             Circle()
-                                .fill(
-                                    LinearGradient(
-                                        colors: [themeManager.currentAccentColor, themeManager.currentAccentColor.opacity(0.8)],
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    )
-                                )
+                                .fill(themeManager.currentAccentColor)
                                 .frame(width: 20, height: 20)
                                 .overlay(
                                     Circle()

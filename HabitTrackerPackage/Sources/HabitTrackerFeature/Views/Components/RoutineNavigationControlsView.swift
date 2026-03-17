@@ -5,39 +5,64 @@ struct RoutineNavigationControlsView: View {
     let data: RoutineExecutionView.SessionDisplayData
     let onPrevious: () -> Void
     let onSkip: () -> Void
-    
+
+    @Environment(\.themeManager) private var themeManager
+
     var body: some View {
         HStack(spacing: AppConstants.Spacing.large) {
-            // Previous habit
+            // Previous habit button
             Button(action: onPrevious) {
-                HStack {
+                HStack(spacing: 6) {
                     Image(systemName: "chevron.left")
+                        .font(.caption.weight(.semibold))
                     Text(String(localized: "RoutineExecutionView.Previous", bundle: .module))
+                        .font(.system(.caption, design: .rounded, weight: .medium))
                 }
-                .font(.caption)
-                .foregroundStyle(data.currentHabitIndex > 0 ? .blue : .gray)
-                .padding(.vertical, 8)
-                .background(.regularMaterial, in: Capsule())
+                .foregroundStyle(data.currentHabitIndex > 0 ? .primary : .tertiary)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 10)
+                .background(
+                    Capsule()
+                        .fill(.regularMaterial)
+                        .overlay(
+                            Capsule()
+                                .stroke(
+                                    data.currentHabitIndex > 0 ?
+                                    Color.primary.opacity(0.1) : Color.clear,
+                                    lineWidth: 1
+                                )
+                        )
+                )
             }
             .disabled(data.currentHabitIndex <= 0)
-            .buttonStyle(.plain)
-            
+            .buttonStyle(ScaleButtonStyle())
+
             Spacer()
-            
-            // Skip current habit
+
+            // Skip current habit button
             Button(action: onSkip) {
-                HStack {
-                    Image(systemName: "forward.fill")
+                HStack(spacing: 6) {
                     Text(String(localized: "RoutineExecutionView.Skip", bundle: .module))
+                        .font(.system(.caption, design: .rounded, weight: .medium))
+                    Image(systemName: "forward.fill")
+                        .font(.caption.weight(.semibold))
                 }
-                .font(.caption)
                 .foregroundStyle(.orange)
-                .padding(.vertical, 8)
-                .background(.regularMaterial, in: Capsule())
+                .padding(.horizontal, 14)
+                .padding(.vertical, 10)
+                .background(
+                    Capsule()
+                        .fill(Color.orange.opacity(0.08))
+                        .overlay(
+                            Capsule()
+                                .stroke(Color.orange.opacity(0.2), lineWidth: 1)
+                        )
+                )
             }
-            .buttonStyle(.plain)
+            .buttonStyle(ScaleButtonStyle())
         }
-        .padding()
+        .padding(.horizontal, 20)
+        .padding(.vertical, 12)
         .background(.regularMaterial)
     }
 }

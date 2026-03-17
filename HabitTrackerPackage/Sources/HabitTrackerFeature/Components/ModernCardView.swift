@@ -79,15 +79,27 @@ public struct ModernCard<Content: View>: View {
     }
     
     private var shadowColor: Color {
-        Color.black.opacity(style == .elevated ? 0.15 : 0.08)
+        switch style {
+        case .elevated: Color.black.opacity(0.12)
+        case .standard: Color.black.opacity(0.06)
+        case .frosted: Color.black.opacity(0.04)
+        }
     }
-    
+
     private var shadowRadius: CGFloat {
-        style == .elevated ? 15 : 8
+        switch style {
+        case .elevated: 20
+        case .standard: 10
+        case .frosted: 6
+        }
     }
-    
+
     private var shadowOffset: CGFloat {
-        style == .elevated ? 8 : 4
+        switch style {
+        case .elevated: 6
+        case .standard: 3
+        case .frosted: 2
+        }
     }
 }
 

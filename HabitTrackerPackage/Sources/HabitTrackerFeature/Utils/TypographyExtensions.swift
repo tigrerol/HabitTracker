@@ -7,6 +7,7 @@ public struct CustomTitleModifier: ViewModifier {
         content
             .font(.system(.largeTitle, design: .rounded, weight: .bold))
             .foregroundColor(Theme.text)
+            .tracking(-0.5)
     }
 }
 

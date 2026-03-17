@@ -30,6 +30,7 @@ public struct DynamicThemeView<Content: View>: View {
         content
             .environment(themeManager)
             .accentColor(themeManager.currentAccentColor)
+            .preferredColorScheme(themeManager.preferredColorScheme)
     }
 }
 

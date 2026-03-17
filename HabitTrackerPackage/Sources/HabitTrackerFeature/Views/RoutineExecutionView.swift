@@ -184,7 +184,7 @@ public struct RoutineExecutionView: View {
                 refreshSessionData()
             }
         }
-        .background(Color(.gray).opacity(0.05))
+        .background(Theme.background)
     }
     
     // MARK: - Helper Methods

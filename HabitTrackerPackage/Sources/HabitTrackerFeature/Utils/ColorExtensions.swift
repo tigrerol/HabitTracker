@@ -50,6 +50,20 @@ extension Color {
             opacity: opacity
         )
     }
+
+    /// Convert a Color to its 6-character uppercase hex string
+    func toHex() -> String? {
+        let uiColor = UIColor(self)
+        var red: CGFloat = 0
+        var green: CGFloat = 0
+        var blue: CGFloat = 0
+        var alpha: CGFloat = 0
+        guard uiColor.getRed(&red, green: &green, blue: &blue, alpha: &alpha) else { return nil }
+        let r = Int(red * 255)
+        let g = Int(green * 255)
+        let b = Int(blue * 255)
+        return String(format: "%06X", (r << 16) | (g << 8) | b)
+    }
 }
 
 // MARK: - Color Encoding/Decoding Utilities
@@ -105,12 +119,12 @@ public struct Theme {
     // MARK: - Color Palette
     public struct Colors {
         // Primary Backgrounds
-        public static let primaryBackground = Color(hex: "F7F7F7") ?? .clear     // Off-white
-        public static let darkPrimaryBackground = Color(hex: "1A202C") ?? .clear // Deep blue-grey
+        public static let primaryBackground = Color(hex: "EDE3CE") ?? .clear     // Warm sand linen (Sunstone)
+        public static let darkPrimaryBackground = Color(hex: "0C1B2E") ?? .clear // Midnight navy (Slate)
 
         // Card Backgrounds
-        public static let cardBackground = Color.white
-        public static let darkCardBackground = Color(hex: "2D3748") ?? .clear    // Lighter dark
+        public static let cardBackground = Color(hex: "FAF3E4") ?? .white        // Warm parchment (Sunstone)
+        public static let darkCardBackground = Color(hex: "162840") ?? .clear    // Deep navy surface (Slate)
 
         // Accent Colors - Choose one as primary
         public static let accentTeal = Color(hex: "2B8C84") ?? .clear      // WCAG AA compliant teal

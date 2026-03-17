@@ -34,10 +34,11 @@ struct SmartTemplateSelectionView: View {
         NavigationStack {
             VStack(spacing: 24) {
                 headerView
-                
+
                 allTemplatesSection
             }
             .padding()
+            .background(Theme.background.ignoresSafeArea())
             .navigationTitle(timeBasedGreeting)
             
             .toolbar {
@@ -205,63 +206,63 @@ struct SmartTemplateSelectionView: View {
     }
     
     private func quickStartSection(_ template: RoutineTemplate) -> some View {
-        VStack(spacing: 12) {
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(String(localized: "SmartTemplateSelectionView.QuickStart", bundle: .module))
-                        .font(.caption)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(.secondary)
-                    
-                    Text(template.name)
-                        .font(.title3)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(.primary)
-                }
-                
-                Spacer()
-                
-                Image(systemName: "play.circle.fill")
-                    .font(.system(size: 32))
-                    .foregroundStyle(
-                        LinearGradient(
-                            colors: [themeManager.currentAccentColor, themeManager.currentAccentColor.opacity(0.8)],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
+        HStack(spacing: 16) {
+            // Left: text content
+            VStack(alignment: .leading, spacing: 6) {
+                Text(String(localized: "SmartTemplateSelectionView.QuickStart", bundle: .module))
+                    .font(.system(.caption, design: .rounded, weight: .semibold))
+                    .foregroundStyle(themeManager.currentAccentColor)
+                    .tracking(0.5)
+                    .textCase(.uppercase)
+
+                Text(template.name)
+                    .font(.system(.title3, design: .rounded, weight: .bold))
+                    .foregroundStyle(.primary)
+
+                HStack(spacing: 10) {
+                    Label(
+                        String(format: String(localized: "SmartTemplateSelectionView.HabitsCount", bundle: .module), template.activeHabitsCount),
+                        systemImage: "list.bullet"
                     )
+                    Label(template.formattedDuration, systemImage: "clock")
+                }
+                .font(.system(.caption, design: .rounded))
+                .foregroundStyle(.secondary)
             }
-            
-            HStack {
-                Label(String(format: String(localized: "SmartTemplateSelectionView.HabitsCount", bundle: .module), template.activeHabitsCount), systemImage: "list.bullet")
-                
-                Spacer()
-                
-                Label(template.formattedDuration, systemImage: "clock")
+
+            Spacer()
+
+            // Right: play button
+            ZStack {
+                Circle()
+                    .fill(themeManager.currentAccentColor.opacity(0.12))
+                    .frame(width: 52, height: 52)
+
+                Image(systemName: "play.fill")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(themeManager.currentAccentColor)
+                    .offset(x: 1)
             }
-            .font(.caption)
-            .foregroundStyle(.secondary)
         }
-        .padding()
+        .padding(.horizontal, 20)
+        .padding(.vertical, 18)
         .background(
-            RoundedRectangle(cornerRadius: 16)
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
                 .fill(.regularMaterial)
-                .shadow(
-                    color: .black.opacity(0.05),
-                    radius: 6,
-                    x: 0,
-                    y: 3
-                )
+                .shadow(color: .black.opacity(0.06), radius: 8, x: 0, y: 4)
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 16)
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
                 .stroke(
                     LinearGradient(
-                        colors: [themeManager.currentAccentColor.opacity(0.5), themeManager.currentAccentColor.opacity(0.2)],
+                        colors: [
+                            themeManager.currentAccentColor.opacity(0.4),
+                            themeManager.currentAccentColor.opacity(0.15)
+                        ],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     ),
-                    lineWidth: 2
+                    lineWidth: 1.5
                 )
         )
         .contextMenu {
@@ -270,7 +271,7 @@ struct SmartTemplateSelectionView: View {
             } label: {
                 Label("Edit Template", systemImage: "pencil")
             }
-            
+
             Button(role: .destructive) {
                 templateToDelete = template
                 showingDeleteAlert = true
@@ -284,7 +285,6 @@ struct SmartTemplateSelectionView: View {
                 startRoutine(with: template)
             }
         }
-        .frame(height: 120)
     }
     
     
@@ -340,6 +340,7 @@ struct SmartTemplateSelectionView: View {
             }
         }
         .listStyle(.plain)
+        .scrollContentBackground(.hidden)
         .transition(.opacity.combined(with: .scale(scale: 0.95)))
     }
     
