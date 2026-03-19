@@ -20,9 +20,6 @@ public final class RoutineSelector {
     /// Throttling for context updates to reduce performance impact
     private var lastContextUpdate: Date = Date.distantPast
     
-    /// Flag to control whether location updates should be active
-    private var shouldUpdateLocation: Bool = false
-    
     public init(locationCoordinator: LocationCoordinator = LocationCoordinator.shared) {
         self.locationCoordinator = locationCoordinator
         self.currentContext = RoutineContext.current()
@@ -43,17 +40,10 @@ public final class RoutineSelector {
                 return
             }
             
-            // Only update if location updates are enabled
-            guard self.shouldUpdateLocation else {
-                self.currentLocationType = locationType
-                self.currentExtendedLocationType = extendedLocationType
-                return
-            }
-            
             self.currentLocationType = locationType
             self.currentExtendedLocationType = extendedLocationType
-            
-            // Apply throttling to location-triggered context updates too
+
+            // Always update context when location changes so the UI reflects the current state
             await self.updateContext()
         }
         
@@ -64,16 +54,6 @@ public final class RoutineSelector {
         self.currentLocationType = locationType
         self.currentExtendedLocationType = extendedLocationType
         await updateContext(force: true)
-    }
-    
-    /// Enable location-based context updates (call when template selection is needed)
-    public func enableLocationUpdates() {
-        shouldUpdateLocation = true
-    }
-    
-    /// Disable location-based context updates (call when not actively needed)
-    public func disableLocationUpdates() {
-        shouldUpdateLocation = false
     }
     
     /// Update the current context
@@ -103,10 +83,6 @@ public final class RoutineSelector {
     
     /// Select the best routine template based on current context
     public func selectBestTemplate(from templates: [RoutineTemplate]) async -> (template: RoutineTemplate?, reason: String) {
-        // Enable location updates only when actively selecting templates
-        enableLocationUpdates()
-        defer { disableLocationUpdates() }
-        
         await updateContext(force: true)
         
         var scoredTemplates: [(template: RoutineTemplate, score: Int)] = []

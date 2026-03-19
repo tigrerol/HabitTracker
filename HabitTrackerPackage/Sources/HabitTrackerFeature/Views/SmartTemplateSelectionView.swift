@@ -68,7 +68,11 @@ struct SmartTemplateSelectionView: View {
         .sheet(item: $editingTemplate) { template in
             RoutineBuilderView(editingTemplate: template)
         }
-        .sheet(isPresented: $showingLocationSetup) {
+        .sheet(isPresented: $showingLocationSetup, onDismiss: {
+            Task {
+                await routineService.routineSelector.updateContext(force: true)
+            }
+        }) {
             LocationSetupView()
         }
         .sheet(isPresented: $showingContextSettings) {
