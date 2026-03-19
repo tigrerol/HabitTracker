@@ -44,11 +44,9 @@ public final class LocationCoordinator: ObservableObject {
     
     /// Set up location tracking
     private func setupLocationTracking() async {
-        // Set up location manager
-        await MainActor.run {
-            trackingService.setupLocationManager()
-        }
-        
+        // Set up location manager and await completion before proceeding
+        await trackingService.setupLocationManager()
+
         // Set callback to process location updates
         await trackingService.setLocationUpdateCallback { [weak self] location in
             await self?.handleLocationUpdate(location)

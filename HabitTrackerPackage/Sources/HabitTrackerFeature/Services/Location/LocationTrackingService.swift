@@ -21,12 +21,9 @@ public actor LocationTrackingService {
     /// Initialize the tracking service
     public init() {}
     
-    /// Set up location manager (must be called from main actor)
-    @MainActor
-    public func setupLocationManager() {
-        Task { [weak self] in
-            await self?.internalSetupLocationManager()
-        }
+    /// Set up location manager
+    public func setupLocationManager() async {
+        await internalSetupLocationManager()
     }
     
     private func internalSetupLocationManager() async {
