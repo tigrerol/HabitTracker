@@ -3,7 +3,7 @@ import SwiftUI
 /// Main coordination view for the morning routine feature
 @MainActor
 public struct MorningRoutineView: View {
-    @State private var routineService = RoutineService()
+    @State private var routineService = RoutineService.shared
     @Namespace private var mainTransition
     
     public init() {}

@@ -120,7 +120,6 @@ struct SmartTemplateSelectionView: View {
         let selector = routineService.routineSelector
         let context = selector.currentContext
         let coordinator = selector.locationCoordinator
-        
         return HStack(spacing: 16) {
             // Time indicator
             Label {

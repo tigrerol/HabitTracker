@@ -47,16 +47,16 @@ public final class RoutineSelector {
             // bypassing the throttle that prevents redundant timer-based refreshes.
             await self.updateContext(force: true)
         }
-        
+
         await locationCoordinator.startUpdatingLocation()
-        
+
         // Get initial location types
         let (locationType, extendedLocationType) = await locationCoordinator.getCurrentLocationTypes()
         self.currentLocationType = locationType
         self.currentExtendedLocationType = extendedLocationType
         await updateContext(force: true)
     }
-    
+
     /// Update the current context
     public func updateContext(force: Bool = false) async {
         // Throttle context updates to prevent performance issues
@@ -65,7 +65,7 @@ public final class RoutineSelector {
             return
         }
         lastContextUpdate = now
-        
+
         let timeSlot = TimeSlotManager.shared.getCurrentTimeSlot()
         let dayCategories = DayCategoryManager.shared.getCurrentDayCategories()
 
@@ -75,9 +75,9 @@ public final class RoutineSelector {
         self.currentContext = RoutineContext(
             timeSlot: timeSlot,
             dayCategories: dayCategories,
-            location: coordinatorLocation  // Use coordinator's location directly
+            location: coordinatorLocation
         )
-        
+
         // Update our cached value to match
         self.currentLocationType = coordinatorLocation
     }

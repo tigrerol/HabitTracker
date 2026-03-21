@@ -10,6 +10,9 @@ extension Notification.Name {
 @MainActor
 @Observable
 public final class RoutineService {
+    /// App-wide singleton — ensures only one RoutineSelector is ever created,
+    /// preventing zombie Tasks from overwriting LocationCoordinator's callback.
+    public static let shared = RoutineService()
     public private(set) var templates: [RoutineTemplate] = []
     public private(set) var currentSession: RoutineSession?
     public private(set) var moodRatings: [MoodRating] = []
