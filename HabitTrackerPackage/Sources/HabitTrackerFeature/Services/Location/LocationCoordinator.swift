@@ -44,6 +44,10 @@ public final class LocationCoordinator: ObservableObject {
     
     /// Set up location tracking
     private func setupLocationTracking() async {
+        // Ensure saved locations are loaded before GPS starts, so the first fix
+        // can be matched against persisted locations rather than an empty dictionary.
+        await storageService.ensureLoaded()
+
         // Set up location manager and await completion before proceeding
         await trackingService.setupLocationManager()
 

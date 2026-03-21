@@ -10,13 +10,21 @@ public final class LocationStorageService: ObservableObject {
     private let persistenceService: any PersistenceServiceProtocol
     private let savedLocationsKey = "SavedLocations"
     private let customLocationsKey = "CustomLocations"
-    
+
+    /// Task handle for the initial persistence load — callers can await this to ensure data is ready
+    private var loadTask: Task<Void, Never>?
+
     /// Initialize with dependency injection
     public init(persistenceService: any PersistenceServiceProtocol = UserDefaultsPersistenceService()) {
         self.persistenceService = persistenceService
-        Task {
+        loadTask = Task {
             await loadFromPersistence()
         }
+    }
+
+    /// Suspend until the initial persistence load has completed
+    public func ensureLoaded() async {
+        await loadTask?.value
     }
     
     // MARK: - Known Locations Management
@@ -168,7 +176,7 @@ public final class LocationStorageService: ObservableObject {
                 operation: "load"
             )
         }
-        
+
         // Load custom locations
         do {
             if let custom = try await persistenceService.load([UUID: CustomLocation].self, forKey: customLocationsKey) {

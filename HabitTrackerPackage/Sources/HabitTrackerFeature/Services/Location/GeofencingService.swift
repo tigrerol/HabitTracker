@@ -54,15 +54,14 @@ public actor GeofencingService {
         let knownLocations = await MainActor.run {
             storageService.getSavedLocations()
         }
-        
         // Check against all saved locations
         for (locationType, savedLocation) in knownLocations {
             let savedCLLocation = savedLocation.clLocation
             let distance = location.distance(from: savedCLLocation)
-            
+
             // Use the specific radius for this location, or the default detection radius
             let radius = savedLocation.radius > 0 ? savedLocation.radius : detectionRadius
-            
+
             if distance <= radius {
                 Task {
                     await LoggingService.shared.logLocationEvent(
@@ -78,7 +77,6 @@ public actor GeofencingService {
                 return locationType
             }
         }
-        
         return .unknown
     }
     
