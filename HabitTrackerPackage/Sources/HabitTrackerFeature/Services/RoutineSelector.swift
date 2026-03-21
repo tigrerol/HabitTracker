@@ -43,8 +43,9 @@ public final class RoutineSelector {
             self.currentLocationType = locationType
             self.currentExtendedLocationType = extendedLocationType
 
-            // Always update context when location changes (throttled internally)
-            await self.updateContext()
+            // Location changed — always force an immediate context update,
+            // bypassing the throttle that prevents redundant timer-based refreshes.
+            await self.updateContext(force: true)
         }
         
         await locationCoordinator.startUpdatingLocation()
