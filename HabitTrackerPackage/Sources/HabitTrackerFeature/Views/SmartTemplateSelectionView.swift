@@ -382,8 +382,7 @@ private struct ContextMatchIcons: View {
                         .foregroundStyle(timeMatch ? themeManager.currentAccentColor : .secondary)
                 }
                 if !rule.dayCategoryIds.isEmpty {
-                    Image(systemName: dayMatch ? "calendar.circle.fill" : "calendar")
-                        .fontWeight(dayMatch ? .bold : .regular)
+                    Image(systemName: "calendar")
                         .foregroundStyle(dayMatch ? themeManager.currentAccentColor : .secondary)
                 }
                 if !rule.locationIds.isEmpty {
