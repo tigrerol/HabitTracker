@@ -438,13 +438,17 @@ public struct ContextCoverageView: View {
             // Check day category match (single category for coverage grid)
             let dayCategoryMatches = rule.dayCategoryIds.contains(dayCategory.id)
 
-            // Check location match
+            // Check location match (empty locationIds means "any location")
             let locationMatches: Bool
-            switch location {
-            case .builtin(let builtinType):
-                locationMatches = rule.locationIds.contains(builtinType.rawValue)
-            case .custom(let customLocationId):
-                locationMatches = rule.locationIds.contains(customLocationId.uuidString)
+            if rule.locationIds.isEmpty {
+                locationMatches = true
+            } else {
+                switch location {
+                case .builtin(let builtinType):
+                    locationMatches = rule.locationIds.contains(builtinType.rawValue)
+                case .custom(let customLocationId):
+                    locationMatches = rule.locationIds.contains(customLocationId.uuidString)
+                }
             }
 
             return timeSlotMatches && dayCategoryMatches && locationMatches

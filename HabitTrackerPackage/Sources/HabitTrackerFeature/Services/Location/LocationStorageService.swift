@@ -164,9 +164,12 @@ public final class LocationStorageService: ObservableObject {
     }
     
     private func loadFromPersistence() async {
-        // Load known locations
+        // Load both location types in parallel
+        async let knownResult = persistenceService.load([LocationType: SavedLocation].self, forKey: savedLocationsKey)
+        async let customResult = persistenceService.load([UUID: CustomLocation].self, forKey: customLocationsKey)
+
         do {
-            if let known = try await persistenceService.load([LocationType: SavedLocation].self, forKey: savedLocationsKey) {
+            if let known = try await knownResult {
                 knownLocations = known
             }
         } catch {
@@ -177,9 +180,8 @@ public final class LocationStorageService: ObservableObject {
             )
         }
 
-        // Load custom locations
         do {
-            if let custom = try await persistenceService.load([UUID: CustomLocation].self, forKey: customLocationsKey) {
+            if let custom = try await customResult {
                 customLocations = custom
             }
         } catch {

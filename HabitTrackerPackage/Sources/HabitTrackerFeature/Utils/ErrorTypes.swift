@@ -77,7 +77,7 @@ public enum LocationError: HabitTrackerError, Equatable {
     public var severity: ErrorSeverity {
         switch self {
         case .permissionDenied, .locationServiceDisabled:
-            return .high
+            return .low
         case .permissionRestricted, .locationUnavailable:
             return .medium
         case .timeout, .locationAccuracyReduced:

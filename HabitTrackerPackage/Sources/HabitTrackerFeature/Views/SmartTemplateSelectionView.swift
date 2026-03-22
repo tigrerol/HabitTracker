@@ -5,6 +5,7 @@ struct SmartTemplateSelectionView: View {
     @Environment(RoutineService.self) private var routineService
     @Environment(ThemeManager.self) private var themeManager
     @State private var selectedTemplate: RoutineTemplate?
+    @State private var sortedTemplates: [RoutineTemplate] = []
     @State private var selectionReason: String = ""
     @State private var showingRoutineBuilder = false
     @State private var editingTemplate: RoutineTemplate?
@@ -206,6 +207,8 @@ struct SmartTemplateSelectionView: View {
                         systemImage: "list.bullet"
                     )
                     Label(template.formattedDuration, systemImage: "clock")
+
+                    ContextMatchIcons(rule: template.contextRule, context: routineService.routineSelector.currentContext)
                 }
                 .font(.system(.caption, design: .rounded))
                 .foregroundStyle(.secondary)
@@ -295,7 +298,7 @@ struct SmartTemplateSelectionView: View {
                     }
             }
             
-            ForEach(routineService.templates) { template in
+            ForEach(sortedTemplates.filter { $0.id != selectedTemplate?.id }) { template in
                 CompactTemplateCard(
                     template: template,
                     isSelected: selectedTemplate?.id == template.id,
@@ -325,16 +328,19 @@ struct SmartTemplateSelectionView: View {
     }
     
     private var selectionTrigger: String {
-        let templateIds = routineService.templates.map(\.id.uuidString).joined(separator: ",")
-        let location = String(describing: routineService.routineSelector.currentContext.location)
-        return "\(templateIds)-\(location)"
+        let context = routineService.routineSelector.currentContext
+        let templateHash = routineService.templates.hashValue
+        let location = String(describing: context.location)
+        let timeSlot = context.timeSlot.rawValue
+        let dayCategories = context.dayCategories.map(\.id).sorted().joined(separator: ",")
+        return "\(templateHash)-\(location)-\(timeSlot)-\(dayCategories)"
     }
 
     private func selectSmartTemplate() async {
-        // Use smart selection based on context
-        let smartSelection = await routineService.getSmartTemplate()
-        selectedTemplate = smartSelection.template
-        selectionReason = smartSelection.reason
+        let result = await routineService.getSmartTemplateAndSort()
+        sortedTemplates = result.sorted
+        selectedTemplate = result.best
+        selectionReason = result.reason
 
         // Fallback to default logic if smart selection fails
         if selectedTemplate == nil {
@@ -355,6 +361,42 @@ struct SmartTemplateSelectionView: View {
     }
 }
 
+/// Shows small icons for which context dimensions a routine targets,
+/// with matching dimensions highlighted in bold and accent color.
+private struct ContextMatchIcons: View {
+    let rule: RoutineContextRule?
+    let context: RoutineContext
+
+    @Environment(ThemeManager.self) private var themeManager
+
+    var body: some View {
+        if let rule {
+            let timeMatch = !rule.timeSlots.isEmpty && rule.timeSlots.contains(context.timeSlot)
+            let dayMatch = !rule.dayCategoryIds.isEmpty && context.dayCategories.contains(where: { rule.dayCategoryIds.contains($0.id) })
+            let locationMatch = !rule.locationIds.isEmpty && rule.locationIds.contains(context.location.rawValue)
+
+            HStack(spacing: 4) {
+                if !rule.timeSlots.isEmpty {
+                    Image(systemName: timeMatch ? "clock.fill" : "clock")
+                        .fontWeight(timeMatch ? .bold : .regular)
+                        .foregroundStyle(timeMatch ? themeManager.currentAccentColor : .secondary)
+                }
+                if !rule.dayCategoryIds.isEmpty {
+                    Image(systemName: dayMatch ? "calendar.circle.fill" : "calendar")
+                        .fontWeight(dayMatch ? .bold : .regular)
+                        .foregroundStyle(dayMatch ? themeManager.currentAccentColor : .secondary)
+                }
+                if !rule.locationIds.isEmpty {
+                    Image(systemName: locationMatch ? "location.fill" : "location")
+                        .fontWeight(locationMatch ? .bold : .regular)
+                        .foregroundStyle(locationMatch ? themeManager.currentAccentColor : .secondary)
+                }
+            }
+            .font(.system(size: 10))
+        }
+    }
+}
+
 /// Compact template card for quick selection
 private struct CompactTemplateCard: View {
     let template: RoutineTemplate
@@ -365,8 +407,9 @@ private struct CompactTemplateCard: View {
     let onDelete: () -> Void
     
     @Environment(ThemeManager.self) private var themeManager
-    
-    
+    @Environment(RoutineService.self) private var routineService
+
+
     var body: some View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {
@@ -375,14 +418,17 @@ private struct CompactTemplateCard: View {
                     .fontWeight(.medium)
                     .foregroundStyle(.primary)
                     .matchedGeometry(
-                        id: .templateTitle(templateId: template.id), 
+                        id: .templateTitle(templateId: template.id),
                         in: namespace,
                         isSource: true
                     )
-                
-                Text("\(String(format: String(localized: "SmartTemplateSelectionView.HabitsCount", bundle: .module), template.activeHabitsCount)) • \(template.formattedDuration)")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+
+                HStack(spacing: 6) {
+                    Text("\(String(format: String(localized: "SmartTemplateSelectionView.HabitsCount", bundle: .module), template.activeHabitsCount)) • \(template.formattedDuration)")
+                    ContextMatchIcons(rule: template.contextRule, context: routineService.routineSelector.currentContext)
+                }
+                .font(.caption)
+                .foregroundStyle(.secondary)
             }
             
             Spacer()

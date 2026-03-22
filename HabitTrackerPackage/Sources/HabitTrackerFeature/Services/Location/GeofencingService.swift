@@ -34,19 +34,50 @@ public actor GeofencingService {
     /// Process location update and determine types
     public func processLocationUpdate(_ location: CLLocation) async -> (LocationType, ExtendedLocationType) {
         let (newLocationType, newExtendedLocationType) = await determineLocationTypes(from: location)
-        
-        // Update state atomically
+
+        let changed = newLocationType != currentLocationType || newExtendedLocationType != currentExtendedLocationType
+
+        // Update state
         self.currentLocationType = newLocationType
         self.currentExtendedLocationType = newExtendedLocationType
-        
+
+        // Only log when location type actually changes
+        if changed && newLocationType != .unknown {
+            Task {
+                await LoggingService.shared.logLocationEvent(
+                    .locationDetected,
+                    metadata: [
+                        "location_type": newLocationType.rawValue,
+                        "detection_method": "geofence"
+                    ]
+                )
+            }
+        }
+
         return (newLocationType, newExtendedLocationType)
     }
     
-    /// Determine both location types simultaneously
+    /// Determine both location types in a single pass (avoids duplicate geofence checks)
     private func determineLocationTypes(from location: CLLocation) async -> (LocationType, ExtendedLocationType) {
         let builtinType = await determineLocationType(from: location)
-        let extendedType = await determineExtendedLocationType(from: location)
-        return (builtinType, extendedType)
+        if builtinType != .unknown {
+            return (builtinType, .builtin(builtinType))
+        }
+
+        // Built-in didn't match — check custom locations
+        let customLocations = await MainActor.run {
+            storageService.getAllCustomLocations()
+        }
+        for customLocation in customLocations {
+            guard let customCLLocation = customLocation.clLocation else { continue }
+            let distance = location.distance(from: customCLLocation)
+            let radius = customLocation.radius > 0 ? customLocation.radius : detectionRadius
+            if distance <= radius {
+                return (.unknown, .custom(customLocation.id))
+            }
+        }
+
+        return (.unknown, .builtin(.unknown))
     }
     
     /// Determine location type from current location using geofencing
@@ -63,47 +94,10 @@ public actor GeofencingService {
             let radius = savedLocation.radius > 0 ? savedLocation.radius : detectionRadius
 
             if distance <= radius {
-                Task {
-                    await LoggingService.shared.logLocationEvent(
-                        .locationDetected,
-                        metadata: [
-                            "location_type": locationType.rawValue,
-                            "distance": String(format: "%.1f", distance),
-                            "radius": String(radius),
-                            "detection_method": "geofence"
-                        ]
-                    )
-                }
                 return locationType
             }
         }
         return .unknown
     }
     
-    /// Determine extended location type (including custom locations)
-    private func determineExtendedLocationType(from location: CLLocation) async -> ExtendedLocationType {
-        // First check built-in locations
-        let builtinType = await determineLocationType(from: location)
-        if builtinType != .unknown {
-            return .builtin(builtinType)
-        }
-        
-        let customLocations = await MainActor.run {
-            storageService.getAllCustomLocations()
-        }
-        
-        // Then check custom locations
-        for customLocation in customLocations {
-            guard let customCLLocation = customLocation.clLocation else { continue }
-            
-            let distance = location.distance(from: customCLLocation)
-            let radius = customLocation.radius > 0 ? customLocation.radius : detectionRadius
-            
-            if distance <= radius {
-                return .custom(customLocation.id)
-            }
-        }
-        
-        return .builtin(.unknown)
-    }
 }

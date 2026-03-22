@@ -82,36 +82,32 @@ public final class RoutineSelector {
         self.currentLocationType = coordinatorLocation
     }
     
-    /// Select the best routine template based on current context
-    public func selectBestTemplate(from templates: [RoutineTemplate]) async -> (template: RoutineTemplate?, reason: String) {
+    /// Score all templates, return sorted list + best match with reason in a single pass.
+    public func selectAndSortTemplates(_ templates: [RoutineTemplate]) async -> (sorted: [RoutineTemplate], best: RoutineTemplate?, reason: String) {
         await updateContext(force: true)
-        
-        var scoredTemplates: [(template: RoutineTemplate, score: Int)] = []
-        
+
+        var scored: [(template: RoutineTemplate, score: Int)] = []
         for template in templates {
             guard let rule = template.contextRule else {
-                scoredTemplates.append((template, 1))
+                scored.append((template, 0))
                 continue
             }
-            
             let score = await calculateMatchScore(for: rule, context: currentContext)
-
-            if score > 0 {
-                scoredTemplates.append((template, score))
-            }
+            scored.append((template, score))
         }
-        
-        // Sort by score (highest first)
-        let sorted = scoredTemplates.sorted { $0.score > $1.score }
 
-        // Get the best match
-        guard let best = sorted.first else {
-            return handleNoMatchingTemplate(from: templates)
+        let sorted = scored.sorted { $0.score > $1.score }
+        let sortedTemplates = sorted.map(\.template)
+
+        // Best match is the highest-scoring template with score > 0
+        if let best = sorted.first, best.score > 0 {
+            selectionReason = buildSelectionReason(for: best.template, context: currentContext)
+            return (sortedTemplates, best.template, selectionReason)
         }
-        
-        // Build selection reason
-        selectionReason = buildSelectionReason(for: best.template, context: currentContext)
-        return (best.template, selectionReason)
+
+        // Fallback
+        let fallback = handleNoMatchingTemplate(from: templates)
+        return (sortedTemplates, fallback.template, fallback.reason)
     }
     
     /// Handle case when no templates match the current context
@@ -134,53 +130,41 @@ public final class RoutineSelector {
         return (templates.first, selectionReason)
     }
     
-    /// Calculate match score for a context rule
-    /// Priority: Day Category (15) > Time (10) > Location (5)
+    /// Calculate match score for a context rule.
+    /// All non-empty dimensions must match or the score is 0.
+    /// Score = priority * 1000 + day match (300) + time match (200) + location specificity (100 explicit, 10 any).
     private func calculateMatchScore(for rule: RoutineContextRule, context: RoutineContext) async -> Int {
-        var score = 0
+        // Day category: must match if specified
+        let dayMatch = rule.dayCategoryIds.isEmpty || context.dayCategories.contains(where: { rule.dayCategoryIds.contains($0.id) })
+        guard dayMatch else { return 0 }
 
-        // Day category matching (highest weight)
-        if context.dayCategories.contains(where: { rule.dayCategoryIds.contains($0.id) }) {
-            score += 15
+        // Time slot: must match if specified
+        let timeMatch = rule.timeSlots.isEmpty || rule.timeSlots.contains(context.timeSlot)
+        guard timeMatch else { return 0 }
+
+        // Location: must match if specified
+        if !rule.locationIds.isEmpty {
+            let locationMatches = await checkLocationMatches(rule: rule, context: context)
+            guard locationMatches else { return 0 }
         }
 
-        // Time slot matching (medium weight)
-        if rule.timeSlots.contains(context.timeSlot) {
+        // All required dimensions match — calculate score
+        var score = rule.priority * 1000
+
+        if !rule.dayCategoryIds.isEmpty {
+            score += 300
+        }
+        if !rule.timeSlots.isEmpty {
+            score += 200
+        }
+        if !rule.locationIds.isEmpty {
+            // Explicit location match scores higher than "any location"
+            score += 100
+        } else {
             score += 10
         }
 
-        // Location matching (lowest weight)
-        if rule.locationIds.isEmpty {
-            // Empty location IDs means "any location" - give small bonus
-            score += 1
-        } else {
-            let locationMatches = await checkLocationMatches(rule: rule, context: context)
-            if locationMatches {
-                score += 5
-            }
-        }
-
-        // Priority bonus
-        score += rule.priority
-
-        return score
-    }
-    
-    /// Check if the rule matches the current context
-    private func checkRuleMatches(_ rule: RoutineContextRule, context: RoutineContext) async -> Bool {
-        // Time slot must match
-        guard rule.timeSlots.contains(context.timeSlot) else { return false }
-        
-        // Day category must match (any of the context's categories)
-        guard context.dayCategories.contains(where: { rule.dayCategoryIds.contains($0.id) }) else { return false }
-        
-        // Location must match (empty means any location)
-        if !rule.locationIds.isEmpty {
-            let locationMatches = await checkLocationMatches(rule: rule, context: context)
-            guard locationMatches else { return false }
-        }
-        
-        return true
+        return max(score, 1)
     }
     
     /// Check if current location matches rule's location requirements

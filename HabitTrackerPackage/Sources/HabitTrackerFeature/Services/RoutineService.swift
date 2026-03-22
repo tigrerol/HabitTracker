@@ -181,10 +181,10 @@ public final class RoutineService {
         templates.first { $0.isDefault }
     }
     
-    /// Get smart template based on current context
+    /// Score, sort, and select the best template based on current context — single pass.
     @MainActor
-    public func getSmartTemplate() async -> (template: RoutineTemplate?, reason: String) {
-        await routineSelector.selectBestTemplate(from: templates)
+    public func getSmartTemplateAndSort() async -> (sorted: [RoutineTemplate], best: RoutineTemplate?, reason: String) {
+        await routineSelector.selectAndSortTemplates(templates)
     }
     
     /// Add a new template

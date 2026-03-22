@@ -245,10 +245,10 @@ struct RoutineSelectorErrorTests {
         let selector = RoutineSelector()
         
         // Test with empty template list
-        let (template, reason) = await selector.selectBestTemplate(from: [])
-        
-        #expect(template == nil)
-        #expect(reason.contains("No templates"))
+        let result = await selector.selectAndSortTemplates([])
+
+        #expect(result.best == nil)
+        #expect(result.reason.contains("No"))
     }
     
     @Test("RoutineSelector handles templates with invalid context rules")
@@ -269,10 +269,10 @@ struct RoutineSelectorErrorTests {
             contextRule: invalidRule
         )
         
-        let (selectedTemplate, reason) = await selector.selectBestTemplate(from: [template])
-        
+        let result = await selector.selectAndSortTemplates([template])
+
         // Should handle invalid rules gracefully
-        #expect(selectedTemplate != nil || reason.contains("score"))
+        #expect(result.best != nil || result.reason.contains("score"))
     }
     
     @Test("RoutineSelector handles location coordinator errors")
@@ -294,10 +294,10 @@ struct RoutineSelectorErrorTests {
         )
         
         // Test when location coordinator might have issues
-        let (selectedTemplate, reason) = await selector.selectBestTemplate(from: [template])
-        
+        let result = await selector.selectAndSortTemplates([template])
+
         // Should handle location errors gracefully
-        #expect(selectedTemplate != nil || reason.contains("location") || reason.contains("score"))
+        #expect(result.best != nil || result.reason.contains("location") || result.reason.contains("score"))
     }
 }
 

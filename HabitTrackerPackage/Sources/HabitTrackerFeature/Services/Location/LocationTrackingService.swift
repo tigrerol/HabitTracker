@@ -95,7 +95,8 @@ public actor LocationTrackingService {
 /// Internal delegate class for CLLocationManager
 private class LocationManagerDelegate: NSObject, CLLocationManagerDelegate, @unchecked Sendable {
     private weak var service: LocationTrackingService?
-    
+    var hasReportedPermissionDenied = false
+
     init(service: LocationTrackingService) {
         self.service = service
         super.init()
@@ -112,10 +113,13 @@ private class LocationManagerDelegate: NSObject, CLLocationManagerDelegate, @unc
     nonisolated func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
         Task { @MainActor in
             let locationError: LocationError
-            
+
             if let clError = error as? CLError {
                 switch clError.code {
                 case .denied:
+                    // Only report once — CLLocationManager sends this repeatedly
+                    guard !self.hasReportedPermissionDenied else { return }
+                    self.hasReportedPermissionDenied = true
                     locationError = .permissionDenied
                 case .locationUnknown:
                     locationError = .locationUnavailable
@@ -127,7 +131,7 @@ private class LocationManagerDelegate: NSObject, CLLocationManagerDelegate, @unc
             } else {
                 locationError = .locationUnavailable
             }
-            
+
             await MainActor.run {
                 ErrorHandlingService.shared.handleLocationError(locationError)
             }
@@ -136,15 +140,17 @@ private class LocationManagerDelegate: NSObject, CLLocationManagerDelegate, @unc
     
     nonisolated func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
         let status = manager.authorizationStatus
-        
+
         #if os(iOS)
         if status == .authorizedWhenInUse || status == .authorizedAlways {
+            hasReportedPermissionDenied = false
             Task { [weak self] in
                 await self?.service?.startUpdatingLocation()
             }
         }
         #elseif os(macOS)
         if status == .authorizedAlways {
+            hasReportedPermissionDenied = false
             Task { [weak self] in
                 await self?.service?.startUpdatingLocation()
             }

@@ -200,37 +200,4 @@ public struct RoutineContextRule: Codable, Hashable, Sendable {
         return timeMatch && dayMatch && locationMatch
     }
 
-    /// Calculate match score (higher is better)
-    @MainActor
-    public func matchScore(for context: RoutineContext, locationCoordinator: LocationCoordinator) -> Int {
-        guard matches(context, locationCoordinator: locationCoordinator) else {
-            return 0
-        }
-
-        var score = priority * 1000 // Base score from priority
-
-        // Day category match (highest weight: 300)
-        if !dayCategoryIds.isEmpty && context.dayCategories.contains(where: { dayCategoryIds.contains($0.id) }) {
-            score += 300
-        }
-        // Time slot match (medium weight: 200)
-        if !timeSlots.isEmpty && timeSlots.contains(context.timeSlot) {
-            score += 200
-        }
-        // Location match (lowest weight: 100)
-        if !locationIds.isEmpty {
-            switch locationCoordinator.currentExtendedLocationType {
-            case .builtin(let locationType):
-                if locationIds.contains(locationType.rawValue) {
-                    score += 100
-                }
-            case .custom(let uuid):
-                if locationIds.contains(uuid.uuidString) {
-                    score += 100
-                }
-            }
-        }
-
-        return score
-    }
 }
