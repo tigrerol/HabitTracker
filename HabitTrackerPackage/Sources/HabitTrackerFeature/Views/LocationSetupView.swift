@@ -83,6 +83,15 @@ private enum LocationItem {
             return customLocation.hasCoordinates ? customLocation.dateCreated : nil
         }
     }
+
+    var coordinate: LocationCoordinate? {
+        switch self {
+        case .builtin(_, let savedLocation):
+            return savedLocation?.coordinate
+        case .custom(let customLocation):
+            return customLocation.coordinate
+        }
+    }
 }
 
 /// Isolated state management for location setup to avoid conflicts
@@ -329,6 +338,12 @@ private struct UnifiedLocationRow: View {
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
                             }
+                            if let coord = locationItem.coordinate {
+                                Text(String(format: "%.4f, %.4f", coord.latitude, coord.longitude))
+                                    .font(.caption2)
+                                    .foregroundStyle(.tertiary)
+                                    .monospaced()
+                            }
                         } else {
                             Text(String(localized: "LocationSetupView.LocationSet.NotSet", bundle: .module))
                                 .font(.caption)
@@ -416,19 +431,24 @@ private struct CustomLocationPickerView: View {
                             .font(.subheadline)
                             .foregroundStyle(.red)
                             .multilineTextAlignment(.center)
-                    } else if currentLocation != nil {
+                    } else if let location = currentLocation {
                         VStack(spacing: 12) {
                             Text(String(localized: "LocationSetupView.LocationFound", bundle: .module))
                                 .font(.headline)
                                 .foregroundStyle(.green)
-                            
+
                             if let customLocation = customLocation {
                                 Text(String(localized: "LocationSetupView.LocationDescription", bundle: .module).replacingOccurrences(of: "%@", with: customLocation.name.lowercased()))
                                     .font(.subheadline)
                                     .foregroundStyle(.secondary)
                                     .multilineTextAlignment(.center)
                             }
-                            
+
+                            Text(String(format: "%.4f, %.4f", location.coordinate.latitude, location.coordinate.longitude))
+                                .font(.caption)
+                                .monospaced()
+                                .foregroundStyle(.secondary)
+
                             Text(String(localized: "LocationSetupView.DetectionRadius", bundle: .module))
                                 .font(.caption)
                                 .foregroundStyle(.tertiary)
@@ -436,9 +456,9 @@ private struct CustomLocationPickerView: View {
                         }
                     }
                 }
-                
+
                 Spacer()
-                
+
                 VStack(spacing: 12) {
                     if let location = currentLocation {
                         Button {
@@ -456,7 +476,7 @@ private struct CustomLocationPickerView: View {
                                 )
                         }
                     }
-                    
+
                     Button("Cancel") {
                         dismiss()
                     }
@@ -465,7 +485,7 @@ private struct CustomLocationPickerView: View {
             }
             .padding()
             .navigationTitle("Set Location")
-            
+
         }
         .task {
             customLocation = locationCoordinator.getAllCustomLocations().first { $0.id == customLocationId }
@@ -538,17 +558,22 @@ private struct LocationPickerView: View {
                             .font(.subheadline)
                             .foregroundStyle(.red)
                             .multilineTextAlignment(.center)
-                    } else if currentLocation != nil {
+                    } else if let location = currentLocation {
                         VStack(spacing: 12) {
                             Text(String(localized: "LocationSetupView.LocationFound", bundle: .module))
                                 .font(.headline)
                                 .foregroundStyle(.green)
-                            
+
                             Text(String(localized: "LocationSetupView.LocationDescription", bundle: .module).replacingOccurrences(of: "%@", with: locationType.displayName.lowercased()))
                                 .font(.subheadline)
                                 .foregroundStyle(.secondary)
                                 .multilineTextAlignment(.center)
-                            
+
+                            Text(String(format: "%.4f, %.4f", location.coordinate.latitude, location.coordinate.longitude))
+                                .font(.caption)
+                                .monospaced()
+                                .foregroundStyle(.secondary)
+
                             Text(String(localized: "LocationSetupView.DetectionRadius", bundle: .module))
                                 .font(.caption)
                                 .foregroundStyle(.tertiary)

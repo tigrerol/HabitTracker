@@ -143,7 +143,17 @@ struct SmartTemplateSelectionView: View {
             .foregroundStyle(.secondary)
             
             // Location indicator - show actual location name when available
-            if context.location != .unknown {
+            if case .custom = context.extendedLocation {
+                // Show custom location name
+                Label {
+                    Text(context.extendedLocation.displayName)
+                } icon: {
+                    Image(systemName: context.extendedLocation.icon)
+                        .foregroundStyle(themeManager.currentAccentColor)
+                }
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            } else if context.location != .unknown {
                 // Show the actual detected location (Home, Office, etc.)
                 Label {
                     Text(context.location.displayName)
@@ -153,10 +163,11 @@ struct SmartTemplateSelectionView: View {
                 }
                 .font(.caption)
                 .foregroundStyle(.secondary)
-            } else if coordinator.currentLocation != nil {
-                // Show that location is detected but not categorized as Home/Office
+            } else if let location = coordinator.currentLocation {
+                // Show GPS coordinates when location doesn't match any saved location
                 Label {
-                    Text("Current Location")
+                    Text(String(format: "GPS: %.4f, %.4f", location.coordinate.latitude, location.coordinate.longitude))
+                        .monospaced()
                 } icon: {
                     Image(systemName: "location")
                         .foregroundStyle(themeManager.currentAccentColor.opacity(0.7))
@@ -373,7 +384,13 @@ private struct ContextMatchIcons: View {
         if let rule {
             let timeMatch = !rule.timeSlots.isEmpty && rule.timeSlots.contains(context.timeSlot)
             let dayMatch = !rule.dayCategoryIds.isEmpty && context.dayCategories.contains(where: { rule.dayCategoryIds.contains($0.id) })
-            let locationMatch = !rule.locationIds.isEmpty && rule.locationIds.contains(context.location.rawValue)
+            let locationMatch: Bool = {
+                guard !rule.locationIds.isEmpty else { return false }
+                if rule.locationIds.contains(context.location.rawValue) { return true }
+                if case .custom(let id) = context.extendedLocation,
+                   rule.locationIds.contains(id.uuidString) { return true }
+                return false
+            }()
 
             HStack(spacing: 4) {
                 if !rule.timeSlots.isEmpty {

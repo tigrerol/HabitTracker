@@ -71,11 +71,13 @@ public final class RoutineSelector {
 
         // Use LocationCoordinator's current location directly to avoid race condition
         let coordinatorLocation = locationCoordinator.currentLocationType
+        let coordinatorExtendedLocation = locationCoordinator.currentExtendedLocationType
 
         self.currentContext = RoutineContext(
             timeSlot: timeSlot,
             dayCategories: dayCategories,
-            location: coordinatorLocation
+            location: coordinatorLocation,
+            extendedLocation: coordinatorExtendedLocation
         )
 
         // Update our cached value to match
@@ -208,7 +210,9 @@ public final class RoutineSelector {
         }
         
         // Location-based reason
-        if context.location != .unknown {
+        if case .custom = context.extendedLocation {
+            reasons.append("you're at \(context.extendedLocation.displayName.lowercased())")
+        } else if context.location != .unknown {
             reasons.append("you're at \(context.location.displayName.lowercased())")
         }
         

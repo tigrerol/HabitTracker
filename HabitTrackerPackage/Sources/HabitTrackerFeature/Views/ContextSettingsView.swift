@@ -79,19 +79,74 @@ struct ContextSettingsView: View {
                             .fontWeight(.medium)
                         
                         HStack(spacing: 16) {
-                            Label(routineService.routineSelector.currentContext.timeSlot.displayName, 
+                            Label(routineService.routineSelector.currentContext.timeSlot.displayName,
                                   systemImage: routineService.routineSelector.currentContext.timeSlot.icon)
-                            
+
                             Label(routineService.routineSelector.currentContext.dayCategories.map(\.displayName).joined(separator: " + "),
                                   systemImage: routineService.routineSelector.currentContext.dayCategories.first?.icon ?? "calendar")
-                            
-                            if routineService.routineSelector.currentContext.location != .unknown {
-                                Label(routineService.routineSelector.currentContext.location.displayName, 
+
+                            if case .custom = routineService.routineSelector.currentContext.extendedLocation {
+                                Label(routineService.routineSelector.currentContext.extendedLocation.displayName,
+                                      systemImage: routineService.routineSelector.currentContext.extendedLocation.icon)
+                            } else if routineService.routineSelector.currentContext.location != .unknown {
+                                Label(routineService.routineSelector.currentContext.location.displayName,
                                       systemImage: routineService.routineSelector.currentContext.location.icon)
                             }
                         }
                         .font(.caption)
                         .foregroundStyle(.secondary)
+
+                        if let location = routineService.routineSelector.locationCoordinator.currentLocation {
+                            Label(
+                                String(format: "GPS: %.4f, %.4f", location.coordinate.latitude, location.coordinate.longitude),
+                                systemImage: "location.fill"
+                            )
+                            .font(.caption2)
+                            .foregroundStyle(.tertiary)
+                            .monospaced()
+
+                            // Debug: show distance to each saved location
+                            let saved = routineService.routineSelector.locationCoordinator.getSavedLocations()
+                            let custom = routineService.routineSelector.locationCoordinator.getAllCustomLocations()
+
+                            if saved.isEmpty && custom.isEmpty {
+                                Text("No saved locations found by coordinator")
+                                    .font(.caption2)
+                                    .foregroundStyle(.red)
+                            }
+
+                            ForEach(Array(saved.keys), id: \.self) { locationType in
+                                if let savedLoc = saved[locationType] {
+                                    let distance = location.distance(from: savedLoc.clLocation)
+                                    Text(String(format: "%@: %.1fm (radius: %.0fm) %@",
+                                                locationType.displayName,
+                                                distance,
+                                                savedLoc.radius,
+                                                distance <= savedLoc.radius ? "MATCH" : "no match"))
+                                        .font(.caption2)
+                                        .foregroundStyle(distance <= savedLoc.radius ? .green : .orange)
+                                        .monospaced()
+                                }
+                            }
+
+                            ForEach(custom) { customLoc in
+                                if let customCL = customLoc.clLocation {
+                                    let distance = location.distance(from: customCL)
+                                    Text(String(format: "%@: %.1fm (radius: %.0fm) %@",
+                                                customLoc.name,
+                                                distance,
+                                                customLoc.radius,
+                                                distance <= customLoc.radius ? "MATCH" : "no match"))
+                                        .font(.caption2)
+                                        .foregroundStyle(distance <= customLoc.radius ? .green : .orange)
+                                        .monospaced()
+                                }
+                            }
+                        } else {
+                            Label("GPS: no location", systemImage: "location.slash")
+                                .font(.caption2)
+                                .foregroundStyle(.tertiary)
+                        }
                     }
                 } header: {
                     Text(String(localized: "ContextSettingsView.CurrentStatus", bundle: .module))

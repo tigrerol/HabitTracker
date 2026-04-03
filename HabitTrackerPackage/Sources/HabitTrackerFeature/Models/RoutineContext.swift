@@ -7,6 +7,8 @@ public struct RoutineContext: Codable, Hashable, Sendable {
     public let timeSlot: TimeSlot
     public let dayCategories: [DayCategory]
     public let location: LocationType
+    /// Extended location that includes custom locations (not persisted — runtime only)
+    public var extendedLocation: ExtendedLocationType
     public let timestamp: Date
 
     enum CodingKeys: String, CodingKey {
@@ -21,11 +23,13 @@ public struct RoutineContext: Codable, Hashable, Sendable {
         timeSlot: TimeSlot,
         dayCategories: [DayCategory],
         location: LocationType,
+        extendedLocation: ExtendedLocationType? = nil,
         timestamp: Date = Date()
     ) {
         self.timeSlot = timeSlot
         self.dayCategories = dayCategories
         self.location = location
+        self.extendedLocation = extendedLocation ?? .builtin(location)
         self.timestamp = timestamp
     }
 
@@ -35,6 +39,7 @@ public struct RoutineContext: Codable, Hashable, Sendable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         timeSlot = try container.decode(TimeSlot.self, forKey: .timeSlot)
         location = try container.decode(LocationType.self, forKey: .location)
+        extendedLocation = .builtin(location)
         timestamp = try container.decode(Date.self, forKey: .timestamp)
 
         // Try new format first: dayCategories array

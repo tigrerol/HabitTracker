@@ -189,7 +189,7 @@ struct ConstantsUsageVerificationTests {
     func testLocationConstantsValues() {
         // Verify the actual values are what we expect
         #expect(AppConstants.Location.defaultRadius == 150.0)
-        #expect(AppConstants.Location.distanceFilter == 100.0)
+        #expect(AppConstants.Location.distanceFilter == 50.0)
     }
     
     @Test("Animation constants match expected values")

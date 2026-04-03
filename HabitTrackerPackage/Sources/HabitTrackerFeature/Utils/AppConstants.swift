@@ -73,8 +73,9 @@ public enum AppConstants {
         /// Default radius for location detection (meters)
         public static let defaultRadius: CLLocationDistance = 150
         
-        /// Distance filter for location updates (meters) - increased to reduce frequency
-        public static let distanceFilter: CLLocationDistance = 500
+        /// Distance filter for location updates (meters) - must be well below defaultRadius
+        /// so that iOS delivers a GPS fix before the user passes through the geofence
+        public static let distanceFilter: CLLocationDistance = 50
         
         /// Minimum time interval between context updates (seconds) - 15 minutes
         public static let contextUpdateInterval: TimeInterval = 15 * 60
