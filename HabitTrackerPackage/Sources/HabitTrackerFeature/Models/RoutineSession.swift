@@ -11,15 +11,36 @@ public final class RoutineSession: Equatable {
     public private(set) var currentHabitIndex: Int
     public private(set) var completions: [HabitCompletion]
     public private(set) var modifications: [SessionModification]
-    
+
+    /// Accumulated active time from prior segments (before pauses)
+    public private(set) var priorActiveTime: TimeInterval
+
+    /// Timestamp when the current active segment started (for tracking active time across pauses)
+    public let segmentStartedAt: Date
+
     public init(template: RoutineTemplate) {
         self.id = UUID()
         self.template = template
         self.startedAt = Date()
+        self.segmentStartedAt = Date()
         self.completedAt = nil
         self.currentHabitIndex = 0
         self.completions = []
         self.modifications = []
+        self.priorActiveTime = 0
+    }
+
+    /// Restore a session from a paused snapshot
+    public init(from snapshot: PausedSessionSnapshot) {
+        self.id = snapshot.id
+        self.template = snapshot.template
+        self.startedAt = snapshot.startedAt
+        self.segmentStartedAt = Date()
+        self.completedAt = nil
+        self.currentHabitIndex = snapshot.currentHabitIndex
+        self.completions = snapshot.completions
+        self.modifications = snapshot.modifications
+        self.priorActiveTime = snapshot.accumulatedActiveTime
     }
     
     /// Current habit being worked on
@@ -63,13 +84,32 @@ public final class RoutineSession: Equatable {
         completedAt != nil
     }
     
-    /// Total session duration
+    /// Total active session duration (excludes paused intervals)
     public var duration: TimeInterval {
+        let currentSegmentTime: TimeInterval
         if let completedAt {
-            return completedAt.timeIntervalSince(startedAt)
+            currentSegmentTime = completedAt.timeIntervalSince(segmentStartedAt)
         } else {
-            return Date().timeIntervalSince(startedAt)
+            currentSegmentTime = Date().timeIntervalSince(segmentStartedAt)
         }
+        return priorActiveTime + currentSegmentTime
+    }
+
+    /// Create a snapshot for pausing this session
+    public func toPausedSnapshot() -> PausedSessionSnapshot {
+        let currentSegmentTime = Date().timeIntervalSince(segmentStartedAt)
+        return PausedSessionSnapshot(
+            id: id,
+            templateId: template.id,
+            template: template,
+            startedAt: startedAt,
+            pausedAt: Date(),
+            currentHabitIndex: currentHabitIndex,
+            completions: completions,
+            modifications: modifications,
+            activeHabitsSnapshot: activeHabits,
+            accumulatedActiveTime: priorActiveTime + currentSegmentTime
+        )
     }
     
     // MARK: - Equatable
@@ -204,5 +244,37 @@ extension RoutineSession {
         if completedAt == nil {
             completedAt = Date()
         }
+    }
+}
+
+// MARK: - Paused Session Snapshot
+
+/// A Codable snapshot of a paused routine session for persistence
+public struct PausedSessionSnapshot: Codable, Identifiable, Sendable {
+    public let id: UUID
+    public let templateId: UUID
+    public let template: RoutineTemplate
+    public let startedAt: Date
+    public let pausedAt: Date
+    public var currentHabitIndex: Int
+    public var completions: [HabitCompletion]
+    public var modifications: [SessionModification]
+    public var activeHabitsSnapshot: [Habit]
+    public var accumulatedActiveTime: TimeInterval
+
+    /// Progress percentage (0.0 to 1.0)
+    public var progress: Double {
+        guard !activeHabitsSnapshot.isEmpty else { return 1.0 }
+        return Double(completions.count) / Double(activeHabitsSnapshot.count)
+    }
+
+    /// Number of completed habits
+    public var completedCount: Int {
+        completions.count
+    }
+
+    /// Total number of habits
+    public var totalCount: Int {
+        activeHabitsSnapshot.count
     }
 }

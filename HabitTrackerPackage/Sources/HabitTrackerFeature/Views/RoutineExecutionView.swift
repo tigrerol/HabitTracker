@@ -73,6 +73,13 @@ public struct RoutineExecutionView: View {
             .navigationTitle(sessionData?.templateName ?? String(localized: "RoutineExecutionView.NavigationTitle", bundle: .module))
             .toolbar {
                 if let session = sessionData, !session.isCompleted {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button {
+                            pauseRoutine()
+                        } label: {
+                            Label(String(localized: "RoutineExecutionView.Pause", bundle: .module), systemImage: "pause.fill")
+                        }
+                    }
                     ToolbarItem(placement: .topBarTrailing) {
                         Button("Cancel") {
                             showingCancelAlert = true
@@ -197,6 +204,15 @@ public struct RoutineExecutionView: View {
     }
     
     /// Cancel the current routine session
+    private func pauseRoutine() {
+        do {
+            try routineService.pauseCurrentSession()
+            sessionData = nil
+        } catch {
+            LoggingService.shared.error("Failed to pause routine session", category: .routine, metadata: ["error": error.localizedDescription])
+        }
+    }
+
     private func cancelRoutine() {
         do {
             // This will cancel the current session and clean up any partial data

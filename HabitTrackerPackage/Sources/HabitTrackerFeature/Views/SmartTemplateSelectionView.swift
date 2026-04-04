@@ -285,6 +285,35 @@ struct SmartTemplateSelectionView: View {
     
     private var allTemplatesSection: some View {
         List {
+            // Paused Sessions Section
+            if !routineService.pausedSessions.isEmpty {
+                Section {
+                    ForEach(routineService.pausedSessions) { snapshot in
+                        PausedSessionRow(
+                            snapshot: snapshot,
+                            onResume: {
+                                do {
+                                    try routineService.resumeSession(withId: snapshot.id)
+                                } catch {
+                                    LoggingService.shared.error("Failed to resume session", category: .routine, metadata: ["error": error.localizedDescription])
+                                }
+                            },
+                            onDiscard: {
+                                routineService.discardPausedSession(withId: snapshot.id)
+                            }
+                        )
+                        .listRowBackground(Color.clear)
+                        .listRowSeparator(.hidden)
+                        .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 4, trailing: 0))
+                    }
+                } header: {
+                    Text(String(localized: "SmartTemplateSelectionView.PausedSection", bundle: .module))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .textCase(nil)
+                }
+            }
+
             // Quick Start Section (only show if there's a selected template)
             if let quickStartTemplate = selectedTemplate {
                 quickStartSection(quickStartTemplate)

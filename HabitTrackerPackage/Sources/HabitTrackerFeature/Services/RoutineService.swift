@@ -15,6 +15,7 @@ public final class RoutineService {
     public static let shared = RoutineService()
     public private(set) var templates: [RoutineTemplate] = []
     public private(set) var currentSession: RoutineSession?
+    public private(set) var pausedSessions: [PausedSessionSnapshot] = []
     public private(set) var moodRatings: [MoodRating] = []
     
     /// Routine selector for context-aware selection
@@ -29,6 +30,7 @@ public final class RoutineService {
     public init(persistenceService: any PersistenceServiceProtocol = UserDefaultsPersistenceService()) {
         self.persistenceService = persistenceService
         loadTemplates()
+        loadPausedSessions()
     }
     
     /// Load templates from persistence, or create sample templates if none exist
@@ -306,6 +308,99 @@ public final class RoutineService {
         NotificationCenter.default.post(name: .routineQueueDidChange, object: nil)
     }
     
+    // MARK: - Pause & Resume
+
+    /// Pause the current session, saving a snapshot for later resumption
+    public func pauseCurrentSession() throws {
+        guard let session = currentSession else {
+            let error = RoutineError.noActiveSession
+            ErrorHandlingService.shared.handleRoutineError(error)
+            throw error
+        }
+
+        let snapshot = session.toPausedSnapshot()
+        pausedSessions.append(snapshot)
+        currentSession = nil
+        Task { await persistPausedSessions() }
+
+        LoggingService.shared.info("Routine session paused", category: .routine, metadata: [
+            "sessionId": snapshot.id.uuidString,
+            "templateName": snapshot.template.name,
+            "progress": String(snapshot.progress),
+            "completedHabits": String(snapshot.completedCount),
+            "totalHabits": String(snapshot.totalCount)
+        ])
+    }
+
+    /// Resume a previously paused session, auto-pausing the current session if one is active
+    public func resumeSession(withId id: UUID) throws {
+        guard let snapshotIndex = pausedSessions.firstIndex(where: { $0.id == id }) else {
+            let error = RoutineError.pausedSessionNotFound(id: id)
+            ErrorHandlingService.shared.handleRoutineError(error)
+            throw error
+        }
+
+        // Auto-pause current session if one is active
+        if currentSession != nil {
+            try pauseCurrentSession()
+        }
+
+        let snapshot = pausedSessions.remove(at: snapshotIndex)
+        currentSession = RoutineSession(from: snapshot)
+        Task { await persistPausedSessions() }
+
+        LoggingService.shared.info("Routine session resumed", category: .routine, metadata: [
+            "sessionId": snapshot.id.uuidString,
+            "templateName": snapshot.template.name,
+            "progress": String(snapshot.progress)
+        ])
+    }
+
+    /// Discard a paused session without resuming
+    public func discardPausedSession(withId id: UUID) {
+        pausedSessions.removeAll { $0.id == id }
+        Task { await persistPausedSessions() }
+    }
+
+    /// Load paused sessions from persistence
+    private func loadPausedSessions() {
+        Task { @MainActor in
+            do {
+                if let loaded = try await persistenceService.load([PausedSessionSnapshot].self, forKey: PersistenceKeys.pausedSessions) {
+                    // Clean up stale sessions (older than 7 days)
+                    let cutoff = Date().addingTimeInterval(-7 * 24 * 60 * 60)
+                    let fresh = loaded.filter { $0.pausedAt > cutoff }
+                    pausedSessions = fresh
+                    if fresh.count < loaded.count {
+                        LoggingService.shared.info("Cleaned up stale paused sessions", category: .routine, metadata: [
+                            "removed": String(loaded.count - fresh.count)
+                        ])
+                        await persistPausedSessions()
+                    }
+                }
+            } catch {
+                ErrorHandlingService.shared.handleDataError(
+                    .decodingFailed(type: "PausedSessionSnapshot", underlyingError: error),
+                    key: PersistenceKeys.pausedSessions,
+                    operation: "load"
+                )
+            }
+        }
+    }
+
+    /// Persist paused sessions
+    private func persistPausedSessions() async {
+        do {
+            try await persistenceService.save(pausedSessions, forKey: PersistenceKeys.pausedSessions)
+        } catch {
+            ErrorHandlingService.shared.handleDataError(
+                .encodingFailed(type: "PausedSessionSnapshot", underlyingError: error),
+                key: PersistenceKeys.pausedSessions,
+                operation: "save"
+            )
+        }
+    }
+
     /// Handle skipping a conditional habit
     public func skipConditionalHabit(habitId: UUID, question: String) {
         guard let session = currentSession else { return }

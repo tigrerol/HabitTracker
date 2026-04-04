@@ -173,6 +173,7 @@ public enum RoutineError: HabitTrackerError, Equatable {
     case habitExecutionFailed(habitName: String, reason: String)
     case conditionalOptionSelectionFailed
     case routineQueueCorrupted
+    case pausedSessionNotFound(id: UUID)
     
     public var category: ErrorCategory { .technical }
     public var shouldLog: Bool { true }
@@ -183,7 +184,7 @@ public enum RoutineError: HabitTrackerError, Equatable {
             return .high
         case .templateNotFound, .habitNotFound, .templateValidationFailed:
             return .medium
-        case .noActiveSession, .sessionAlreadyActive, .invalidHabitIndex, .contextEvaluationFailed, .habitExecutionFailed, .conditionalOptionSelectionFailed:
+        case .noActiveSession, .sessionAlreadyActive, .invalidHabitIndex, .contextEvaluationFailed, .habitExecutionFailed, .conditionalOptionSelectionFailed, .pausedSessionNotFound:
             return .low
         }
     }
@@ -212,6 +213,8 @@ public enum RoutineError: HabitTrackerError, Equatable {
             return "Failed to process your conditional habit selection."
         case .routineQueueCorrupted:
             return "Routine data is corrupted. Please restart the app."
+        case .pausedSessionNotFound:
+            return "The paused routine could not be found."
         }
     }
     
@@ -239,6 +242,8 @@ public enum RoutineError: HabitTrackerError, Equatable {
             return "ConditionalHabitHandler.handleOptionSelection failed"
         case .routineQueueCorrupted:
             return "RoutineSession.activeHabits queue is corrupted"
+        case .pausedSessionNotFound(let id):
+            return "Paused session not found: \(id)"
         }
     }
     
@@ -258,9 +263,11 @@ public enum RoutineError: HabitTrackerError, Equatable {
             return [.checkSettings, .retry]
         case .templateValidationFailed, .conditionalOptionSelectionFailed:
             return [.contact]
+        case .pausedSessionNotFound:
+            return [.retry]
         }
     }
-    
+
     public var errorDescription: String? { userMessage }
     public var description: String { technicalDetails }
 }

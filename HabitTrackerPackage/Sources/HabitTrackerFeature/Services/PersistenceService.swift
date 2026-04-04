@@ -51,6 +51,7 @@ public enum PersistenceKeys {
     public static let dayCategorySettings = "DayCategorySettings"
     public static let locationCategorySettings = "LocationCategorySettings"
     public static let routineTemplates = "RoutineTemplates"
+    public static let pausedSessions = "PausedSessions"
 }
 
 /// Error types for persistence operations
