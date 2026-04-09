@@ -37,6 +37,22 @@ public struct Habit: Identifiable, Codable, Hashable, Sendable {
 }
 
 extension Habit {
+    /// Create a copy of this habit with a fresh UUID, useful when inserting snippets
+    /// multiple times so each instance has its own identity.
+    public func withNewIdentity() -> Habit {
+        Habit(
+            id: UUID(),
+            name: name,
+            type: type,
+            isOptional: isOptional,
+            notes: notes,
+            color: color,
+            order: order,
+            isActive: isActive,
+            createdAt: createdAt
+        )
+    }
+
     /// Estimated duration for the habit (for progress calculation)
     public var estimatedDuration: TimeInterval {
         switch type {

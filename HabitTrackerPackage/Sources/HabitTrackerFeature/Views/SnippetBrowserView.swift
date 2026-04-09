@@ -67,7 +67,7 @@ struct SnippetBrowserView: View {
             ], spacing: 16) {
                 ForEach(filteredSnippets) { snippet in
                     SnippetCard(snippet: snippet) {
-                        onSnippetSelected(snippet.habits)
+                        onSnippetSelected(snippet.habits.map { $0.withNewIdentity() })
                         dismiss()
                     }
                 }

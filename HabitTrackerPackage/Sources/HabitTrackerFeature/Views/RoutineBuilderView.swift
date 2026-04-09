@@ -800,7 +800,7 @@ public struct RoutineBuilderView: View {
         .sheet(isPresented: $showingSnippetBrowser) {
             SnippetBrowserView { selectedHabits in
                 withAnimation(.easeInOut) {
-                    habits.append(contentsOf: selectedHabits)
+                    habits.append(contentsOf: selectedHabits.map { $0.withNewIdentity() })
                 }
             }
         }
@@ -835,7 +835,7 @@ public struct RoutineBuilderView: View {
                             SnippetCard(snippet: snippet) {
                                 // Add snippet habits to current routine
                                 withAnimation(.easeInOut) {
-                                    habits.append(contentsOf: snippet.habits)
+                                    habits.append(contentsOf: snippet.habits.map { $0.withNewIdentity() })
                                 }
                             }
                             .frame(width: 120)
