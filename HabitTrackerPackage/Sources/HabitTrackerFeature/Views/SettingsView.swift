@@ -7,6 +7,7 @@ public struct SettingsView: View {
     @Environment(ThemeManager.self) private var themeManager
     @State private var showingThemeCustomization = false
     @State private var showingContextSettings = false
+    @AppStorage(FeedbackManager.soundEnabledKey) private var timerSoundEnabled: Bool = true
     
     public init() {}
     
@@ -59,7 +60,33 @@ public struct SettingsView: View {
                     .buttonStyle(.plain)
                 }
                 
-                // Smart Routine Section  
+                // Sound & Haptics Section
+                Section("Sound & Haptics") {
+                    Toggle(isOn: $timerSoundEnabled) {
+                        HStack {
+                            Image(systemName: timerSoundEnabled ? "speaker.wave.2.fill" : "speaker.slash.fill")
+                                .foregroundStyle(
+                                    LinearGradient(
+                                        colors: [themeManager.currentAccentColor, themeManager.currentAccentColor.opacity(0.7)],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
+                                )
+                                .frame(width: 24)
+
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Timer Sound")
+                                    .customSubheadline()
+
+                                Text("Play a sound when a timer completes")
+                                    .customCaption()
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+                }
+
+                // Smart Routine Section
                 Section("Smart Routine") {
                     Button {
                         showingContextSettings = true

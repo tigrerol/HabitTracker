@@ -5,6 +5,7 @@ public struct RoutineExecutionView: View {
     @Environment(RoutineService.self) private var routineService
     @State private var sessionData: SessionDisplayData?
     @State private var showingCancelAlert = false
+    @AppStorage(FeedbackManager.soundEnabledKey) private var timerSoundEnabled: Bool = true
     @Namespace private var routineTransition
     
     public init() {}
@@ -79,6 +80,15 @@ public struct RoutineExecutionView: View {
                         } label: {
                             Label(String(localized: "RoutineExecutionView.Pause", bundle: .module), systemImage: "pause.fill")
                         }
+                    }
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button {
+                            timerSoundEnabled.toggle()
+                            HapticManager.trigger(.light)
+                        } label: {
+                            Image(systemName: timerSoundEnabled ? "speaker.wave.2.fill" : "speaker.slash.fill")
+                        }
+                        .accessibilityLabel(timerSoundEnabled ? "Mute timer sound" : "Unmute timer sound")
                     }
                     ToolbarItem(placement: .topBarTrailing) {
                         Button("Cancel") {
@@ -159,6 +169,10 @@ public struct RoutineExecutionView: View {
                     onComplete: { habitId, duration, notes in
                         routineService.currentSession?.completeCurrentHabit(duration: duration, notes: notes)
                         refreshSessionData()
+                    },
+                    initialTimerState: routineService.currentSession?.timerStates[currentHabit.id.uuidString],
+                    onTimerStateChange: { habitId, state in
+                        routineService.currentSession?.updateTimerState(habitId: habitId, state: state)
                     }
                 )
                 .id(currentHabit.id)
