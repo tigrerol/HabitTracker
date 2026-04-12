@@ -18,6 +18,9 @@ public final class RoutineSession: Equatable {
     /// Timestamp when the current active segment started (for tracking active time across pauses)
     public let segmentStartedAt: Date
 
+    /// Per-habit timer state (keyed by habit UUID string) — updated live by TimerHabitView so it survives pause/resume
+    public private(set) var timerStates: [String: TimerHabitState] = [:]
+
     public init(template: RoutineTemplate) {
         self.id = UUID()
         self.template = template
@@ -41,6 +44,12 @@ public final class RoutineSession: Equatable {
         self.completions = snapshot.completions
         self.modifications = snapshot.modifications
         self.priorActiveTime = snapshot.accumulatedActiveTime
+        self.timerStates = snapshot.timerStates
+    }
+
+    /// Called by TimerHabitView on every tick/state-change to keep timer progress available for snapshot
+    public func updateTimerState(habitId: UUID, state: TimerHabitState) {
+        timerStates[habitId.uuidString] = state
     }
     
     /// Current habit being worked on
@@ -108,7 +117,8 @@ public final class RoutineSession: Equatable {
             completions: completions,
             modifications: modifications,
             activeHabitsSnapshot: activeHabits,
-            accumulatedActiveTime: priorActiveTime + currentSegmentTime
+            accumulatedActiveTime: priorActiveTime + currentSegmentTime,
+            timerStates: timerStates
         )
     }
     
@@ -247,6 +257,17 @@ extension RoutineSession {
     }
 }
 
+// MARK: - Timer Habit State
+
+/// Snapshot of a timer habit's in-progress state, so the timer position survives session pause/resume
+public struct TimerHabitState: Codable, Sendable {
+    public var timeRemaining: TimeInterval
+    public var timeElapsed: TimeInterval
+    public var currentStepIndex: Int
+    public var currentRound: Int
+    public var totalElapsed: TimeInterval
+}
+
 // MARK: - Paused Session Snapshot
 
 /// A Codable snapshot of a paused routine session for persistence
@@ -261,6 +282,55 @@ public struct PausedSessionSnapshot: Codable, Identifiable, Sendable {
     public var modifications: [SessionModification]
     public var activeHabitsSnapshot: [Habit]
     public var accumulatedActiveTime: TimeInterval
+    /// Per-habit timer state at the moment the session was paused (keyed by habit UUID string)
+    public var timerStates: [String: TimerHabitState]
+
+    public init(
+        id: UUID,
+        templateId: UUID,
+        template: RoutineTemplate,
+        startedAt: Date,
+        pausedAt: Date,
+        currentHabitIndex: Int,
+        completions: [HabitCompletion],
+        modifications: [SessionModification],
+        activeHabitsSnapshot: [Habit],
+        accumulatedActiveTime: TimeInterval,
+        timerStates: [String: TimerHabitState] = [:]
+    ) {
+        self.id = id
+        self.templateId = templateId
+        self.template = template
+        self.startedAt = startedAt
+        self.pausedAt = pausedAt
+        self.currentHabitIndex = currentHabitIndex
+        self.completions = completions
+        self.modifications = modifications
+        self.activeHabitsSnapshot = activeHabitsSnapshot
+        self.accumulatedActiveTime = accumulatedActiveTime
+        self.timerStates = timerStates
+    }
+
+    // Custom decoder: timerStates may be absent in snapshots saved before this field was added
+    private enum CodingKeys: String, CodingKey {
+        case id, templateId, template, startedAt, pausedAt, currentHabitIndex
+        case completions, modifications, activeHabitsSnapshot, accumulatedActiveTime, timerStates
+    }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(UUID.self, forKey: .id)
+        templateId = try c.decode(UUID.self, forKey: .templateId)
+        template = try c.decode(RoutineTemplate.self, forKey: .template)
+        startedAt = try c.decode(Date.self, forKey: .startedAt)
+        pausedAt = try c.decode(Date.self, forKey: .pausedAt)
+        currentHabitIndex = try c.decode(Int.self, forKey: .currentHabitIndex)
+        completions = try c.decode([HabitCompletion].self, forKey: .completions)
+        modifications = try c.decode([SessionModification].self, forKey: .modifications)
+        activeHabitsSnapshot = try c.decode([Habit].self, forKey: .activeHabitsSnapshot)
+        accumulatedActiveTime = try c.decode(TimeInterval.self, forKey: .accumulatedActiveTime)
+        timerStates = try c.decodeIfPresent([String: TimerHabitState].self, forKey: .timerStates) ?? [:]
+    }
 
     /// Progress percentage (0.0 to 1.0)
     public var progress: Double {

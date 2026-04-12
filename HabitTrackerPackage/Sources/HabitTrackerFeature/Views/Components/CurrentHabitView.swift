@@ -5,8 +5,24 @@ struct CurrentHabitView: View {
     let habit: Habit
     let data: RoutineExecutionView.SessionDisplayData
     let onComplete: (UUID, TimeInterval?, String?) -> Void
+    let initialTimerState: TimerHabitState?
+    let onTimerStateChange: ((UUID, TimerHabitState) -> Void)?
 
     @Environment(ThemeManager.self) private var themeManager
+
+    init(
+        habit: Habit,
+        data: RoutineExecutionView.SessionDisplayData,
+        onComplete: @escaping (UUID, TimeInterval?, String?) -> Void,
+        initialTimerState: TimerHabitState? = nil,
+        onTimerStateChange: ((UUID, TimerHabitState) -> Void)? = nil
+    ) {
+        self.habit = habit
+        self.data = data
+        self.onComplete = onComplete
+        self.initialTimerState = initialTimerState
+        self.onTimerStateChange = onTimerStateChange
+    }
 
     var body: some View {
         VStack(spacing: AppConstants.Spacing.extraLarge) {
@@ -43,7 +59,9 @@ struct CurrentHabitView: View {
             HabitInteractionView(
                 habit: habit,
                 onComplete: onComplete,
-                isCompleted: data.completions.contains(where: { $0.habitId == habit.id })
+                isCompleted: data.completions.contains(where: { $0.habitId == habit.id }),
+                initialTimerState: initialTimerState,
+                onTimerStateChange: onTimerStateChange
             )
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)

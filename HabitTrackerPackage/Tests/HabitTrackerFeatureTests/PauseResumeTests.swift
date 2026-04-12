@@ -208,6 +208,124 @@ struct PauseResumeTests {
 
     // MARK: - Multiple Paused Sessions
 
+    // MARK: - Timer State Tests
+
+    @Test("Paused snapshot preserves timer state for multiple-timer habit")
+    @MainActor func pausePreservesMultipleTimerState() throws {
+        let service = RoutineService()
+        let template = createTestTemplate()
+        service.addTemplate(template)
+        try service.startSession(with: template)
+
+        // Simulate timer progress on the second habit (which is a multiple-timer)
+        let timerHabitId = template.habits[1].id
+        let timerState = TimerHabitState(
+            timeRemaining: 45,
+            timeElapsed: 75,
+            currentStepIndex: 1,
+            currentRound: 2,
+            totalElapsed: 75
+        )
+        service.currentSession?.updateTimerState(habitId: timerHabitId, state: timerState)
+
+        try service.pauseCurrentSession()
+
+        let snapshot = try #require(service.pausedSessions.first)
+        let saved = try #require(snapshot.timerStates[timerHabitId.uuidString])
+        #expect(saved.timeRemaining == 45)
+        #expect(saved.currentStepIndex == 1)
+        #expect(saved.currentRound == 2)
+        #expect(saved.totalElapsed == 75)
+    }
+
+    @Test("Resumed session restores timer state for multiple-timer habit")
+    @MainActor func resumeRestoresMultipleTimerState() throws {
+        let service = RoutineService()
+        let template = createTestTemplate()
+        service.addTemplate(template)
+        try service.startSession(with: template)
+
+        let timerHabitId = template.habits[1].id
+        let timerState = TimerHabitState(
+            timeRemaining: 45,
+            timeElapsed: 75,
+            currentStepIndex: 1,
+            currentRound: 2,
+            totalElapsed: 75
+        )
+        service.currentSession?.updateTimerState(habitId: timerHabitId, state: timerState)
+
+        try service.pauseCurrentSession()
+        let snapshotId = try #require(service.pausedSessions.first?.id)
+        try service.resumeSession(withId: snapshotId)
+
+        let restored = try #require(service.currentSession?.timerStates[timerHabitId.uuidString])
+        #expect(restored.timeRemaining == 45)
+        #expect(restored.currentStepIndex == 1)
+        #expect(restored.currentRound == 2)
+        #expect(restored.totalElapsed == 75)
+    }
+
+    @Test("Timer state is absent when no timer was started before pause")
+    @MainActor func pauseWithNoTimerStateHasEmptyTimerStates() throws {
+        let service = RoutineService()
+        let template = createTestTemplate()
+        service.addTemplate(template)
+        try service.startSession(with: template)
+        try service.pauseCurrentSession()
+
+        let snapshot = try #require(service.pausedSessions.first)
+        #expect(snapshot.timerStates.isEmpty)
+    }
+
+    @Test("PausedSessionSnapshot Codable round-trip preserves timer state")
+    @MainActor func snapshotCodableWithTimerState() throws {
+        let template = createTestTemplate()
+        let session = RoutineSession(template: template)
+        let habitId = template.habits[1].id
+        session.updateTimerState(
+            habitId: habitId,
+            state: TimerHabitState(timeRemaining: 30, timeElapsed: 90, currentStepIndex: 2, currentRound: 3, totalElapsed: 90)
+        )
+
+        let snapshot = session.toPausedSnapshot()
+
+        let data = try JSONEncoder().encode(snapshot)
+        let decoded = try JSONDecoder().decode(PausedSessionSnapshot.self, from: data)
+
+        let restoredState = try #require(decoded.timerStates[habitId.uuidString])
+        #expect(restoredState.timeRemaining == 30)
+        #expect(restoredState.currentStepIndex == 2)
+        #expect(restoredState.currentRound == 3)
+    }
+
+    @Test("Old snapshot without timerStates decodes without error (backward compat)")
+    @MainActor func oldSnapshotDecodesWithoutTimerStates() throws {
+        let template = createTestTemplate()
+        // Build a JSON payload without the timerStates key to simulate old persisted data
+        let oldJson = """
+        {
+          "id": "00000000-0000-0000-0000-000000000001",
+          "templateId": "\(template.id.uuidString)",
+          "template": \(String(data: try JSONEncoder().encode(template), encoding: .utf8)!),
+          "startedAt": 0,
+          "pausedAt": 100,
+          "currentHabitIndex": 1,
+          "completions": [],
+          "modifications": [],
+          "activeHabitsSnapshot": [],
+          "accumulatedActiveTime": 60
+        }
+        """
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .secondsSince1970
+        let decoded = try decoder.decode(PausedSessionSnapshot.self, from: Data(oldJson.utf8))
+        #expect(decoded.timerStates.isEmpty)
+        #expect(decoded.currentHabitIndex == 1)
+    }
+
+    // MARK: - Multiple Paused Sessions
+
     @Test("Multiple sessions can be paused for same template")
     @MainActor func multiplePausedSameTemplate() throws {
         let service = RoutineService()

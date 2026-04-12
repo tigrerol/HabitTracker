@@ -8,15 +8,25 @@ public struct HabitInteractionView: View {
     let habit: Habit
     let onComplete: (UUID, TimeInterval?, String?) -> Void
     let isCompleted: Bool
-    
+    let initialTimerState: TimerHabitState?
+    let onTimerStateChange: ((UUID, TimerHabitState) -> Void)?
+
     @Environment(RoutineService.self) private var routineService
-    
-    public init(habit: Habit, onComplete: @escaping (UUID, TimeInterval?, String?) -> Void, isCompleted: Bool) {
+
+    public init(
+        habit: Habit,
+        onComplete: @escaping (UUID, TimeInterval?, String?) -> Void,
+        isCompleted: Bool,
+        initialTimerState: TimerHabitState? = nil,
+        onTimerStateChange: ((UUID, TimerHabitState) -> Void)? = nil
+    ) {
         self.habit = habit
         self.onComplete = onComplete
         self.isCompleted = isCompleted
+        self.initialTimerState = initialTimerState
+        self.onTimerStateChange = onTimerStateChange
     }
-    
+
     @ViewBuilder
     public var body: some View {
         switch habit.type {
@@ -28,7 +38,18 @@ public struct HabitInteractionView: View {
                 }
 
             case .timer(let style, let duration, let target, let steps, let repeatCount):
-                TimerHabitView(habit: habit, style: style, duration: duration, target: target, steps: steps, repeatCount: repeatCount, onComplete: onComplete, isCompleted: isCompleted)
+                TimerHabitView(
+                    habit: habit,
+                    style: style,
+                    duration: duration,
+                    target: target,
+                    steps: steps,
+                    repeatCount: repeatCount,
+                    onComplete: onComplete,
+                    isCompleted: isCompleted,
+                    initialState: initialTimerState,
+                    onStateChange: { state in onTimerStateChange?(habit.id, state) }
+                )
 
             case .action(let type, let identifier, let displayName, _):
                 ActionHabitView(habit: habit, actionType: type, identifier: identifier, displayName: displayName, onComplete: onComplete)
@@ -155,18 +176,30 @@ struct TimerHabitView: View {
     let repeatCount: Int?
     let onComplete: (UUID, TimeInterval?, String?) -> Void
     let isCompleted: Bool
-    
+    let onStateChange: ((TimerHabitState) -> Void)?
+
     @State private var timeRemaining: TimeInterval
-    @State private var timeElapsed: TimeInterval = 0
+    @State private var timeElapsed: TimeInterval
     @State private var isRunning = false
     @State private var isPaused = false
 
     // For multiple timer style
-    @State private var currentStepIndex = 0
-    @State private var currentRound = 0
-    @State private var totalElapsed: TimeInterval = 0
-    
-    init(habit: Habit, style: TimerStyle, duration: TimeInterval, target: TimeInterval? = nil, steps: [SequenceStep] = [], repeatCount: Int? = nil, onComplete: @escaping (UUID, TimeInterval?, String?) -> Void, isCompleted: Bool) {
+    @State private var currentStepIndex: Int
+    @State private var currentRound: Int
+    @State private var totalElapsed: TimeInterval
+
+    init(
+        habit: Habit,
+        style: TimerStyle,
+        duration: TimeInterval,
+        target: TimeInterval? = nil,
+        steps: [SequenceStep] = [],
+        repeatCount: Int? = nil,
+        onComplete: @escaping (UUID, TimeInterval?, String?) -> Void,
+        isCompleted: Bool,
+        initialState: TimerHabitState? = nil,
+        onStateChange: ((TimerHabitState) -> Void)? = nil
+    ) {
         self.habit = habit
         self.style = style
         self.duration = duration
@@ -175,19 +208,43 @@ struct TimerHabitView: View {
         self.repeatCount = repeatCount
         self.onComplete = onComplete
         self.isCompleted = isCompleted
-        
-        // Initialize timer state based on style
-        switch style {
-        case .down:
-            self._timeRemaining = State(initialValue: duration)
-        case .up:
-            self._timeRemaining = State(initialValue: 0)
-        case .multiple:
-            // For multiple timers, start with first step duration
-            let firstStepDuration = steps.first?.duration ?? duration
-            self._timeRemaining = State(initialValue: firstStepDuration)
-            self._currentRound = State(initialValue: 1) // Start at round 1
+        self.onStateChange = onStateChange
+
+        if let s = initialState {
+            // Restore from saved state — timer starts paused so the user re-taps to continue
+            self._timeRemaining = State(initialValue: s.timeRemaining)
+            self._timeElapsed = State(initialValue: s.timeElapsed)
+            self._currentStepIndex = State(initialValue: s.currentStepIndex)
+            self._currentRound = State(initialValue: s.currentRound)
+            self._totalElapsed = State(initialValue: s.totalElapsed)
+        } else {
+            // Fresh start
+            self._timeElapsed = State(initialValue: 0)
+            self._currentStepIndex = State(initialValue: 0)
+            self._totalElapsed = State(initialValue: 0)
+            switch style {
+            case .down:
+                self._timeRemaining = State(initialValue: duration)
+                self._currentRound = State(initialValue: 0)
+            case .up:
+                self._timeRemaining = State(initialValue: 0)
+                self._currentRound = State(initialValue: 0)
+            case .multiple:
+                let firstStepDuration = steps.first?.duration ?? duration
+                self._timeRemaining = State(initialValue: firstStepDuration)
+                self._currentRound = State(initialValue: 1)
+            }
         }
+    }
+
+    private var currentTimerState: TimerHabitState {
+        TimerHabitState(
+            timeRemaining: timeRemaining,
+            timeElapsed: timeElapsed,
+            currentStepIndex: currentStepIndex,
+            currentRound: currentRound,
+            totalElapsed: totalElapsed
+        )
     }
     
     // Computed properties for display
@@ -373,14 +430,17 @@ struct TimerHabitView: View {
     private func startTimer() {
         isRunning = true
         isPaused = false
+        onStateChange?(currentTimerState)
     }
 
     private func pauseTimer() {
         isPaused = true
+        onStateChange?(currentTimerState)
     }
 
     private func resumeTimer() {
         isPaused = false
+        onStateChange?(currentTimerState)
     }
 
     private func stopTimer() {
@@ -404,6 +464,7 @@ struct TimerHabitView: View {
         case .down:
             if timeRemaining > 0 {
                 timeRemaining -= 1
+                onStateChange?(currentTimerState)
             } else {
                 isRunning = false
                 FeedbackManager.shared.timerCompleted()
@@ -413,6 +474,7 @@ struct TimerHabitView: View {
             if timeRemaining > 0 {
                 timeRemaining -= 1
                 totalElapsed += 1
+                onStateChange?(currentTimerState)
             } else {
                 FeedbackManager.shared.stepCompleted()
                 currentStepIndex += 1
@@ -420,12 +482,14 @@ struct TimerHabitView: View {
 
                 if currentStepIndex < steps.count {
                     timeRemaining = steps[currentStepIndex].duration
+                    onStateChange?(currentTimerState)
                 } else {
                     let totalRounds = repeatCount ?? 1
                     if currentRound < totalRounds {
                         currentRound += 1
                         currentStepIndex = 0
                         timeRemaining = steps[0].duration
+                        onStateChange?(currentTimerState)
 
                         if totalRounds > 1 {
                             FeedbackManager.shared.timerCompleted()
@@ -443,6 +507,7 @@ struct TimerHabitView: View {
         case .up:
             timeElapsed += 1
             timeRemaining = timeElapsed
+            onStateChange?(currentTimerState)
 
             if let target = target, timeElapsed >= target {
                 isRunning = false
