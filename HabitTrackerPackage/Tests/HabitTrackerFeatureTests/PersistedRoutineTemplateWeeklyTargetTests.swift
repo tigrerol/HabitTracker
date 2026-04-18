@@ -16,8 +16,10 @@ struct PersistedRoutineTemplateWeeklyTargetTests {
         context.insert(persisted)
         try context.save()
 
-        let restored = persisted.toDomainModel()
-        #expect(restored.weeklyTarget == 5)
+        let fetchDescriptor = FetchDescriptor<PersistedRoutineTemplate>()
+        let results = try context.fetch(fetchDescriptor)
+        let fetched = try #require(results.first)
+        #expect(fetched.toDomainModel().weeklyTarget == 5)
     }
 
     @MainActor
