@@ -306,4 +306,5 @@ private final class FailingPersistenceService: @unchecked Sendable, PersistenceS
     }
 
     func loadRoutineSessions(for templateId: UUID) async -> [RoutineSessionData] { [] }
+    func saveRoutineSession(_ session: RoutineSessionData, for templateId: UUID) async { }
 }

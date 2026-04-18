@@ -134,9 +134,21 @@ public final class RoutineService {
             ErrorHandlingService.shared.handleRoutineError(error)
             throw error
         }
-        
+
         // Complete the session manually
         session.forceComplete()
+
+        let data = RoutineSessionData(
+            id: session.id,
+            startedAt: session.startedAt,
+            completedAt: session.completedAt,
+            currentHabitIndex: session.currentHabitIndex,
+            completions: session.completions,
+            modifications: session.modifications
+        )
+        let templateId = session.template.id
+        Task { await persistenceService.saveRoutineSession(data, for: templateId) }
+
         currentSession = nil
     }
     

@@ -187,7 +187,35 @@ public final class SwiftDataPersistenceService: PersistenceServiceProtocol, @unc
             )
         }
     }
-    
+
+    /// Append a session record to the template's session list.
+    @MainActor
+    public func saveRoutineSession(_ session: RoutineSessionData, for templateId: UUID) async {
+        guard let persistedTemplate = getPersistedTemplate(id: templateId) else { return }
+
+        if let existing = getPersistedSession(id: session.id) {
+            existing.completedAt = session.completedAt
+            existing.currentHabitIndex = session.currentHabitIndex
+            if let data = try? JSONEncoder().encode(session.modifications) {
+                existing.modificationsData = data
+            }
+        } else {
+            let persisted = PersistedRoutineSession(
+                id: session.id,
+                startedAt: session.startedAt,
+                completedAt: session.completedAt,
+                currentHabitIndex: session.currentHabitIndex,
+                template: persistedTemplate
+            )
+            if let data = try? JSONEncoder().encode(session.modifications) {
+                persisted.modificationsData = data
+            }
+            modelContext.insert(persisted)
+        }
+
+        try? modelContext.save()
+    }
+
     private func getPersistedTemplate(id: UUID) -> PersistedRoutineTemplate? {
         let descriptor = FetchDescriptor<PersistedRoutineTemplate>(
             predicate: #Predicate { $0.id == id }
@@ -316,11 +344,27 @@ public final class SwiftDataPersistenceService: PersistenceServiceProtocol, @unc
 }
 
 /// Data structure for transferring session data
-public struct RoutineSessionData {
+public struct RoutineSessionData: Codable, Sendable {
     public let id: UUID
     public let startedAt: Date
     public let completedAt: Date?
     public let currentHabitIndex: Int
     public let completions: [HabitCompletion]
     public let modifications: [SessionModification]
+
+    public init(
+        id: UUID,
+        startedAt: Date,
+        completedAt: Date?,
+        currentHabitIndex: Int,
+        completions: [HabitCompletion],
+        modifications: [SessionModification]
+    ) {
+        self.id = id
+        self.startedAt = startedAt
+        self.completedAt = completedAt
+        self.currentHabitIndex = currentHabitIndex
+        self.completions = completions
+        self.modifications = modifications
+    }
 }

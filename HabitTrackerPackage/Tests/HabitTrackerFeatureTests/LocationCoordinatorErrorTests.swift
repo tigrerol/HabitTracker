@@ -208,6 +208,7 @@ private final class FailingPersistenceService: @unchecked Sendable, PersistenceS
     }
 
     func loadRoutineSessions(for templateId: UUID) async -> [RoutineSessionData] { [] }
+    func saveRoutineSession(_ session: RoutineSessionData, for templateId: UUID) async { }
 }
 
 /// Mock persistence service that returns corrupted data
@@ -229,4 +230,5 @@ private final class CorruptedDataPersistenceService: @unchecked Sendable, Persis
     }
 
     func loadRoutineSessions(for templateId: UUID) async -> [RoutineSessionData] { [] }
+    func saveRoutineSession(_ session: RoutineSessionData, for templateId: UUID) async { }
 }

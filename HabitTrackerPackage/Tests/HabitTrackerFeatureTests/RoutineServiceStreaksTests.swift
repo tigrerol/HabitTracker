@@ -23,6 +23,12 @@ private actor StubPersistence: PersistenceServiceProtocol {
         sessionsByTemplate[templateId] ?? []
     }
 
+    func saveRoutineSession(_ session: RoutineSessionData, for templateId: UUID) async {
+        var existing = sessionsByTemplate[templateId] ?? []
+        existing.append(session)
+        sessionsByTemplate[templateId] = existing
+    }
+
     func setTemplates(_ t: [RoutineTemplate]) { templates = t }
     func setSessions(_ s: [RoutineSessionData], for id: UUID) { sessionsByTemplate[id] = s }
 }

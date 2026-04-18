@@ -10,6 +10,10 @@ public protocol PersistenceServiceProtocol: Sendable {
     /// Load finished and in-progress routine sessions for a given template.
     /// Implementations that don't persist sessions should return `[]`.
     func loadRoutineSessions(for templateId: UUID) async -> [RoutineSessionData]
+
+    /// Append a session record to the history for a given template.
+    /// Used by the streak calculator.
+    func saveRoutineSession(_ session: RoutineSessionData, for templateId: UUID) async
 }
 
 /// UserDefaults-based implementation of PersistenceService
@@ -49,10 +53,38 @@ public final class UserDefaultsPersistenceService: PersistenceServiceProtocol, @
         userDefaults.object(forKey: key) != nil
     }
 
-    /// UserDefaults persistence doesn't store sessions.
+    /// Load persisted sessions for a template.
     public func loadRoutineSessions(for templateId: UUID) async -> [RoutineSessionData] {
-        []
+        loadHistory().sessionsByTemplate[templateId.uuidString] ?? []
     }
+
+    /// Append a session to the history for a template.
+    public func saveRoutineSession(_ session: RoutineSessionData, for templateId: UUID) async {
+        var history = loadHistory()
+        let key = templateId.uuidString
+        var existing = history.sessionsByTemplate[key] ?? []
+        if let index = existing.firstIndex(where: { $0.id == session.id }) {
+            existing[index] = session
+        } else {
+            existing.append(session)
+        }
+        history.sessionsByTemplate[key] = existing
+        if let data = try? encoder.encode(history) {
+            userDefaults.set(data, forKey: PersistenceKeys.routineSessionHistory)
+        }
+    }
+
+    private func loadHistory() -> SessionHistoryStore {
+        guard let data = userDefaults.data(forKey: PersistenceKeys.routineSessionHistory),
+              let store = try? decoder.decode(SessionHistoryStore.self, from: data) else {
+            return SessionHistoryStore(sessionsByTemplate: [:])
+        }
+        return store
+    }
+}
+
+private struct SessionHistoryStore: Codable {
+    var sessionsByTemplate: [String: [RoutineSessionData]]
 }
 
 /// Persistence keys used throughout the app
@@ -61,6 +93,7 @@ public enum PersistenceKeys {
     public static let locationCategorySettings = "LocationCategorySettings"
     public static let routineTemplates = "RoutineTemplates"
     public static let pausedSessions = "PausedSessions"
+    public static let routineSessionHistory = "RoutineSessionHistory"
 }
 
 /// Error types for persistence operations

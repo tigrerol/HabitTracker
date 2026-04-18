@@ -186,6 +186,21 @@ public final class PersistedRoutineSession {
         self.modificationsData = (try? JSONEncoder().encode(session.modifications)) ?? Data()
         self.template = template
     }
+
+    public init(
+        id: UUID,
+        startedAt: Date,
+        completedAt: Date?,
+        currentHabitIndex: Int,
+        template: PersistedRoutineTemplate
+    ) {
+        self.id = id
+        self.startedAt = startedAt
+        self.completedAt = completedAt
+        self.currentHabitIndex = currentHabitIndex
+        self.modificationsData = Data()
+        self.template = template
+    }
     
     /// Update from domain model
     @MainActor
