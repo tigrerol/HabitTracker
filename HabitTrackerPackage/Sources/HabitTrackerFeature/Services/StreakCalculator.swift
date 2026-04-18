@@ -95,13 +95,31 @@ public struct StreakCalculator: Sendable {
             ))
         }
 
+        // Total streak: walk backwards from -1w, count consecutive met weeks.
+        var totalStreak = 0
+        var offset = 1
+        let hardCap = 520 // 10 years — avoid pathological loops.
+        while offset <= hardCap {
+            let start = calendar.date(byAdding: .weekOfYear, value: -offset, to: currentWeekStart)!
+            let counts = bucket(sessions: sessions, weekStart: start, calendar: calendar)
+            let week = WeekStats(weekStart: start, completionsPerDay: counts)
+            if week.meetsTarget(target) {
+                totalStreak += 1
+                offset += 1
+            } else {
+                break
+            }
+        }
+
+        let extendedStreakBeyond = max(0, totalStreak - previousWeeks.count)
+
         return RoutineStreakData(
             template: template,
             target: target,
             currentWeek: currentWeek,
             previousWeeks: previousWeeks,
-            extendedStreakBeyond: 0,
-            totalStreak: 0
+            extendedStreakBeyond: extendedStreakBeyond,
+            totalStreak: totalStreak
         )
     }
 }

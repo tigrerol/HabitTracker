@@ -29,6 +29,28 @@ struct StreakCalculatorTests {
         )
     }
 
+    /// Creates N sessions per prior week at noon each Monday, going `weekCount`
+    /// weeks back. Each prior week thus has exactly `daysPerWeek` unique
+    /// completed days.
+    static func priorWeekSessions(
+        weekCount: Int,
+        daysPerWeek: Int,
+        relativeTo referenceNow: Date = now
+    ) -> [RoutineSessionData] {
+        var sessions: [RoutineSessionData] = []
+        let cal = Calendar.mondayFirst
+        let currentWeekStart = cal.dateInterval(of: .weekOfYear, for: referenceNow)!.start
+        for w in 1...weekCount {
+            let weekStart = cal.date(byAdding: .weekOfYear, value: -w, to: currentWeekStart)!
+            for d in 0..<daysPerWeek {
+                let day = cal.date(byAdding: .day, value: d, to: weekStart)!
+                var comps = cal.dateComponents([.year, .month, .day], from: day)
+                sessions.append(Self.session(onLocalDate: comps))
+            }
+        }
+        return sessions
+    }
+
     @Test func currentWeekBucketsSessionsByWeekday() {
         let template = RoutineTemplate(name: "Morning", weeklyTarget: 3)
         let monday    = DateComponents(year: 2026, month: 4, day: 13)
@@ -122,6 +144,72 @@ struct StreakCalculatorTests {
         #expect(data.currentWeek.completionsPerDay[1] == 2)
         #expect(data.currentWeek.completedDayCount == 1)
         #expect(data.currentWeek.meetsTarget(1))
+    }
+
+    @Test func totalStreakCountsConsecutiveMetWeeks() {
+        // Target 3. Last 3 prior weeks have 3 days each (met). Week -4 has 1 day (missed).
+        var sessions = Self.priorWeekSessions(weekCount: 3, daysPerWeek: 3)
+        let cal = Calendar.mondayFirst
+        let currentWeekStart = cal.dateInterval(of: .weekOfYear, for: Self.now)!.start
+        let w4 = cal.date(byAdding: .weekOfYear, value: -4, to: currentWeekStart)!
+        let w4Comps = cal.dateComponents([.year, .month, .day], from: w4)
+        sessions.append(Self.session(onLocalDate: w4Comps))
+
+        let template = RoutineTemplate(name: "Morning", weeklyTarget: 3)
+        let data = try! #require(StreakCalculator.compute(
+            for: template,
+            sessions: sessions,
+            now: Self.now,
+            calendar: .mondayFirst
+        ))
+        #expect(data.totalStreak == 3)
+        #expect(data.extendedStreakBeyond == 0)
+    }
+
+    @Test func extendedStreakBeyondVisibleWindow() {
+        // 10 prior weeks all met. previousWeeks shows 4; extended = 6.
+        let sessions = Self.priorWeekSessions(weekCount: 10, daysPerWeek: 3)
+        let template = RoutineTemplate(name: "Morning", weeklyTarget: 3)
+        let data = try! #require(StreakCalculator.compute(
+            for: template,
+            sessions: sessions,
+            now: Self.now,
+            calendar: .mondayFirst
+        ))
+        #expect(data.totalStreak == 10)
+        #expect(data.extendedStreakBeyond == 6)
+        for week in data.previousWeeks {
+            #expect(week.meetsTarget(3))
+        }
+    }
+
+    @Test func streakIsZeroWhenMostRecentPriorWeekMissed() {
+        // Target 3. Week -1 has 1 day (missed). Older weeks with 3 days don't matter.
+        var sessions: [RoutineSessionData] = []
+        let cal = Calendar.mondayFirst
+        let currentWeekStart = cal.dateInterval(of: .weekOfYear, for: Self.now)!.start
+        let w1 = cal.date(byAdding: .weekOfYear, value: -1, to: currentWeekStart)!
+        sessions.append(Self.session(
+            onLocalDate: cal.dateComponents([.year, .month, .day], from: w1)
+        ))
+        for w in 2...5 {
+            let ws = cal.date(byAdding: .weekOfYear, value: -w, to: currentWeekStart)!
+            for d in 0..<3 {
+                let day = cal.date(byAdding: .day, value: d, to: ws)!
+                sessions.append(Self.session(
+                    onLocalDate: cal.dateComponents([.year, .month, .day], from: day)
+                ))
+            }
+        }
+        let template = RoutineTemplate(name: "Morning", weeklyTarget: 3)
+        let data = try! #require(StreakCalculator.compute(
+            for: template,
+            sessions: sessions,
+            now: Self.now,
+            calendar: .mondayFirst
+        ))
+        #expect(data.totalStreak == 0)
+        #expect(data.extendedStreakBeyond == 0)
     }
 
     @Test func previousWeeksArePopulatedNewestFirst() {
