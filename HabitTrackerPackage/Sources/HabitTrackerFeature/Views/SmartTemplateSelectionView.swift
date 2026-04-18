@@ -13,6 +13,7 @@ struct SmartTemplateSelectionView: View {
     @State private var showingDeleteAlert = false
     @State private var showingLocationSetup = false
     @State private var showingContextSettings = false
+    @State private var showingStreaks = false
     @Namespace private var templateTransition
     
     private var timeBasedGreeting: String {
@@ -39,6 +40,15 @@ struct SmartTemplateSelectionView: View {
             }
             .padding()
             .background(Theme.background.ignoresSafeArea())
+            .contentShape(Rectangle())
+            .gesture(
+                DragGesture(minimumDistance: 20)
+                    .onEnded { value in
+                        if value.translation.width < -80 && abs(value.translation.height) < 60 {
+                            showingStreaks = true
+                        }
+                    }
+            )
             .navigationTitle(timeBasedGreeting)
             
             .toolbar {
@@ -46,6 +56,17 @@ struct SmartTemplateSelectionView: View {
                     SettingsButton()
                 }
                 
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button {
+                        showingStreaks = true
+                    } label: {
+                        Image(systemName: "flame")
+                            .fontWeight(.semibold)
+                            .foregroundStyle(themeManager.currentAccentColor)
+                    }
+                    .accessibilityLabel("Streaks")
+                }
+
                 ToolbarItem(placement: .confirmationAction) {
                     Button {
                         showingRoutineBuilder = true
@@ -55,6 +76,10 @@ struct SmartTemplateSelectionView: View {
                             .foregroundStyle(themeManager.currentAccentColor)
                     }
                 }
+            }
+            .navigationDestination(isPresented: $showingStreaks) {
+                StreaksView()
+                    .environment(routineService)
             }
             .safeAreaInset(edge: .bottom) {
                 buildVersionView
