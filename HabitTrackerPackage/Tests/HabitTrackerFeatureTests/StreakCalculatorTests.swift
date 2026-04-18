@@ -80,6 +80,49 @@ struct StreakCalculatorTests {
         #expect(data.totalStreak == 0)
         #expect(data.extendedStreakBeyond == 0)
     }
+
+    @Test func currentWeekIgnoresUnfinishedSessions() {
+        let template = RoutineTemplate(name: "Morning", weeklyTarget: 1)
+        let monday = DateComponents(year: 2026, month: 4, day: 13)
+        var c = monday
+        c.hour = 9; c.minute = 0
+        let date = Calendar.mondayFirst.date(from: c)!
+        let pending = RoutineSessionData(
+            id: UUID(),
+            startedAt: date,
+            completedAt: nil,
+            currentHabitIndex: 0,
+            completions: [],
+            modifications: []
+        )
+        let data = try! #require(StreakCalculator.compute(
+            for: template,
+            sessions: [pending],
+            now: Self.now,
+            calendar: .mondayFirst
+        ))
+        #expect(data.currentWeek.completionsPerDay.allSatisfy { $0 == 0 })
+    }
+
+    @Test func multipleSessionsSameDayIncrementCountButCountDayOnce() {
+        // completedDayCount treats a day with 2 sessions as 1 met day.
+        let template = RoutineTemplate(name: "Morning", weeklyTarget: 1)
+        let tuesday = DateComponents(year: 2026, month: 4, day: 14)
+        let sessions = [
+            Self.session(onLocalDate: tuesday),
+            Self.session(onLocalDate: tuesday)
+        ]
+        let data = try! #require(StreakCalculator.compute(
+            for: template,
+            sessions: sessions,
+            now: Self.now,
+            calendar: .mondayFirst
+        ))
+        // Tuesday index = 1.
+        #expect(data.currentWeek.completionsPerDay[1] == 2)
+        #expect(data.currentWeek.completedDayCount == 1)
+        #expect(data.currentWeek.meetsTarget(1))
+    }
 }
 
 // MARK: - Test helpers
