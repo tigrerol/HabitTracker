@@ -43,6 +43,30 @@ public struct StreakCalculator: Sendable {
         public let totalStreak: Int
     }
 
+    /// Build 7 per-day session counts for the week starting at `weekStart`,
+    /// counting only sessions whose `completedAt` falls inside that week.
+    /// Index 0 = Monday (given a Monday-first `calendar`).
+    private static func bucket(
+        sessions: [RoutineSessionData],
+        weekStart: Date,
+        calendar: Calendar
+    ) -> [Int] {
+        guard let weekEnd = calendar.date(byAdding: .weekOfYear, value: 1, to: weekStart) else {
+            return Array(repeating: 0, count: 7)
+        }
+        var counts = Array(repeating: 0, count: 7)
+        for session in sessions {
+            guard let completedAt = session.completedAt,
+                  completedAt >= weekStart, completedAt < weekEnd else { continue }
+            // Weekday: Monday-first calendar has firstWeekday = 2, so Monday's weekday == 2.
+            // We want Monday → 0 … Sunday → 6.
+            let weekday = calendar.component(.weekday, from: completedAt)
+            let index = (weekday - calendar.firstWeekday + 7) % 7
+            counts[index] += 1
+        }
+        return counts
+    }
+
     /// Compute streak data for a routine. Returns `nil` when the routine does not
     /// track a weekly target.
     public static func compute(
@@ -56,10 +80,9 @@ public struct StreakCalculator: Sendable {
         let weekInterval = calendar.dateInterval(of: .weekOfYear, for: now)!
         let currentWeekStart = weekInterval.start
 
-        // Build current week with zeros; later tasks will populate it.
         let currentWeek = WeekStats(
             weekStart: currentWeekStart,
-            completionsPerDay: Array(repeating: 0, count: 7)
+            completionsPerDay: bucket(sessions: sessions, weekStart: currentWeekStart, calendar: calendar)
         )
 
         // Previous 4 weeks, newest first.

@@ -14,6 +14,43 @@ struct StreakCalculatorTests {
         return Calendar.mondayFirst.date(from: c)!
     }()
 
+    /// Build a finished session whose `completedAt` falls on the given local date at noon.
+    static func session(onLocalDate components: DateComponents, id: UUID = UUID()) -> RoutineSessionData {
+        var c = components
+        c.hour = 12; c.minute = 0; c.second = 0
+        let date = Calendar.mondayFirst.date(from: c)!
+        return RoutineSessionData(
+            id: id,
+            startedAt: date.addingTimeInterval(-600),
+            completedAt: date,
+            currentHabitIndex: 0,
+            completions: [],
+            modifications: []
+        )
+    }
+
+    @Test func currentWeekBucketsSessionsByWeekday() {
+        let template = RoutineTemplate(name: "Morning", weeklyTarget: 3)
+        let monday    = DateComponents(year: 2026, month: 4, day: 13)
+        let wednesday = DateComponents(year: 2026, month: 4, day: 15)
+        let friday    = DateComponents(year: 2026, month: 4, day: 17)
+        let sessions = [
+            Self.session(onLocalDate: monday),
+            Self.session(onLocalDate: wednesday),
+            Self.session(onLocalDate: friday)
+        ]
+        let data = try! #require(StreakCalculator.compute(
+            for: template,
+            sessions: sessions,
+            now: Self.now,
+            calendar: .mondayFirst
+        ))
+        // Index 0 = Monday … 6 = Sunday
+        #expect(data.currentWeek.completionsPerDay == [1, 0, 1, 0, 1, 0, 0])
+        #expect(data.currentWeek.completedDayCount == 3)
+        #expect(data.currentWeek.meetsTarget(3))
+    }
+
     @Test func returnsNilWhenTargetIsNil() {
         let template = RoutineTemplate(name: "Morning", weeklyTarget: nil)
         let result = StreakCalculator.compute(
