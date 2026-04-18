@@ -51,7 +51,34 @@ public struct StreakCalculator: Sendable {
         now: Date,
         calendar: Calendar
     ) -> RoutineStreakData? {
-        // Implementation filled in by later tasks.
-        return nil
+        guard let target = template.weeklyTarget else { return nil }
+
+        let weekInterval = calendar.dateInterval(of: .weekOfYear, for: now)!
+        let currentWeekStart = weekInterval.start
+
+        // Build current week with zeros; later tasks will populate it.
+        let currentWeek = WeekStats(
+            weekStart: currentWeekStart,
+            completionsPerDay: Array(repeating: 0, count: 7)
+        )
+
+        // Previous 4 weeks, newest first.
+        var previousWeeks: [WeekStats] = []
+        for offset in 1...4 {
+            let start = calendar.date(byAdding: .weekOfYear, value: -offset, to: currentWeekStart)!
+            previousWeeks.append(WeekStats(
+                weekStart: start,
+                completionsPerDay: Array(repeating: 0, count: 7)
+            ))
+        }
+
+        return RoutineStreakData(
+            template: template,
+            target: target,
+            currentWeek: currentWeek,
+            previousWeeks: previousWeeks,
+            extendedStreakBeyond: 0,
+            totalStreak: 0
+        )
     }
 }

@@ -24,6 +24,25 @@ struct StreakCalculatorTests {
         )
         #expect(result == nil)
     }
+
+    @Test func emptyHistoryProducesZeroValues() {
+        let template = RoutineTemplate(name: "Morning", weeklyTarget: 3)
+        let result = StreakCalculator.compute(
+            for: template,
+            sessions: [],
+            now: Self.now,
+            calendar: .mondayFirst
+        )
+        let data = try! #require(result)
+        #expect(data.target == 3)
+        #expect(data.currentWeek.completionsPerDay == [0, 0, 0, 0, 0, 0, 0])
+        #expect(data.previousWeeks.count == 4)
+        for week in data.previousWeeks {
+            #expect(week.completionsPerDay == [0, 0, 0, 0, 0, 0, 0])
+        }
+        #expect(data.totalStreak == 0)
+        #expect(data.extendedStreakBeyond == 0)
+    }
 }
 
 // MARK: - Test helpers
