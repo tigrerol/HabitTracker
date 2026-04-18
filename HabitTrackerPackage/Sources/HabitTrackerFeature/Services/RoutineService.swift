@@ -224,6 +224,38 @@ public final class RoutineService {
         }
     }
     
+    /// Compute streak data for every routine that has a weekly target.
+    /// Results are sorted by `lastUsedAt` descending (nils last), matching
+    /// the order used elsewhere in the app.
+    @MainActor
+    public func computeStreaks(now: Date) async -> [StreakCalculator.RoutineStreakData] {
+        var results: [StreakCalculator.RoutineStreakData] = []
+        let sorted = templates.sorted { lhs, rhs in
+            switch (lhs.lastUsedAt, rhs.lastUsedAt) {
+            case let (l?, r?): return l > r
+            case (_?, nil):    return true
+            case (nil, _?):    return false
+            case (nil, nil):   return lhs.createdAt > rhs.createdAt
+            }
+        }
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.firstWeekday = 2
+        calendar.minimumDaysInFirstWeek = 4
+
+        for template in sorted where template.weeklyTarget != nil {
+            let sessions = await persistenceService.loadRoutineSessions(for: template.id)
+            if let data = StreakCalculator.compute(
+                for: template,
+                sessions: sessions,
+                now: now,
+                calendar: calendar
+            ) {
+                results.append(data)
+            }
+        }
+        return results
+    }
+
     /// Delete a template
     public func deleteTemplate(withId id: UUID) {
         templates.removeAll { $0.id == id }
