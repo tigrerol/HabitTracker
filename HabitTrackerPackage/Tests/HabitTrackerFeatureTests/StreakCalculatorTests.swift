@@ -274,6 +274,36 @@ struct StreakCalculatorTests {
         // -1w (previousWeeks[0]): Sunday should be index 6 and have 1 completion.
         #expect(data.previousWeeks[0].completionsPerDay[6] == 1)
     }
+
+    @Test func dstTransitionDoesNotSkipWeek() {
+        // Europe/Vienna: DST starts on Sunday 2026-03-29 (Sun 02:00 → 03:00 local).
+        // "Now" = Wednesday 2026-04-01 10:00 local.
+        // Target 1. A session every Monday for -1w, -2w, -3w straddling the DST change.
+        var nowComps = DateComponents(year: 2026, month: 4, day: 1, hour: 10, minute: 0, second: 0)
+        let nowApril = Calendar.mondayFirst.date(from: nowComps)!
+
+        let cal = Calendar.mondayFirst
+        let currentWeekStart = cal.dateInterval(of: .weekOfYear, for: nowApril)!.start
+        var sessions: [RoutineSessionData] = []
+        for w in 1...3 {
+            let weekStart = cal.date(byAdding: .weekOfYear, value: -w, to: currentWeekStart)!
+            sessions.append(Self.session(
+                onLocalDate: cal.dateComponents([.year, .month, .day], from: weekStart)
+            ))
+        }
+
+        let template = RoutineTemplate(name: "Morning", weeklyTarget: 1)
+        let data = try! #require(StreakCalculator.compute(
+            for: template,
+            sessions: sessions,
+            now: nowApril,
+            calendar: .mondayFirst
+        ))
+        #expect(data.totalStreak == 3)
+        #expect(data.previousWeeks[0].meetsTarget(1))
+        #expect(data.previousWeeks[1].meetsTarget(1))
+        #expect(data.previousWeeks[2].meetsTarget(1))
+    }
 }
 
 // MARK: - Test helpers
