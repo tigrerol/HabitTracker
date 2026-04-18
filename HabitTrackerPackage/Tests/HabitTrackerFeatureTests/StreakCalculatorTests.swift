@@ -123,6 +123,39 @@ struct StreakCalculatorTests {
         #expect(data.currentWeek.completedDayCount == 1)
         #expect(data.currentWeek.meetsTarget(1))
     }
+
+    @Test func previousWeeksArePopulatedNewestFirst() {
+        let template = RoutineTemplate(name: "Morning", weeklyTarget: 3)
+        // Week -1 starts Mon 2026-04-06. Three sessions in that week.
+        let w1Mon = DateComponents(year: 2026, month: 4, day: 6)
+        let w1Wed = DateComponents(year: 2026, month: 4, day: 8)
+        let w1Fri = DateComponents(year: 2026, month: 4, day: 10)
+        // Week -3 starts Mon 2026-03-23. One session on Thursday.
+        let w3Thu = DateComponents(year: 2026, month: 3, day: 26)
+        let sessions = [
+            Self.session(onLocalDate: w1Mon),
+            Self.session(onLocalDate: w1Wed),
+            Self.session(onLocalDate: w1Fri),
+            Self.session(onLocalDate: w3Thu)
+        ]
+        let data = try! #require(StreakCalculator.compute(
+            for: template,
+            sessions: sessions,
+            now: Self.now,
+            calendar: .mondayFirst
+        ))
+        #expect(data.previousWeeks.count == 4)
+        // Newest first: index 0 = -1w, index 3 = -4w.
+        #expect(data.previousWeeks[0].completionsPerDay == [1, 0, 1, 0, 1, 0, 0])
+        #expect(data.previousWeeks[0].completedDayCount == 3)
+        #expect(data.previousWeeks[0].meetsTarget(3))
+        #expect(data.previousWeeks[2].completionsPerDay == [0, 0, 0, 1, 0, 0, 0])
+        #expect(data.previousWeeks[2].completedDayCount == 1)
+        #expect(!data.previousWeeks[2].meetsTarget(3))
+        // -2w and -4w should be all zeros.
+        #expect(data.previousWeeks[1].completedDayCount == 0)
+        #expect(data.previousWeeks[3].completedDayCount == 0)
+    }
 }
 
 // MARK: - Test helpers

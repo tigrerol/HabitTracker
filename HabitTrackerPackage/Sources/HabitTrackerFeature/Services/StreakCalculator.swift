@@ -91,7 +91,7 @@ public struct StreakCalculator: Sendable {
             let start = calendar.date(byAdding: .weekOfYear, value: -offset, to: currentWeekStart)!
             previousWeeks.append(WeekStats(
                 weekStart: start,
-                completionsPerDay: Array(repeating: 0, count: 7)
+                completionsPerDay: bucket(sessions: sessions, weekStart: start, calendar: calendar)
             ))
         }
 
