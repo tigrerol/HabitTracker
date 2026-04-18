@@ -292,16 +292,18 @@ private final class FailingPersistenceService: @unchecked Sendable, PersistenceS
     func save<T: Codable & Sendable>(_ object: T, forKey key: String) async throws {
         throw DataError.encodingFailed(type: String(describing: T.self), underlyingError: NSError(domain: "TestError", code: 1))
     }
-    
+
     func load<T: Codable & Sendable>(_ type: T.Type, forKey key: String) async throws -> T? {
         throw DataError.decodingFailed(type: String(describing: T.self), underlyingError: NSError(domain: "TestError", code: 2))
     }
-    
+
     func delete(forKey key: String) async {
         // Delete fails silently
     }
-    
+
     func exists(forKey key: String) async -> Bool {
         return false
     }
+
+    func loadRoutineSessions(for templateId: UUID) async -> [RoutineSessionData] { [] }
 }

@@ -6,6 +6,10 @@ public protocol PersistenceServiceProtocol: Sendable {
     func load<T: Codable & Sendable>(_ type: T.Type, forKey key: String) async throws -> T?
     func delete(forKey key: String) async
     func exists(forKey key: String) async -> Bool
+
+    /// Load finished and in-progress routine sessions for a given template.
+    /// Implementations that don't persist sessions should return `[]`.
+    func loadRoutineSessions(for templateId: UUID) async -> [RoutineSessionData]
 }
 
 /// UserDefaults-based implementation of PersistenceService
@@ -43,6 +47,11 @@ public final class UserDefaultsPersistenceService: PersistenceServiceProtocol, @
     /// Check if a key exists in persistence
     public func exists(forKey key: String) async -> Bool {
         userDefaults.object(forKey: key) != nil
+    }
+
+    /// UserDefaults persistence doesn't store sessions.
+    public func loadRoutineSessions(for templateId: UUID) async -> [RoutineSessionData] {
+        []
     }
 }
 
