@@ -210,25 +210,7 @@ public struct RoutineBuilderView: View {
                     smartSelectionSection
 
                     // Streak tracking
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Streak tracking")
-                            .font(.headline)
-                        Toggle("Track streak", isOn: Binding(
-                            get: { weeklyTarget != nil },
-                            set: { weeklyTarget = $0 ? (weeklyTarget ?? 3) : nil }
-                        ))
-                        if let target = weeklyTarget {
-                            Stepper(
-                                "Weekly target: \(target)× per week",
-                                value: Binding(
-                                    get: { weeklyTarget ?? 3 },
-                                    set: { weeklyTarget = $0 }
-                                ),
-                                in: 1...7
-                            )
-                        }
-                    }
-                    .padding(.vertical, 8)
+                    streakTrackingSection
 
                     // Extra padding for safe area
                     Spacer()
@@ -616,8 +598,10 @@ public struct RoutineBuilderView: View {
                         // Smart Selection Criteria section (for editing mode)
                         if editingTemplate != nil {
                             smartSelectionEditingSection
+                            streakTrackingSection
+                                .padding(.horizontal)
                         }
-                        
+
                         // Snippet browser section
                         snippetBrowserSection
                         
@@ -1100,8 +1084,32 @@ public struct RoutineBuilderView: View {
     // MARK: - Review Step
     
     
+    // MARK: - Streak Tracking Section
+
+    private var streakTrackingSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Streak tracking")
+                .font(.headline)
+            Toggle("Track streak", isOn: Binding(
+                get: { weeklyTarget != nil },
+                set: { weeklyTarget = $0 ? (weeklyTarget ?? 3) : nil }
+            ))
+            if let target = weeklyTarget {
+                Stepper(
+                    "Weekly target: \(target)× per week",
+                    value: Binding(
+                        get: { weeklyTarget ?? 3 },
+                        set: { weeklyTarget = $0 }
+                    ),
+                    in: 1...7
+                )
+            }
+        }
+        .padding(.vertical, 8)
+    }
+
     // MARK: - Smart Selection Section
-    
+
     private var smartSelectionSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             // Header with disclosure arrow
