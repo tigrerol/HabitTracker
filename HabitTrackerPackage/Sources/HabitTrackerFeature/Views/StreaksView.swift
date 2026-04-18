@@ -70,7 +70,7 @@ struct RoutineStreakCard: View {
             }
             HStack(alignment: .top, spacing: 14) {
                 previousColumn
-                // Current-week column added in Task 17.
+                currentWeekColumn
             }
         }
         .padding(14)
@@ -104,5 +104,57 @@ struct RoutineStreakCard: View {
             }
         }
         .frame(width: 104)
+    }
+
+    private var currentWeekColumn: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text("THIS WEEK · \(data.currentWeek.completedDayCount) / \(data.target)")
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundStyle(Theme.secondaryText)
+            HStack(spacing: 4) {
+                ForEach(0..<7, id: \.self) { index in
+                    daySquare(count: data.currentWeek.completionsPerDay[index], isFuture: isFutureDay(index))
+                }
+            }
+            HStack(spacing: 4) {
+                ForEach(["M", "T", "W", "T", "F", "S", "S"], id: \.self) { letter in
+                    Text(letter)
+                        .font(.system(size: 9))
+                        .foregroundStyle(Theme.secondaryText)
+                        .frame(maxWidth: .infinity)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    @ViewBuilder
+    private func daySquare(count: Int, isFuture: Bool) -> some View {
+        let fill: Color = {
+            if count > 0 { return .green }
+            if isFuture { return Color.gray.opacity(0.3) }
+            return Color.gray.opacity(0.7)
+        }()
+        ZStack {
+            RoundedRectangle(cornerRadius: 4, style: .continuous)
+                .fill(fill)
+                .aspectRatio(1, contentMode: .fit)
+            if count >= 2 {
+                Text("\(count)")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundStyle(.black)
+            }
+        }
+    }
+
+    private func isFutureDay(_ index: Int) -> Bool {
+        // Today's weekday index 0…6 (Monday-first). A day is "future" if its index
+        // is strictly greater than today's index for the current week.
+        var cal = Calendar(identifier: .gregorian)
+        cal.firstWeekday = 2
+        cal.minimumDaysInFirstWeek = 4
+        let weekday = cal.component(.weekday, from: Date())
+        let todayIndex = (weekday - cal.firstWeekday + 7) % 7
+        return index > todayIndex
     }
 }
