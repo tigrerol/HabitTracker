@@ -304,6 +304,32 @@ struct StreakCalculatorTests {
         #expect(data.previousWeeks[1].meetsTarget(1))
         #expect(data.previousWeeks[2].meetsTarget(1))
     }
+
+    @Test func historicalTargetChangesReEvaluate() {
+        // Prior week -1 has 4 completed days. The routine's current target is 5.
+        // Per Q7, the week should evaluate as MISSED even though it would have
+        // been MET when the target was 3.
+        let cal = Calendar.mondayFirst
+        let currentWeekStart = cal.dateInterval(of: .weekOfYear, for: Self.now)!.start
+        let w1 = cal.date(byAdding: .weekOfYear, value: -1, to: currentWeekStart)!
+        var sessions: [RoutineSessionData] = []
+        for d in 0..<4 {
+            let day = cal.date(byAdding: .day, value: d, to: w1)!
+            sessions.append(Self.session(
+                onLocalDate: cal.dateComponents([.year, .month, .day], from: day)
+            ))
+        }
+
+        let template = RoutineTemplate(name: "Morning", weeklyTarget: 5)
+        let data = try! #require(StreakCalculator.compute(
+            for: template,
+            sessions: sessions,
+            now: Self.now,
+            calendar: .mondayFirst
+        ))
+        #expect(!data.previousWeeks[0].meetsTarget(5))
+        #expect(data.totalStreak == 0)
+    }
 }
 
 // MARK: - Test helpers
