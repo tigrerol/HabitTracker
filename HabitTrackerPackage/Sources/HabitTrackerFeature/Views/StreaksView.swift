@@ -53,6 +53,56 @@ struct RoutineStreakCard: View {
     let data: StreakCalculator.RoutineStreakData
 
     var body: some View {
-        Text(data.template.name) // Filled in by later tasks.
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text(data.template.name)
+                    .font(.headline)
+                Spacer()
+                if data.totalStreak > 0 {
+                    Text("🔥 \(data.totalStreak) week streak")
+                        .font(.caption)
+                        .foregroundStyle(Theme.secondaryText)
+                } else {
+                    Text("\(data.target)× / week")
+                        .font(.caption)
+                        .foregroundStyle(Theme.secondaryText)
+                }
+            }
+            HStack(alignment: .top, spacing: 14) {
+                previousColumn
+                // Current-week column added in Task 17.
+            }
+        }
+        .padding(14)
+        .background(Theme.cardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+    }
+
+    private var previousColumn: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text("PREVIOUS")
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundStyle(Theme.secondaryText)
+            ForEach(Array(data.previousWeeks.enumerated()), id: \.offset) { offset, week in
+                HStack(spacing: 6) {
+                    Text("−\(offset + 1)w")
+                        .font(.system(size: 9))
+                        .foregroundStyle(Theme.secondaryText)
+                        .frame(width: 22, alignment: .leading)
+                    RoundedRectangle(cornerRadius: 3, style: .continuous)
+                        .fill(week.meetsTarget(data.target) ? Color.green : Color.red)
+                        .frame(height: 12)
+                    Text("\(week.completedDayCount)/\(data.target)")
+                        .font(.system(size: 9))
+                        .foregroundStyle(Theme.secondaryText)
+                        .frame(width: 22, alignment: .trailing)
+                }
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel(
+                    "Week minus \(offset + 1), \(week.completedDayCount) of \(data.target) days completed, target \(week.meetsTarget(data.target) ? "met" : "missed")"
+                )
+            }
+        }
+        .frame(width: 104)
     }
 }
