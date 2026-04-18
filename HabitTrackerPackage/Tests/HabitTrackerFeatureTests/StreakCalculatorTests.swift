@@ -244,6 +244,36 @@ struct StreakCalculatorTests {
         #expect(data.previousWeeks[1].completedDayCount == 0)
         #expect(data.previousWeeks[3].completedDayCount == 0)
     }
+
+    @Test func weekBoundaryMondayFirst() {
+        // Session at Sunday 2026-04-12 23:59 local belongs to week ending 2026-04-12
+        // (which is -1w). A session at Monday 2026-04-13 00:01 local belongs to the
+        // current week.
+        var sundayLate = DateComponents(year: 2026, month: 4, day: 12, hour: 23, minute: 59)
+        var mondayEarly = DateComponents(year: 2026, month: 4, day: 13, hour: 0, minute: 1)
+        sundayLate.second = 0
+        mondayEarly.second = 0
+        let sunday = Calendar.mondayFirst.date(from: sundayLate)!
+        let monday = Calendar.mondayFirst.date(from: mondayEarly)!
+
+        let sessions = [
+            RoutineSessionData(id: UUID(), startedAt: sunday, completedAt: sunday,
+                               currentHabitIndex: 0, completions: [], modifications: []),
+            RoutineSessionData(id: UUID(), startedAt: monday, completedAt: monday,
+                               currentHabitIndex: 0, completions: [], modifications: [])
+        ]
+        let template = RoutineTemplate(name: "Morning", weeklyTarget: 1)
+        let data = try! #require(StreakCalculator.compute(
+            for: template,
+            sessions: sessions,
+            now: Self.now,
+            calendar: .mondayFirst
+        ))
+        // Current week: Monday should be index 0 and have 1 completion.
+        #expect(data.currentWeek.completionsPerDay[0] == 1)
+        // -1w (previousWeeks[0]): Sunday should be index 6 and have 1 completion.
+        #expect(data.previousWeeks[0].completionsPerDay[6] == 1)
+    }
 }
 
 // MARK: - Test helpers
