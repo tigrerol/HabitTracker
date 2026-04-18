@@ -102,6 +102,24 @@ struct RoutineStreakCard: View {
                     "Week minus \(offset + 1), \(week.completedDayCount) of \(data.target) days completed, target \(week.meetsTarget(data.target) ? "met" : "missed")"
                 )
             }
+            if data.extendedStreakBeyond > 0 {
+                Text("🔥 +\(data.extendedStreakBeyond) more")
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(.green)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 4)
+                    .padding(.horizontal, 8)
+                    .background(
+                        RoundedRectangle(cornerRadius: 6, style: .continuous)
+                            .fill(Color.green.opacity(0.2))
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 6, style: .continuous)
+                            .stroke(Color.green.opacity(0.4), lineWidth: 1)
+                    )
+                    .padding(.top, 4)
+                    .accessibilityLabel("Plus \(data.extendedStreakBeyond) more consecutive weeks meeting target")
+            }
         }
         .frame(width: 104)
     }
