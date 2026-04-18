@@ -12,7 +12,8 @@ public struct RoutineTemplate: Identifiable, Codable, Hashable, Sendable {
     public let createdAt: Date
     public var lastUsedAt: Date?
     public var contextRule: RoutineContextRule?
-    
+    public var weeklyTarget: Int?
+
     public init(
         id: UUID = UUID(),
         name: String,
@@ -22,7 +23,8 @@ public struct RoutineTemplate: Identifiable, Codable, Hashable, Sendable {
         isDefault: Bool = false,
         createdAt: Date = Date(),
         lastUsedAt: Date? = nil,
-        contextRule: RoutineContextRule? = nil
+        contextRule: RoutineContextRule? = nil,
+        weeklyTarget: Int? = nil
     ) {
         self.id = id
         self.name = name
@@ -33,6 +35,7 @@ public struct RoutineTemplate: Identifiable, Codable, Hashable, Sendable {
         self.createdAt = createdAt
         self.lastUsedAt = lastUsedAt
         self.contextRule = contextRule
+        self.weeklyTarget = weeklyTarget
     }
 }
 
