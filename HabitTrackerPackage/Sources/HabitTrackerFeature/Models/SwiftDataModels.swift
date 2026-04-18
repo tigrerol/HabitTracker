@@ -82,7 +82,8 @@ public final class PersistedRoutineTemplate {
     public var lastUsedAt: Date?
     public var modifiedAt: Date
     public var contextRuleData: Data? // Encoded RoutineContextRule
-    
+    public var weeklyTarget: Int?
+
     // Relationships
     @Relationship(deleteRule: .cascade, inverse: \PersistedHabit.template)
     public var habits: [PersistedHabit] = []
@@ -99,8 +100,9 @@ public final class PersistedRoutineTemplate {
         self.lastUsedAt = template.lastUsedAt
         self.modifiedAt = Date()
         self.contextRuleData = template.contextRule.flatMap { try? JSONEncoder().encode($0) }
+        self.weeklyTarget = template.weeklyTarget
     }
-    
+
     /// Convert back to domain model
     public func toDomainModel() -> RoutineTemplate {
         let contextRule: RoutineContextRule?
@@ -121,7 +123,8 @@ public final class PersistedRoutineTemplate {
             isDefault: isDefault,
             createdAt: createdAt,
             lastUsedAt: lastUsedAt,
-            contextRule: contextRule
+            contextRule: contextRule,
+            weeklyTarget: weeklyTarget
         )
     }
     
@@ -134,7 +137,8 @@ public final class PersistedRoutineTemplate {
         self.lastUsedAt = template.lastUsedAt
         self.modifiedAt = Date()
         self.contextRuleData = template.contextRule.flatMap { try? JSONEncoder().encode($0) }
-        
+        self.weeklyTarget = template.weeklyTarget
+
         // Update habits
         updateHabits(from: template.habits)
     }
