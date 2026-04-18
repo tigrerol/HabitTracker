@@ -32,7 +32,8 @@ public struct RoutineBuilderView: View {
     @State private var showingSaveSnippetSheet = false
     @State private var isSelectingForSnippet = false
     @State private var showingSnippetBrowser = false
-    
+    @State private var weeklyTarget: Int? = nil
+
     enum BuilderStep {
         case naming
         case building
@@ -80,7 +81,8 @@ public struct RoutineBuilderView: View {
                 templateColor = template.color
                 habits = template.habits
                 contextRule = template.contextRule
-                
+                weeklyTarget = template.weeklyTarget
+
                 // Initialize smart selection state from existing context rule
                 if let rule = template.contextRule {
                     selectedTimeSlots = Set(rule.timeSlots)
@@ -206,7 +208,28 @@ public struct RoutineBuilderView: View {
                     
                     // Smart Selection Section
                     smartSelectionSection
-                    
+
+                    // Streak tracking
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Streak tracking")
+                            .font(.headline)
+                        Toggle("Track streak", isOn: Binding(
+                            get: { weeklyTarget != nil },
+                            set: { weeklyTarget = $0 ? (weeklyTarget ?? 3) : nil }
+                        ))
+                        if let target = weeklyTarget {
+                            Stepper(
+                                "Weekly target: \(target)× per week",
+                                value: Binding(
+                                    get: { weeklyTarget ?? 3 },
+                                    set: { weeklyTarget = $0 }
+                                ),
+                                in: 1...7
+                            )
+                        }
+                    }
+                    .padding(.vertical, 8)
+
                     // Extra padding for safe area
                     Spacer()
                         .frame(height: 100)
@@ -1835,7 +1858,8 @@ public struct RoutineBuilderView: View {
             updatedTemplate.color = templateColor
             updatedTemplate.isDefault = false
             updatedTemplate.contextRule = finalContextRule
-            
+            updatedTemplate.weeklyTarget = weeklyTarget
+
             routineService.updateTemplate(updatedTemplate)
         } else {
             // Create new template
@@ -1844,7 +1868,8 @@ public struct RoutineBuilderView: View {
                 habits: habits,
                 color: templateColor,
                 isDefault: false,
-                contextRule: finalContextRule
+                contextRule: finalContextRule,
+                weeklyTarget: weeklyTarget
             )
             
             routineService.addTemplate(template)
