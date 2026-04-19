@@ -55,17 +55,6 @@ struct SmartTemplateSelectionView: View {
                 ToolbarItem(placement: .cancellationAction) {
                     SettingsButton()
                 }
-                
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button {
-                        showingStreaks = true
-                    } label: {
-                        Image(systemName: "flame")
-                            .fontWeight(.semibold)
-                            .foregroundStyle(themeManager.currentAccentColor)
-                    }
-                    .accessibilityLabel("Streaks")
-                }
 
                 ToolbarItem(placement: .confirmationAction) {
                     Button {
@@ -82,7 +71,18 @@ struct SmartTemplateSelectionView: View {
                     .environment(routineService)
             }
             .safeAreaInset(edge: .bottom) {
-                buildVersionView
+                VStack(spacing: 6) {
+                    PageDotsIndicator(
+                        currentIndex: 0,
+                        count: 2,
+                        labels: ["Habits, current page", "Streaks"]
+                    ) { index in
+                        if index == 1 {
+                            showingStreaks = true
+                        }
+                    }
+                    buildVersionView
+                }
             }
         }
         .task(id: selectionTrigger) {
