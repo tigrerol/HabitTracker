@@ -297,6 +297,14 @@
 "SmartTemplateSelectionView.Edit" = "Edit";
 "SmartTemplateSelectionView.Delete" = "Delete";
 "SmartTemplateSelectionView.HabitsCount" = "%d habits";
+"SmartTemplateSelectionView.PausedSection" = "Paused Sessions";
+
+/* PausedSessionRow Strings */
+"PausedSessionRow.Discard" = "Discard";
+"PausedSessionRow.JustNow" = "just now";
+"PausedSessionRow.MinutesAgo" = "%d min ago";
+"PausedSessionRow.HoursAgo" = "%dh ago";
+"PausedSessionRow.DaysAgo" = "%dd ago";
 
 /* RoutineExecutionView Strings */
 "RoutineExecutionView.NoActiveRoutine" = "No active routine";
