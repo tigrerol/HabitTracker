@@ -2,7 +2,10 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<!-- Base entitlements - add your app's entitlements here -->
+	<key>com.apple.security.application-groups</key>
+	<array>
+		<string>group.com.tigrerol.habittracker</string>
+	</array>
 	<!-- AI agents can safely modify this file to add capabilities -->
 	
 	<!-- Example entitlements (commented out by default):

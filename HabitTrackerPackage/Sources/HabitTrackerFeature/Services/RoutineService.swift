@@ -1,5 +1,8 @@
 import Foundation
 import SwiftUI
+#if canImport(WidgetKit)
+import WidgetKit
+#endif
 
 // MARK: - Notifications
 extension Notification.Name {
@@ -79,7 +82,7 @@ public final class RoutineService {
     private func persistTemplates() async {
         do {
             try await persistenceService.save(templates, forKey: PersistenceKeys.routineTemplates)
-            
+
             // Send updated templates to watch
             await MainActor.run {
                 #if canImport(WatchConnectivity)
@@ -93,6 +96,7 @@ public final class RoutineService {
                 operation: "save"
             )
         }
+        await refreshWidgetSnapshot()
     }
     
     /// Start a new routine session with the given template
@@ -147,7 +151,10 @@ public final class RoutineService {
             modifications: session.modifications
         )
         let templateId = session.template.id
-        Task { await persistenceService.saveRoutineSession(data, for: templateId) }
+        Task {
+            await persistenceService.saveRoutineSession(data, for: templateId)
+            await refreshWidgetSnapshot()
+        }
 
         currentSession = nil
     }
@@ -441,6 +448,64 @@ public final class RoutineService {
                 .encodingFailed(type: "PausedSessionSnapshot", underlyingError: error),
                 key: PersistenceKeys.pausedSessions,
                 operation: "save"
+            )
+        }
+        await refreshWidgetSnapshot()
+    }
+
+    /// Build a fresh WidgetSnapshot from current state and persist it to the App Group
+    /// container, then ask WidgetKit to reload all timelines.
+    public func refreshWidgetSnapshot() async {
+        let topRoutine = templates.first.map { template in
+            WidgetSnapshot.TopRoutine(
+                name: template.name,
+                habitCount: template.activeHabitsCount,
+                colorHex: template.color
+            )
+        }
+
+        let pausedSession: WidgetSnapshot.PausedSession? = pausedSessions
+            .sorted { $0.pausedAt > $1.pausedAt }
+            .first
+            .map { snapshot in
+                WidgetSnapshot.PausedSession(
+                    routineName: snapshot.template.name,
+                    pausedAt: snapshot.pausedAt,
+                    currentStepIndex: snapshot.currentHabitIndex,
+                    totalSteps: snapshot.activeHabitsSnapshot.count
+                )
+            }
+
+        let streakData = await computeStreaks(now: Date())
+        let streaks = streakData
+            .sorted { $0.totalStreak > $1.totalStreak }
+            .prefix(3)
+            .map { data in
+                WidgetSnapshot.StreakEntry(
+                    routineName: data.template.name,
+                    totalStreak: data.totalStreak,
+                    target: data.target,
+                    completedThisWeek: data.currentWeek.completedDayCount
+                )
+            }
+
+        let snapshot = WidgetSnapshot(
+            generatedAt: Date(),
+            topRoutine: topRoutine,
+            pausedSession: pausedSession,
+            streaks: Array(streaks)
+        )
+
+        do {
+            try WidgetSnapshotStore.shared.write(snapshot)
+            #if canImport(WidgetKit)
+            WidgetCenter.shared.reloadAllTimelines()
+            #endif
+        } catch {
+            LoggingService.shared.error(
+                "Failed to write widget snapshot",
+                category: .routine,
+                metadata: ["error": String(describing: error)]
             )
         }
     }
