@@ -116,10 +116,9 @@ struct SmartTemplateSelectionView: View {
     }
     
     private var buildVersionView: some View {
-        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "Unknown"
         let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "Unknown"
 
-        return Text(String(format: String(localized: "SmartTemplateSelectionView.BuildNumber", bundle: .module), version, build))
+        return Text(String(format: String(localized: "SmartTemplateSelectionView.BuildNumber", bundle: .module), build))
             .font(.caption2)
             .foregroundStyle(.secondary)
             .padding(.bottom, 8)

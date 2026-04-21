@@ -283,7 +283,7 @@
 "SmartTemplateSelectionView.NavigationTitle.Afternoon" = "Good Afternoon!";
 "SmartTemplateSelectionView.NavigationTitle.Evening" = "Good Evening!";
 "SmartTemplateSelectionView.NavigationTitle.Default" = "Ready to Start!";
-"SmartTemplateSelectionView.BuildNumber" = "Build: %@ (%@)";
+"SmartTemplateSelectionView.BuildNumber" = "Build %@";
 "SmartTemplateSelectionView.DeleteAlert.Title" = "Delete Routine";
 "SmartTemplateSelectionView.DeleteAlert.Cancel" = "Cancel";
 "SmartTemplateSelectionView.DeleteAlert.Delete" = "Delete";
