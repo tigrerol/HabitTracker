@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		0D88205B2F9810CE0038289B /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0D88205A2F9810CE0038289B /* WidgetKit.framework */; };
 		0D88205D2F9810CE0038289B /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0D88205C2F9810CE0038289B /* SwiftUI.framework */; };
+		0D8822012F990A000038289B /* HabitTrackerWidgetShared in Frameworks */ = {isa = PBXBuildFile; productRef = 0D8822002F990A000038289B /* HabitTrackerWidgetShared */; };
 		0D8821492F9815C60038289B /* HabitTrackerWidgetsExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 0D8820592F9810CE0038289B /* HabitTrackerWidgetsExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		0D9D870A2E35386D003590FA /* HabitTrackerFeature in Frameworks */ = {isa = PBXBuildFile; productRef = 8B41F6842DEDD25C001A66F9 /* HabitTrackerFeature */; };
 		0D9D870B2E35386D003590FA /* HabitTrackerFeature in Frameworks */ = {isa = PBXBuildFile; productRef = 8B41F6822DEDD23B001A66F9 /* HabitTrackerFeature */; };
@@ -110,6 +111,7 @@
 			files = (
 				0D88205D2F9810CE0038289B /* SwiftUI.framework in Frameworks */,
 				0D88205B2F9810CE0038289B /* WidgetKit.framework in Frameworks */,
+				0D8822012F990A000038289B /* HabitTrackerWidgetShared in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -184,6 +186,7 @@
 			);
 			name = HabitTrackerWidgetsExtension;
 			packageProductDependencies = (
+				0D8822002F990A000038289B /* HabitTrackerWidgetShared */,
 			);
 			productName = HabitTrackerWidgetsExtension;
 			productReference = 0D8820592F9810CE0038289B /* HabitTrackerWidgetsExtension.appex */;
@@ -387,7 +390,7 @@
 				INFOPLIST_FILE = HabitTrackerWidgets/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = HabitTrackerWidgets;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				IPHONEOS_DEPLOYMENT_TARGET = 26.4;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -419,7 +422,7 @@
 				INFOPLIST_FILE = HabitTrackerWidgets/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = HabitTrackerWidgets;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				IPHONEOS_DEPLOYMENT_TARGET = 26.4;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -708,6 +711,10 @@
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		0D8822002F990A000038289B /* HabitTrackerWidgetShared */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = HabitTrackerWidgetShared;
+		};
 		0D9D871F2E353C8E003590FA /* HabitTrackerFeature */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = HabitTrackerFeature;

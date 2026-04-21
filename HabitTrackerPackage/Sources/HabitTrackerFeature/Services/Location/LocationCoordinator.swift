@@ -16,24 +16,30 @@ public final class LocationCoordinator: ObservableObject {
     @Published public private(set) var currentExtendedLocationType: ExtendedLocationType = .builtin(.unknown)
     @Published public private(set) var currentLocation: CLLocation?
     
-    /// Callback for location updates
-    private var locationUpdateCallback: (@MainActor (LocationType, ExtendedLocationType) async -> Void)?
-    
+    /// Observers notified when location changes. Multiple subscribers (e.g.
+    /// RoutineSelector for context, RoutineService for widget snapshot) can
+    /// register independently. Order of invocation is not guaranteed.
+    private var locationUpdateCallbacks: [UUID: @MainActor (LocationType, ExtendedLocationType) async -> Void] = [:]
+
+    /// Tracks the async setup so public calls can wait for the location
+    /// manager to exist before invoking it.
+    private var setupTask: Task<Void, Never>?
+
     /// Storage service accessor for UI
     public var storage: LocationStorageService {
         storageService
     }
-    
+
     /// Initialize with optional custom persistence
     public init(persistenceService: (any PersistenceServiceProtocol)? = nil) {
         let persistence = persistenceService ?? UserDefaultsPersistenceService()
-        
+
         self.trackingService = LocationTrackingService()
         self.storageService = LocationStorageService(persistenceService: persistence)
         self.geofencingService = GeofencingService(storageService: storageService)
-        
-        Task {
-            await setupLocationTracking()
+
+        self.setupTask = Task { [weak self] in
+            await self?.setupLocationTracking()
         }
     }
     
@@ -69,26 +75,38 @@ public final class LocationCoordinator: ObservableObject {
         self.currentLocationType = locationType
         self.currentExtendedLocationType = extendedType
         
-        // Notify callback if set
-        if let callback = locationUpdateCallback {
+        // Notify all observers (snapshot dict to avoid mutation-during-iteration
+        // if a callback adds/removes observers).
+        for callback in locationUpdateCallbacks.values {
             await callback(locationType, extendedType)
         }
     }
-    
+
     // MARK: - Public API
-    
-    /// Set callback for location updates
-    public func setLocationUpdateCallback(_ callback: @escaping @MainActor (LocationType, ExtendedLocationType) async -> Void) {
-        self.locationUpdateCallback = callback
+
+    /// Register an observer for location updates. Returns a token to use with
+    /// `removeLocationUpdateCallback`. Multiple observers can be registered.
+    @discardableResult
+    public func addLocationUpdateCallback(_ callback: @escaping @MainActor (LocationType, ExtendedLocationType) async -> Void) -> UUID {
+        let token = UUID()
+        locationUpdateCallbacks[token] = callback
+        return token
+    }
+
+    /// Remove a previously-registered observer.
+    public func removeLocationUpdateCallback(_ token: UUID) {
+        locationUpdateCallbacks.removeValue(forKey: token)
     }
     
     /// Start updating location
     public func startUpdatingLocation() async {
+        await setupTask?.value
         await trackingService.startUpdatingLocation()
     }
-    
+
     /// Stop updating location
     public func stopUpdatingLocation() async {
+        await setupTask?.value
         await trackingService.stopUpdatingLocation()
     }
     

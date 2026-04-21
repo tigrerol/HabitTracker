@@ -1,5 +1,6 @@
 import Foundation
 import SwiftUI
+import HabitTrackerWidgetShared
 #if canImport(WidgetKit)
 import WidgetKit
 #endif
@@ -34,6 +35,14 @@ public final class RoutineService {
         self.persistenceService = persistenceService
         loadTemplates()
         loadPausedSessions()
+
+        // Refresh widget snapshot when location updates land, so the smart-selected
+        // template the widget shows matches the in-app Quick Start once GPS resolves.
+        // RoutineSelector also observes location updates separately for its own context;
+        // we register independently so neither observer can break the other.
+        routineSelector.locationCoordinator.addLocationUpdateCallback { [weak self] _, _ in
+            await self?.refreshWidgetSnapshot()
+        }
     }
     
     /// Load templates from persistence, or create sample templates if none exist
@@ -42,11 +51,12 @@ public final class RoutineService {
             do {
                 if let loadedTemplates = try await persistenceService.load([RoutineTemplate].self, forKey: PersistenceKeys.routineTemplates) {
                     templates = loadedTemplates
-                    
+
                     // Send loaded templates to watch on app startup
                     #if canImport(WatchConnectivity)
                     WatchConnectivityManager.shared.sendRoutineDataToWatch(templates)
                     #endif
+                    await refreshWidgetSnapshot()
                     return
                 }
             } catch {
@@ -455,8 +465,41 @@ public final class RoutineService {
 
     /// Build a fresh WidgetSnapshot from current state and persist it to the App Group
     /// container, then ask WidgetKit to reload all timelines.
-    public func refreshWidgetSnapshot() async {
-        let topRoutine = templates.first.map { template in
+    public func refreshWidgetSnapshot(callSite: String = #function) async {
+        let smartBest = await getSmartTemplateAndSort().best
+        let defaultT = defaultTemplate
+        let lastUsedT = lastUsedTemplate
+        let firstT = templates.first
+
+        let quickStartTemplate = smartBest ?? defaultT ?? lastUsedT ?? firstT
+
+        let chosenSource: String
+        if smartBest != nil { chosenSource = "smart" }
+        else if defaultT != nil { chosenSource = "default" }
+        else if lastUsedT != nil { chosenSource = "lastUsed" }
+        else if firstT != nil { chosenSource = "first" }
+        else { chosenSource = "none" }
+
+        let ctx = routineSelector.currentContext
+        LoggingService.shared.info(
+            "WidgetSnapshot: refresh",
+            category: .routine,
+            metadata: [
+                "callSite": callSite,
+                "chosenSource": chosenSource,
+                "chosen": quickStartTemplate?.name ?? "nil",
+                "smartBest": smartBest?.name ?? "nil",
+                "defaultTemplate": defaultT?.name ?? "nil",
+                "lastUsedTemplate": lastUsedT?.name ?? "nil",
+                "ctx.timeSlot": String(describing: ctx.timeSlot),
+                "ctx.dayCategoryIds": ctx.dayCategories.map(\.id).joined(separator: ","),
+                "ctx.location": ctx.location.rawValue,
+                "ctx.extendedLocation": String(describing: ctx.extendedLocation),
+                "templateCount": String(templates.count)
+            ]
+        )
+
+        let topRoutine = quickStartTemplate.map { template in
             WidgetSnapshot.TopRoutine(
                 name: template.name,
                 habitCount: template.activeHabitsCount,

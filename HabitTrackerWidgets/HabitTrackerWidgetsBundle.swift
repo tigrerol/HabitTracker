@@ -11,6 +11,8 @@ import SwiftUI
 @main
 struct HabitTrackerWidgetsBundle: WidgetBundle {
     var body: some Widget {
-        HabitTrackerWidgets()
+        TopRoutineWidget()
+        PausedRoutineWidget()
+        StreaksWidget()
     }
 }

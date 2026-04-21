@@ -32,7 +32,7 @@ public final class RoutineSelector {
     
     /// Set up location monitoring
     private func setupLocationUpdates() async {
-        locationCoordinator.setLocationUpdateCallback { [weak self] locationType, extendedLocationType in
+        locationCoordinator.addLocationUpdateCallback { [weak self] locationType, extendedLocationType in
             guard let self = self else { return }
 
             // Check if location actually changed to avoid unnecessary updates

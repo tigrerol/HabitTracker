@@ -8,20 +8,25 @@ let package = Package(
     defaultLocalization: "en",
     platforms: [.iOS(.v18), .macOS(.v14)],
     products: [
-        // Products define the executables and libraries a package produces, making them visible to other packages.
         .library(
             name: "HabitTrackerFeature",
             targets: ["HabitTrackerFeature"]
         ),
+        .library(
+            name: "HabitTrackerWidgetShared",
+            targets: ["HabitTrackerWidgetShared"]
+        ),
     ],
     targets: [
-        // Targets are the basic building blocks of a package, defining a module or a test suite.
-        // Targets can depend on other targets in this package and products from dependencies.
         .target(
             name: "HabitTrackerFeature",
+            dependencies: ["HabitTrackerWidgetShared"],
             resources: [
                 .process("Resources")
             ]
+        ),
+        .target(
+            name: "HabitTrackerWidgetShared"
         ),
         .testTarget(
             name: "HabitTrackerFeatureTests",

@@ -156,7 +156,7 @@ struct LocationCoordinatorTests {
         var receivedExtendedType: ExtendedLocationType?
         
         // Set up callback
-        coordinator.setLocationUpdateCallback { locationType, extendedType in
+        coordinator.addLocationUpdateCallback { locationType, extendedType in
             updateReceived = true
             receivedLocationType = locationType
             receivedExtendedType = extendedType
