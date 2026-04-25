@@ -173,7 +173,7 @@ struct RoutineStreakCard: View {
             if count >= 2 {
                 Text("\(count)")
                     .font(.system(size: 12, weight: .bold))
-                    .foregroundStyle(.black)
+                    .foregroundStyle(.white)
             }
         }
     }
