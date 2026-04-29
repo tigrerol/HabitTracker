@@ -439,10 +439,12 @@ private struct ContextMatchIcons: View {
             let dayMatch = !rule.dayCategoryIds.isEmpty && context.dayCategories.contains(where: { rule.dayCategoryIds.contains($0.id) })
             let locationMatch: Bool = {
                 guard !rule.locationIds.isEmpty else { return false }
-                if rule.locationIds.contains(context.location.rawValue) { return true }
-                if case .custom(let id) = context.extendedLocation,
-                   rule.locationIds.contains(id.uuidString) { return true }
-                return false
+                switch context.extendedLocation {
+                case .builtin(let locationType):
+                    return rule.locationIds.contains(locationType.rawValue)
+                case .custom(let id):
+                    return rule.locationIds.contains(id.uuidString)
+                }
             }()
 
             HStack(spacing: 4) {

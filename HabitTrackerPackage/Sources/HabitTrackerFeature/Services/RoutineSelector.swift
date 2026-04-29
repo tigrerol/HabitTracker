@@ -169,26 +169,17 @@ public final class RoutineSelector {
         return max(score, 1)
     }
     
-    /// Check if current location matches rule's location requirements
+    /// Check if current location matches rule's location requirements.
+    /// Switches on `extendedLocation` so that an "Other Location" rule (locationIds = ["unknown"])
+    /// does not falsely match when the user is at a saved custom location — at custom locations
+    /// `context.location` falls back to `.unknown` while the real identity lives in `extendedLocation`.
     private func checkLocationMatches(rule: RoutineContextRule, context: RoutineContext) async -> Bool {
-        // Check built-in location types
-        if rule.locationIds.contains(context.location.rawValue) {
-            return true
+        switch context.extendedLocation {
+        case .builtin(let locationType):
+            return rule.locationIds.contains(locationType.rawValue)
+        case .custom(let uuid):
+            return rule.locationIds.contains(uuid.uuidString)
         }
-        
-        // Check custom locations
-        let allCustomLocations = locationCoordinator.getAllCustomLocations()
-        for customLocation in allCustomLocations {
-            if rule.locationIds.contains(customLocation.id.uuidString) {
-                // Check if we're currently at this custom location
-                if case .custom(let currentCustomId) = currentExtendedLocationType,
-                   currentCustomId == customLocation.id {
-                    return true
-                }
-            }
-        }
-        
-        return false
     }
     
     /// Build a human-readable reason for the selection
