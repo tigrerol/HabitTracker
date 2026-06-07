@@ -30,6 +30,7 @@ public struct HabitEditorView: View {
         case measurement = "Measurement"
     }
     @State private var subtasks: [Subtask] = []
+    @State private var taskMinRequired: Int? = nil
     @State private var taskEstimatedDuration: TimeInterval? = nil
     @State private var sequenceSteps: [SequenceStep] = []
     @FocusState private var isNameFieldFocused: Bool
@@ -66,8 +67,9 @@ public struct HabitEditorView: View {
                 self._measurementUnit = State(initialValue: unit)
                 self._measurementTarget = State(initialValue: target)
             }
-        case .task(let tasks, let customDuration):
+        case .task(let tasks, let minRequired, let customDuration):
             self._subtasks = State(initialValue: tasks)
+            self._taskMinRequired = State(initialValue: minRequired)
             self._taskEstimatedDuration = State(initialValue: customDuration)
         case .guidedSequence(let steps):
             self._sequenceSteps = State(initialValue: steps)
@@ -588,7 +590,7 @@ public struct HabitEditorView: View {
                     .italic()
             } else {
                 ForEach(subtasks) { subtask in
-                    HStack {
+                    HStack(spacing: 8) {
                         TextField(String(localized: "HabitEditorView.Subtasks.Subtask.Placeholder", bundle: .module), text: Binding(
                             get: { subtask.name },
                             set: { newName in
@@ -598,10 +600,27 @@ public struct HabitEditorView: View {
                             }
                         ))
                         .textFieldStyle(.roundedBorder)
-                        
+
+                        // Per-subtask Optional toggle (no effect when a min-required threshold is set)
+                        Toggle(isOn: Binding(
+                            get: { subtask.isOptional },
+                            set: { newValue in
+                                if let index = subtasks.firstIndex(where: { $0.id == subtask.id }) {
+                                    subtasks[index].isOptional = newValue
+                                }
+                            }
+                        )) {
+                            Text("Optional")
+                                .font(.caption2)
+                        }
+                        .toggleStyle(.switch)
+                        .labelsHidden()
+                        .disabled(taskMinRequired != nil)
+
                         Button {
                             withAnimation {
                                 subtasks.removeAll { $0.id == subtask.id }
+                                clampMinRequired()
                             }
                         } label: {
                             Image(systemName: "minus.circle.fill")
@@ -610,7 +629,7 @@ public struct HabitEditorView: View {
                     }
                 }
             }
-            
+
             Button {
                 withAnimation {
                     let newSubtask = Subtask(name: String(localized: "HabitEditorView.Subtasks.NewSubtask.Default", bundle: .module))
@@ -621,6 +640,57 @@ public struct HabitEditorView: View {
                     .font(.subheadline)
                     .foregroundStyle(.blue)
             }
+
+            if subtasks.count >= 2 {
+                Divider().padding(.vertical, 4)
+                minRequiredEditor
+            }
+        }
+    }
+
+    private var minRequiredEditor: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Toggle(isOn: Binding(
+                get: { taskMinRequired != nil },
+                set: { isOn in
+                    if isOn {
+                        // Default to (count - 1) — "any but one is fine" — common case
+                        taskMinRequired = max(1, subtasks.count - 1)
+                    } else {
+                        taskMinRequired = nil
+                    }
+                }
+            )) {
+                Text("Require X of \(subtasks.count) subtasks")
+                    .font(.subheadline)
+            }
+
+            if let current = taskMinRequired {
+                Stepper(
+                    value: Binding(
+                        get: { current },
+                        set: { taskMinRequired = max(1, min(subtasks.count, $0)) }
+                    ),
+                    in: 1...max(1, subtasks.count)
+                ) {
+                    Text("Need \(current) of \(subtasks.count)")
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                }
+                Text("Any \(current) checked subtasks will count as complete. Individual 'Optional' switches are ignored while this is on.")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+            }
+        }
+    }
+
+    /// Keep `taskMinRequired` inside [1, subtasks.count] when the list shrinks.
+    private func clampMinRequired() {
+        guard let current = taskMinRequired else { return }
+        if subtasks.count < 2 {
+            taskMinRequired = nil
+        } else if current > subtasks.count {
+            taskMinRequired = subtasks.count
         }
     }
     
@@ -838,7 +908,11 @@ public struct HabitEditorView: View {
         // Update type with new values
         switch habit.type {
         case .task:
-            updatedHabit.type = .task(subtasks: subtasks, estimatedDuration: taskEstimatedDuration)
+            let cappedMin: Int? = {
+                guard let raw = taskMinRequired, raw > 0, raw < subtasks.count else { return nil }
+                return raw
+            }()
+            updatedHabit.type = .task(subtasks: subtasks, minRequired: cappedMin, estimatedDuration: taskEstimatedDuration)
         case .timer:
             updatedHabit.type = .timer(style: timerStyle, duration: timerDuration, target: timerTarget, steps: timerSteps, repeatCount: timerRepeatCount > 1 ? timerRepeatCount : nil)
         case .action:

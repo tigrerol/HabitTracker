@@ -68,7 +68,7 @@ struct RoutineImportServiceTests {
         """
         let template = try service.importRoutine(fromJSON: json, existingTemplateNames: [])
         #expect(template.habits.count == 1)
-        guard case .task(let subtasks, let duration) = template.habits[0].type else {
+        guard case .task(let subtasks, _, let duration) = template.habits[0].type else {
             Issue.record("Expected task type"); return
         }
         #expect(subtasks.map(\.name) == ["Neck", "Shoulders"])
@@ -314,6 +314,113 @@ struct RoutineImportServiceTests {
         let template = try service.importRoutine(fromJSON: json, existingTemplateNames: [])
         #expect(template.habits.map(\.name) == ["One", "Two", "Three"])
         #expect(template.habits.map(\.order) == [0, 1, 2])
+    }
+
+    // MARK: - Subtask optional + minRequired
+
+    @Test("Subtask object form preserves isOptional")
+    func subtaskObjectFormPreservesOptional() throws {
+        let json = """
+        { "name": "Stretch", "habits": [{
+          "name": "Mobility", "type": "task",
+          "subtasks": [
+            { "name": "Neck",  "isOptional": false },
+            { "name": "Wrist", "isOptional": true }
+          ]
+        }]}
+        """
+        let template = try service.importRoutine(fromJSON: json, existingTemplateNames: [])
+        guard case .task(let subtasks, _, _) = template.habits[0].type else {
+            Issue.record("Expected task"); return
+        }
+        #expect(subtasks.count == 2)
+        #expect(subtasks[0].name == "Neck")
+        #expect(subtasks[0].isOptional == false)
+        #expect(subtasks[1].name == "Wrist")
+        #expect(subtasks[1].isOptional == true)
+    }
+
+    @Test("Subtask plain-string form defaults isOptional to false")
+    func subtaskStringFormDefaultsOptional() throws {
+        let json = """
+        { "name": "Stretch", "habits": [{
+          "name": "Mobility", "type": "task",
+          "subtasks": ["Neck", "Wrist"]
+        }]}
+        """
+        let template = try service.importRoutine(fromJSON: json, existingTemplateNames: [])
+        guard case .task(let subtasks, _, _) = template.habits[0].type else {
+            Issue.record("Expected task"); return
+        }
+        #expect(subtasks.allSatisfy { $0.isOptional == false })
+    }
+
+    @Test("Mixed string and object subtasks both accepted")
+    func subtaskMixedFormAccepted() throws {
+        let json = """
+        { "name": "Stretch", "habits": [{
+          "name": "Mobility", "type": "task",
+          "subtasks": [
+            "Neck",
+            { "name": "Wrist", "isOptional": true }
+          ]
+        }]}
+        """
+        let template = try service.importRoutine(fromJSON: json, existingTemplateNames: [])
+        guard case .task(let subtasks, _, _) = template.habits[0].type else {
+            Issue.record("Expected task"); return
+        }
+        #expect(subtasks.map(\.name) == ["Neck", "Wrist"])
+        #expect(subtasks.map(\.isOptional) == [false, true])
+    }
+
+    @Test("Valid minRequired round-trips")
+    func minRequiredRoundTrips() throws {
+        let json = """
+        { "name": "Pick 2", "habits": [{
+          "name": "Any 2 of 3", "type": "task",
+          "subtasks": ["A", "B", "C"],
+          "minRequired": 2
+        }]}
+        """
+        let template = try service.importRoutine(fromJSON: json, existingTemplateNames: [])
+        guard case .task(_, let minRequired, _) = template.habits[0].type else {
+            Issue.record("Expected task"); return
+        }
+        #expect(minRequired == 2)
+    }
+
+    @Test("minRequired equal to subtask count is dropped to nil")
+    func minRequiredAtMaxIsDropped() throws {
+        let json = """
+        { "name": "X", "habits": [{
+          "name": "Y", "type": "task",
+          "subtasks": ["A", "B"],
+          "minRequired": 2
+        }]}
+        """
+        let template = try service.importRoutine(fromJSON: json, existingTemplateNames: [])
+        guard case .task(_, let minRequired, _) = template.habits[0].type else {
+            Issue.record("Expected task"); return
+        }
+        // 2 of 2 is the same as all-required; we normalize to nil
+        #expect(minRequired == nil)
+    }
+
+    @Test("minRequired of 0 is dropped to nil")
+    func minRequiredZeroDropped() throws {
+        let json = """
+        { "name": "X", "habits": [{
+          "name": "Y", "type": "task",
+          "subtasks": ["A", "B"],
+          "minRequired": 0
+        }]}
+        """
+        let template = try service.importRoutine(fromJSON: json, existingTemplateNames: [])
+        guard case .task(_, let minRequired, _) = template.habits[0].type else {
+            Issue.record("Expected task"); return
+        }
+        #expect(minRequired == nil)
     }
 
     @Test("Too many habits throws tooManyHabits")

@@ -30,11 +30,11 @@ public struct HabitInteractionView: View {
     @ViewBuilder
     public var body: some View {
         switch habit.type {
-            case .task(let subtasks, _):
+            case .task(let subtasks, let minRequired, _):
                 if subtasks.isEmpty {
                     AccessibleCheckboxHabitView(habit: habit, onComplete: onComplete, isCompleted: isCompleted)
                 } else {
-                    SubtasksHabitView(habit: habit, subtasks: subtasks, onComplete: onComplete, isCompleted: isCompleted)
+                    SubtasksHabitView(habit: habit, subtasks: subtasks, minRequired: minRequired, onComplete: onComplete, isCompleted: isCompleted)
                 }
 
             case .timer(let style, let duration, let target, let steps, let repeatCount):
@@ -904,18 +904,33 @@ extension TimeInterval {
 struct SubtasksHabitView: View {
     let habit: Habit
     let subtasks: [Subtask]
+    let minRequired: Int?
     let onComplete: (UUID, TimeInterval?, String?) -> Void
     let isCompleted: Bool
-    
+
     @State private var completedSubtasks: Set<UUID> = []
-    
-    init(habit: Habit, subtasks: [Subtask], onComplete: @escaping (UUID, TimeInterval?, String?) -> Void, isCompleted: Bool) {
+
+    init(habit: Habit, subtasks: [Subtask], minRequired: Int? = nil, onComplete: @escaping (UUID, TimeInterval?, String?) -> Void, isCompleted: Bool) {
         self.habit = habit
         self.subtasks = subtasks
+        self.minRequired = minRequired
         self.onComplete = onComplete
         self.isCompleted = isCompleted
     }
-    
+
+    /// Effective threshold: how many subtasks must be checked to complete.
+    /// When `minRequired` is set, that wins; otherwise count of non-optional subtasks.
+    private var requiredCount: Int {
+        if let minRequired {
+            return max(0, min(subtasks.count, minRequired))
+        }
+        return subtasks.filter { !$0.isOptional }.count
+    }
+
+    /// When `minRequired` is set, individual subtasks aren't named-required, so
+    /// the "Optional" badge becomes noise — hide it.
+    private var showOptionalBadges: Bool { minRequired == nil }
+
     var body: some View {
         VStack(spacing: 16) {
             VStack(alignment: .leading, spacing: 12) {
@@ -926,7 +941,7 @@ struct SubtasksHabitView: View {
                                 completedSubtasks.remove(subtask.id)
                             } else {
                                 completedSubtasks.insert(subtask.id)
-                                
+
                                 // Haptic feedback
                                 #if canImport(UIKit)
                                 let impactFeedback = UIImpactFeedbackGenerator(style: .light)
@@ -939,15 +954,15 @@ struct SubtasksHabitView: View {
                             Image(systemName: completedSubtasks.contains(subtask.id) ? "checkmark.circle.fill" : "circle")
                                 .font(.title3)
                                 .foregroundStyle(completedSubtasks.contains(subtask.id) ? .green : .secondary)
-                            
+
                             Text(subtask.name)
                                 .font(.body)
                                 .foregroundStyle(.primary)
                                 .strikethrough(completedSubtasks.contains(subtask.id))
-                            
+
                             Spacer()
-                            
-                            if subtask.isOptional {
+
+                            if showOptionalBadges && subtask.isOptional {
                                 Text(String(localized: "HabitInteractionView.Optional.Label", bundle: .module))
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
@@ -967,21 +982,28 @@ struct SubtasksHabitView: View {
                     .buttonStyle(.plain)
                 }
             }
-            
+
             VStack(spacing: 12) {
                 // Progress indicator
                 if !subtasks.isEmpty {
-                    let requiredCount = subtasks.filter { !$0.isOptional }.count
-                    let completedRequiredCount = completedSubtasks.filter { id in 
-                        subtasks.first { $0.id == id && !$0.isOptional } != nil 
-                    }.count
-                    
-                    Text("Progress: \(completedRequiredCount)/\(requiredCount) required completed")
+                    let progressCount: Int = {
+                        if minRequired != nil { return completedSubtasks.count }
+                        return completedSubtasks.filter { id in
+                            subtasks.first { $0.id == id && !$0.isOptional } != nil
+                        }.count
+                    }()
+
+                    Text("Progress: \(progressCount)/\(requiredCount) required completed")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
-                
-                // Complete button - enabled when all required subtasks are done
+
+                // Complete button - enabled when threshold is met
+                let progressForGate: Int = (minRequired != nil) ? completedSubtasks.count : completedSubtasks.filter { id in
+                    subtasks.first { $0.id == id && !$0.isOptional } != nil
+                }.count
+                let canComplete = progressForGate >= requiredCount
+
                 Button {
                     let notes = "Completed \(completedSubtasks.count) of \(subtasks.count) subtasks"
                     onComplete(habit.id, nil, notes)
@@ -992,17 +1014,16 @@ struct SubtasksHabitView: View {
                         .frame(maxWidth: .infinity)
                         .padding()
                         .background(
-                            (completedSubtasks.count >= subtasks.filter { !$0.isOptional }.count ? habit.swiftUIColor : .gray),
+                            (canComplete ? habit.swiftUIColor : .gray),
                             in: RoundedRectangle(cornerRadius: 12)
                         )
                 }
-                .disabled(completedSubtasks.count < subtasks.filter { !$0.isOptional }.count)
-                
-                // Skip option if user wants to complete without finishing all optional subtasks
-                if (completedSubtasks.count >= subtasks.filter { !$0.isOptional }.count) && 
-                   (completedSubtasks.count < subtasks.count) {
+                .disabled(!canComplete)
+
+                // Skip option if user wants to complete without finishing remaining subtasks
+                if canComplete && completedSubtasks.count < subtasks.count {
                     Button {
-                        let notes = "Completed \(completedSubtasks.count) of \(subtasks.count) subtasks (skipped optional)"
+                        let notes = "Completed \(completedSubtasks.count) of \(subtasks.count) subtasks (skipped remaining)"
                         onComplete(habit.id, nil, notes)
                     } label: {
                         Text("Complete with \(completedSubtasks.count) tasks")

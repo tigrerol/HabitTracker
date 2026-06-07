@@ -252,7 +252,7 @@ struct HabitQuickAddView: View {
                 if duration != 600 {
                     suggestions.append((String(format: String(localized: "HabitQuickAddView.Suggestion.10min", bundle: .module), cleanName), .timer(style: .down, duration: 600)))
                 }
-            case .task(let subtasks, _):
+            case .task(let subtasks, _, _):
                 if subtasks.isEmpty {
                     suggestions.append((String(format: String(localized: "HabitQuickAddView.Suggestion.Task", bundle: .module), cleanName), .task(subtasks: [])))
                 }

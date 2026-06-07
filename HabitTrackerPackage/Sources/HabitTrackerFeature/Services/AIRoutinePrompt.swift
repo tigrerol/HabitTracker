@@ -27,8 +27,14 @@ public enum AIRoutinePrompt {
     Per-type fields:
 
     1. "task" — a checklist item, with optional subtasks.
-       "subtasks": ["Sub item 1", "Sub item 2"],   // optional
-       "estimatedSeconds": 120                     // optional, overrides default duration
+       "subtasks": [
+         "Plain item",                              // string form (required by default)
+         { "name": "Stretch left",  "isOptional": false },
+         { "name": "Stretch right", "isOptional": true } // object form, lets you mark optional
+       ],
+       "minRequired": 2,                            // optional; when set, ANY N of M is sufficient
+                                                    // (overrides individual isOptional flags)
+       "estimatedSeconds": 120                      // optional, overrides default duration
 
     2. "timer" — a timer of one of three styles.
        "timer": {

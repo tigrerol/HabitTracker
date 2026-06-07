@@ -2182,7 +2182,7 @@ struct ExpandableHabitRow: View {
     
     private var hasExpandableContent: Bool {
         switch habit.type {
-        case .task(let subtasks, _):
+        case .task(let subtasks, _, _):
             return !subtasks.isEmpty
         default:
             return false
@@ -2195,7 +2195,7 @@ struct ExpandableHabitRow: View {
             switch habit.type {
             case .conditional(let info):
                 conditionalOptionsContent(info: info)
-            case .task(let subtasks, _):
+            case .task(let subtasks, _, _):
                 if !subtasks.isEmpty {
                     subtasksContent(subtasks: subtasks)
                 }
@@ -2339,27 +2339,27 @@ struct ExpandableHabitRow: View {
     }
     
     private func addSubtask() {
-        guard case .task(var subtasks, let duration) = habit.type else { return }
+        guard case .task(var subtasks, let minRequired, let duration) = habit.type else { return }
 
         let newSubtask = Subtask(name: "New subtask")
         subtasks.append(newSubtask)
-        habit.type = .task(subtasks: subtasks, estimatedDuration: duration)
+        habit.type = .task(subtasks: subtasks, minRequired: minRequired, estimatedDuration: duration)
     }
 
     private func removeSubtask(at index: Int) {
-        guard case .task(var subtasks, let duration) = habit.type else { return }
+        guard case .task(var subtasks, let minRequired, let duration) = habit.type else { return }
         guard index < subtasks.count else { return }
 
         subtasks.remove(at: index)
-        habit.type = .task(subtasks: subtasks, estimatedDuration: duration)
+        habit.type = .task(subtasks: subtasks, minRequired: minRequired, estimatedDuration: duration)
     }
 
     private func updateSubtaskName(at index: Int, newName: String) {
-        guard case .task(var subtasks, let duration) = habit.type else { return }
+        guard case .task(var subtasks, let minRequired, let duration) = habit.type else { return }
         guard index < subtasks.count else { return }
 
         subtasks[index].name = newName
-        habit.type = .task(subtasks: subtasks, estimatedDuration: duration)
+        habit.type = .task(subtasks: subtasks, minRequired: minRequired, estimatedDuration: duration)
     }
 }
 

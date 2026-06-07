@@ -2,8 +2,10 @@ import Foundation
 
 /// Represents different types of habits in the morning routine
 public enum HabitType: Codable, Hashable, Sendable {
-    /// Task completion with optional subtasks
-    case task(subtasks: [Subtask], estimatedDuration: TimeInterval? = nil)
+    /// Task completion with optional subtasks.
+    /// `minRequired`, when non-nil, gates completion on *any* N checked subtasks
+    /// and overrides each subtask's `isOptional` flag.
+    case task(subtasks: [Subtask], minRequired: Int? = nil, estimatedDuration: TimeInterval? = nil)
     
     /// Timer-based habit with flexible timing modes
     case timer(style: TimerStyle, duration: TimeInterval, target: TimeInterval? = nil, steps: [SequenceStep] = [], repeatCount: Int? = nil)
@@ -83,8 +85,12 @@ extension HabitType {
     /// Human-readable description of the habit type
     public var description: String {
         switch self {
-        case .task(let subtasks, _):
-            return subtasks.isEmpty ? "Simple task" : "\(subtasks.count) subtasks"
+        case .task(let subtasks, let minRequired, _):
+            if subtasks.isEmpty { return "Simple task" }
+            if let minRequired, minRequired < subtasks.count {
+                return "\(minRequired) of \(subtasks.count) required"
+            }
+            return "\(subtasks.count) subtasks"
         case .timer(let style, let duration, let target, let steps, let repeatCount):
             switch style {
             case .down:
@@ -140,7 +146,7 @@ extension HabitType {
     /// Icon name for the habit type
     public var iconName: String {
         switch self {
-        case .task(let subtasks, _):
+        case .task(let subtasks, _, _):
             return subtasks.isEmpty ? "checkmark.square" : "list.bullet.rectangle"
         case .timer(let style, _, _, _, _):
             switch style {

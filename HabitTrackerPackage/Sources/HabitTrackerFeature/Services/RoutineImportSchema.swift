@@ -20,7 +20,8 @@ public struct HabitImportDTO: Codable, Sendable {
     public var color: String?
 
     // task
-    public var subtasks: [String]?
+    public var subtasks: [SubtaskImportDTO]?
+    public var minRequired: Int?
     public var estimatedSeconds: Double?
 
     // timer
@@ -81,4 +82,39 @@ public struct SequenceStepImportDTO: Codable, Sendable {
     public var name: String
     public var durationSeconds: Double
     public var instructions: String?
+}
+
+/// A subtask in the import schema. Accepts either a plain string
+/// (`"Brush teeth"`) or an object (`{"name": "Brush teeth", "isOptional": true}`)
+/// so the AI prompt can stay terse for the common case.
+public struct SubtaskImportDTO: Codable, Sendable {
+    public var name: String
+    public var isOptional: Bool?
+
+    public init(name: String, isOptional: Bool? = nil) {
+        self.name = name
+        self.isOptional = isOptional
+    }
+
+    public init(from decoder: Decoder) throws {
+        if let single = try? decoder.singleValueContainer().decode(String.self) {
+            self.name = single
+            self.isOptional = nil
+            return
+        }
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.name = try container.decode(String.self, forKey: .name)
+        self.isOptional = try container.decodeIfPresent(Bool.self, forKey: .isOptional)
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(name, forKey: .name)
+        try container.encodeIfPresent(isOptional, forKey: .isOptional)
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case name
+        case isOptional
+    }
 }

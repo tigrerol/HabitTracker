@@ -66,7 +66,7 @@ public struct CheckboxHabitHandler: HabitInteractionHandler {
     }
     
     public func canHandle(habit: Habit) -> Bool {
-        if case .task(let subtasks, _) = habit.type, subtasks.isEmpty {
+        if case .task(let subtasks, _, _) = habit.type, subtasks.isEmpty {
             return true
         }
         return false
@@ -88,7 +88,7 @@ public struct SubtasksHabitHandler: HabitInteractionHandler {
         isCompleted: Bool
     ) -> AnyView {
         switch habit.type {
-        case .task(let subtasks, _):
+        case .task(let subtasks, _, _):
             return AnyView(SubtasksHabitView(habit: habit, subtasks: subtasks, onComplete: onComplete, isCompleted: isCompleted))
         default:
             return AnyView(Text("Invalid habit type for SubtasksHabitHandler"))
@@ -96,14 +96,14 @@ public struct SubtasksHabitHandler: HabitInteractionHandler {
     }
     
     public func canHandle(habit: Habit) -> Bool {
-        if case .task(let subtasks, _) = habit.type, !subtasks.isEmpty {
+        if case .task(let subtasks, _, _) = habit.type, !subtasks.isEmpty {
             return true
         }
         return false
     }
     
     public func estimatedDuration(for habit: Habit) -> TimeInterval {
-        guard case .task(let subtasks, _) = habit.type else { return 60 }
+        guard case .task(let subtasks, _, _) = habit.type else { return 60 }
         return TimeInterval(subtasks.count * 45) // 45 seconds per subtask
     }
 }

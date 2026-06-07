@@ -94,11 +94,17 @@ public struct RoutineImportService: Sendable {
     private func buildHabitType(from dto: HabitImportDTO, habitIndex: Int) throws -> HabitType {
         switch dto.type {
         case .task:
-            let subtasks = (dto.subtasks ?? [])
-                .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-                .filter { !$0.isEmpty }
-                .map { Subtask(name: $0) }
-            return .task(subtasks: subtasks, estimatedDuration: dto.estimatedSeconds.flatMap(positiveDuration))
+            let subtasks: [Subtask] = (dto.subtasks ?? [])
+                .compactMap { raw in
+                    let trimmed = raw.name.trimmingCharacters(in: .whitespacesAndNewlines)
+                    guard !trimmed.isEmpty else { return nil }
+                    return Subtask(name: trimmed, isOptional: raw.isOptional ?? false)
+                }
+            let minRequired: Int? = {
+                guard let raw = dto.minRequired, raw > 0, raw < subtasks.count else { return nil }
+                return raw
+            }()
+            return .task(subtasks: subtasks, minRequired: minRequired, estimatedDuration: dto.estimatedSeconds.flatMap(positiveDuration))
 
         case .timer:
             guard let timer = dto.timer else {
