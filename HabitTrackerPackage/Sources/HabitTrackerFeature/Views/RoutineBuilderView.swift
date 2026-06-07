@@ -479,10 +479,15 @@ public struct RoutineBuilderView: View {
             VStack(spacing: 16) {
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(templateName)
-                            .font(.title2)
-                            .fontWeight(.semibold)
-                        
+                        TextField(
+                            String(localized: "RoutineBuilderView.Naming.RoutineName.Placeholder", bundle: .module),
+                            text: $templateName
+                        )
+                        .font(.title2)
+                        .fontWeight(.semibold)
+                        .textFieldStyle(.plain)
+                        .submitLabel(.done)
+
                         if habits.isEmpty {
                             Text(String(localized: "RoutineBuilderView.Building.Question", bundle: .module))
                                 .font(.subheadline)
@@ -632,6 +637,7 @@ public struct RoutineBuilderView: View {
                     
                     if editingTemplate != nil {
                         // Single update button for editing mode
+                        let trimmedName = templateName.trimmingCharacters(in: .whitespacesAndNewlines)
                         Button {
                             saveTemplate()
                         } label: {
@@ -642,9 +648,10 @@ public struct RoutineBuilderView: View {
                                 .padding()
                                 .background(
                                     RoundedRectangle(cornerRadius: 12)
-                                        .fill(Color(hex: templateColor) ?? .blue)
+                                        .fill(trimmedName.isEmpty ? Color.gray : (Color(hex: templateColor) ?? .blue))
                                 )
                         }
+                        .disabled(trimmedName.isEmpty)
                     } else {
                         // Single save button for new routine creation
                         Button {
