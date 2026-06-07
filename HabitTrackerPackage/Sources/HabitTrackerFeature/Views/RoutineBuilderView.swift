@@ -812,7 +812,7 @@ public struct RoutineBuilderView: View {
             )
         }
         .sheet(isPresented: $showingSnippetBrowser) {
-            SnippetBrowserView { selectedHabits in
+            SnippetBrowserView(excludedRoutineId: editingTemplate?.id) { selectedHabits in
                 withAnimation(.easeInOut) {
                     habits.append(contentsOf: selectedHabits.map { $0.withNewIdentity() })
                 }
@@ -827,7 +827,7 @@ public struct RoutineBuilderView: View {
                     .font(.headline)
                     .fontWeight(.semibold)
                 Spacer()
-                Button("Browse All") {
+                Button("Snippets & Routines") {
                     showingSnippetBrowser = true
                 }
                 .font(.caption)

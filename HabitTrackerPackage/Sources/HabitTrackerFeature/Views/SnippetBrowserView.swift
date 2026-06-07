@@ -1,30 +1,77 @@
 import SwiftUI
 
-/// Browser for selecting snippets to add to a routine
+/// Browser for adding habits to a routine from either a saved snippet or another routine.
 struct SnippetBrowserView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(RoutineService.self) private var routineService
-    
+
     let onSnippetSelected: ([Habit]) -> Void
-    
+    /// Routine ID to hide from the Routines tab — typically the one being edited.
+    let excludedRoutineId: UUID?
+
     @State private var searchText = ""
-    
+    @State private var sourceMode: SourceMode = .snippets
+
+    enum SourceMode: String, CaseIterable, Identifiable {
+        case snippets
+        case routines
+        var id: String { rawValue }
+        var title: String {
+            switch self {
+            case .snippets: return "Snippets"
+            case .routines: return "Routines"
+            }
+        }
+    }
+
+    init(excludedRoutineId: UUID? = nil, onSnippetSelected: @escaping ([Habit]) -> Void) {
+        self.excludedRoutineId = excludedRoutineId
+        self.onSnippetSelected = onSnippetSelected
+    }
+
     private var filteredSnippets: [HabitSnippet] {
         routineService.snippetService.searchSnippets(query: searchText)
     }
-    
+
+    private var filteredRoutines: [RoutineTemplate] {
+        let trimmed = searchText.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        return routineService.templates
+            .filter { $0.id != excludedRoutineId }
+            .filter { trimmed.isEmpty || $0.name.lowercased().contains(trimmed) }
+    }
+
     var body: some View {
         NavigationStack {
-            VStack {
-                if filteredSnippets.isEmpty {
-                    emptyStateView
-                } else {
-                    snippetGrid
+            VStack(spacing: 0) {
+                Picker("Source", selection: $sourceMode) {
+                    ForEach(SourceMode.allCases) { mode in
+                        Text(mode.title).tag(mode)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .padding(.horizontal)
+                .padding(.top, 8)
+
+                Group {
+                    switch sourceMode {
+                    case .snippets:
+                        if filteredSnippets.isEmpty {
+                            emptySnippetsState
+                        } else {
+                            snippetGrid
+                        }
+                    case .routines:
+                        if filteredRoutines.isEmpty {
+                            emptyRoutinesState
+                        } else {
+                            routineGrid
+                        }
+                    }
                 }
             }
-            .navigationTitle("Add Snippet")
-            .searchable(text: $searchText, prompt: "Search snippets")
-            
+            .navigationTitle("Add Habits")
+            .searchable(text: $searchText, prompt: sourceMode == .snippets ? "Search snippets" : "Search routines")
+
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {
@@ -34,31 +81,55 @@ struct SnippetBrowserView: View {
             }
         }
     }
-    
-    private var emptyStateView: some View {
+
+    private var emptySnippetsState: some View {
         VStack(spacing: 16) {
             Spacer()
-            
+
             Image(systemName: "square.stack.3d.up")
                 .font(.system(size: 60))
                 .foregroundStyle(.secondary)
-            
+
             Text(searchText.isEmpty ? "No Snippets Yet" : "No Results")
                 .font(.headline)
                 .foregroundStyle(.secondary)
-            
-            Text(searchText.isEmpty ? 
-                 "Create your first snippet by selecting habits in a routine and tapping 'Save snippet'" : 
+
+            Text(searchText.isEmpty ?
+                 "Create your first snippet by selecting habits in a routine and tapping 'Save snippet'" :
                  "Try a different search term")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal)
-            
+
             Spacer()
         }
     }
-    
+
+    private var emptyRoutinesState: some View {
+        VStack(spacing: 16) {
+            Spacer()
+
+            Image(systemName: "list.bullet.rectangle")
+                .font(.system(size: 60))
+                .foregroundStyle(.secondary)
+
+            Text(searchText.isEmpty ? "No Other Routines" : "No Results")
+                .font(.headline)
+                .foregroundStyle(.secondary)
+
+            Text(searchText.isEmpty ?
+                 "You need at least one other routine to copy habits from." :
+                 "Try a different search term")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal)
+
+            Spacer()
+        }
+    }
+
     private var snippetGrid: some View {
         ScrollView {
             LazyVGrid(columns: [
@@ -75,22 +146,39 @@ struct SnippetBrowserView: View {
             .padding()
         }
     }
+
+    private var routineGrid: some View {
+        ScrollView {
+            LazyVGrid(columns: [
+                GridItem(.flexible()),
+                GridItem(.flexible())
+            ], spacing: 16) {
+                ForEach(filteredRoutines) { routine in
+                    RoutineSourceCard(routine: routine) {
+                        onSnippetSelected(routine.habits.map { $0.withNewIdentity() })
+                        dismiss()
+                    }
+                }
+            }
+            .padding()
+        }
+    }
 }
 
 /// Individual snippet card
 struct SnippetCard: View {
     let snippet: HabitSnippet
     let onTap: () -> Void
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Image(systemName: snippet.icon)
                     .font(.title2)
                     .foregroundStyle(snippet.swiftUIColor)
-                
+
                 Spacer()
-                
+
                 Text("\(snippet.habitCount)")
                     .font(.caption)
                     .fontWeight(.medium)
@@ -98,14 +186,57 @@ struct SnippetCard: View {
                     .padding(.vertical, 2)
                     .background(.regularMaterial, in: Capsule())
             }
-            
+
             VStack(alignment: .leading, spacing: 4) {
                 Text(snippet.name)
                     .font(.subheadline)
                     .fontWeight(.medium)
                     .lineLimit(2)
-                
+
                 Text(snippet.estimatedDuration.formattedDuration)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding()
+        .frame(height: 100)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+        .contentShape(Rectangle())
+        .onTapGesture {
+            onTap()
+        }
+    }
+}
+
+/// Card showing another routine as a habit source
+struct RoutineSourceCard: View {
+    let routine: RoutineTemplate
+    let onTap: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Image(systemName: "list.bullet.rectangle")
+                    .font(.title2)
+                    .foregroundStyle(routine.swiftUIColor)
+
+                Spacer()
+
+                Text("\(routine.habits.count)")
+                    .font(.caption)
+                    .fontWeight(.medium)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(.regularMaterial, in: Capsule())
+            }
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(routine.name)
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                    .lineLimit(2)
+
+                Text(routine.formattedDuration)
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
