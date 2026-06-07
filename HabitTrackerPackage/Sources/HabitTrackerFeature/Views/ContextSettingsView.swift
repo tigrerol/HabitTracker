@@ -18,6 +18,8 @@ struct ContextSettingsView: View {
     @State private var importResult: ImportResult?
     @State private var showingSnippetLibrary = false
     @State private var showingContextCoverage = false
+    @State private var showingAIRoutineImport = false
+    @State private var showingAIPromptCopy = false
     
     var body: some View {
         NavigationStack {
@@ -204,6 +206,30 @@ struct ContextSettingsView: View {
                         )
                     }
                     .buttonStyle(.plain)
+
+                    Button {
+                        showingAIPromptCopy = true
+                    } label: {
+                        SettingsRow(
+                            title: "Copy AI Prompt",
+                            subtitle: "Get a prompt to ask any AI for a routine JSON",
+                            icon: "doc.on.doc",
+                            detail: ""
+                        )
+                    }
+                    .buttonStyle(.plain)
+
+                    Button {
+                        showingAIRoutineImport = true
+                    } label: {
+                        SettingsRow(
+                            title: "Import Routine from AI",
+                            subtitle: "Paste AI-generated JSON to add a new routine",
+                            icon: "sparkles",
+                            detail: ""
+                        )
+                    }
+                    .buttonStyle(.plain)
                 } header: {
                     Text("Data Management")
                 }
@@ -237,6 +263,13 @@ struct ContextSettingsView: View {
             if let exportedFileURL = exportedFileURL {
                 ShareSheet(items: [exportedFileURL])
             }
+        }
+        .sheet(isPresented: $showingAIPromptCopy) {
+            AIPromptCopyView()
+        }
+        .sheet(isPresented: $showingAIRoutineImport) {
+            AIRoutineImportView()
+                .environment(routineService)
         }
         .fileImporter(
             isPresented: $showingFilePicker,
