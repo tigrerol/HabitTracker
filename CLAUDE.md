@@ -38,9 +38,11 @@ HabitTracker/
 │   │   ├── Utils/                       # Theme, typography, haptics, geometry
 │   │   └── Views/                       # All SwiftUI views
 │   └── Tests/HabitTrackerFeatureTests/
-├── HabitTrackerWatch Watch App/          # watchOS companion
+├── HabitTrackerWidgets/                  # Widgets extension
 └── HabitTrackerUITests/                  # UI automation tests
 ```
+
+**Note:** There is no watchOS target — the watch app has been set aside for now.
 
 **Important:** All development work should be done in the **HabitTrackerPackage** Swift Package, not in the app project. The app project is a thin wrapper that creates the SwiftData model container and calls `HabitTrackerFeature.morningRoutineView()`.
 
