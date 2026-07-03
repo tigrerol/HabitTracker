@@ -65,7 +65,7 @@ struct SaveSnippetSheet: View {
                 }
                 .padding()
             }
-            .background(Theme.background.ignoresSafeArea())
+            .appBackground()
             .navigationTitle("New Snippet")
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)

@@ -56,6 +56,8 @@ struct CustomLocationEditorView: View {
                     Text(String(localized: "CustomLocationEditorView.LocationDetails.Footer", bundle: .module))
                 }
             }
+            .scrollContentBackground(.hidden)
+            .appBackground()
             .navigationTitle(isEditing ? String(localized: "CustomLocationEditorView.EditLocation.NavigationTitle", bundle: .module) : String(localized: "CustomLocationEditorView.NewLocation.NavigationTitle", bundle: .module))
             
             .toolbar {
@@ -153,6 +155,8 @@ private struct IconPickerView: View {
                 }
             }
             .padding()
+            .scrollContentBackground(.hidden)
+            .appBackground()
             .navigationTitle(String(localized: "CustomLocationEditorView.ChooseIcon.NavigationTitle", bundle: .module))
             
             .toolbar {

@@ -4,7 +4,6 @@ import SwiftUI
 @MainActor
 public struct StreaksView: View {
     @Environment(RoutineService.self) private var routineService
-    @Environment(\.dismiss) private var dismiss
     @State private var streaks: [StreakCalculator.RoutineStreakData] = []
     @State private var didLoadOnce = false
 
@@ -25,21 +24,8 @@ public struct StreaksView: View {
                 }
             }
         }
-        .background(Theme.background.ignoresSafeArea())
+        .appBackground()
         .navigationTitle("Streaks")
-        .navigationBarTitleDisplayMode(.inline)
-        .safeAreaInset(edge: .bottom) {
-            PageDotsIndicator(
-                currentIndex: 1,
-                count: 2,
-                labels: ["Habits", "Streaks, current page"]
-            ) { index in
-                if index == 0 {
-                    dismiss()
-                }
-            }
-            .padding(.bottom, 8)
-        }
         .task(id: routineService.templates.count) {
             streaks = await routineService.computeStreaks(now: Date())
             didLoadOnce = true
@@ -87,8 +73,12 @@ struct RoutineStreakCard: View {
             }
         }
         .padding(14)
-        .background(Theme.cardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .background(Theme.cardSurface)
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(Theme.hairline, lineWidth: 1)
+        )
     }
 
     private var previousColumn: some View {

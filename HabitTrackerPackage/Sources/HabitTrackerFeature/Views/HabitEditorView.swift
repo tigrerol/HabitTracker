@@ -149,7 +149,8 @@ public struct HabitEditorView: View {
                 }
                 .padding()
             }
-            .background(Theme.background.ignoresSafeArea())
+            .scrollContentBackground(.hidden)
+            .appBackground()
             .navigationTitle(String(localized: "HabitEditorView.NavigationTitle", bundle: .module))
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)

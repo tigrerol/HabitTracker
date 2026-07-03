@@ -13,7 +13,6 @@ struct SmartTemplateSelectionView: View {
     @State private var showingDeleteAlert = false
     @State private var showingLocationSetup = false
     @State private var showingContextSettings = false
-    @State private var showingStreaks = false
     @Namespace private var templateTransition
     
     private var timeBasedGreeting: String {
@@ -39,18 +38,8 @@ struct SmartTemplateSelectionView: View {
                 allTemplatesSection
             }
             .padding()
-            .background(Theme.background.ignoresSafeArea())
-            .contentShape(Rectangle())
-            .gesture(
-                DragGesture(minimumDistance: 20)
-                    .onEnded { value in
-                        if value.translation.width < -80 && abs(value.translation.height) < 60 {
-                            showingStreaks = true
-                        }
-                    }
-            )
+            .appBackground()
             .navigationTitle(timeBasedGreeting)
-            
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     SettingsButton()
@@ -62,26 +51,7 @@ struct SmartTemplateSelectionView: View {
                     } label: {
                         Image(systemName: "plus")
                             .fontWeight(.semibold)
-                            .foregroundStyle(themeManager.currentAccentColor)
                     }
-                }
-            }
-            .navigationDestination(isPresented: $showingStreaks) {
-                StreaksView()
-                    .environment(routineService)
-            }
-            .safeAreaInset(edge: .bottom) {
-                VStack(spacing: 6) {
-                    PageDotsIndicator(
-                        currentIndex: 0,
-                        count: 2,
-                        labels: ["Habits, current page", "Streaks"]
-                    ) { index in
-                        if index == 1 {
-                            showingStreaks = true
-                        }
-                    }
-                    buildVersionView
                 }
             }
         }
@@ -113,15 +83,6 @@ struct SmartTemplateSelectionView: View {
                 Text(String(localized: "SmartTemplateSelectionView.DeleteAlert.Message", bundle: .module).replacingOccurrences(of: "%@", with: template.name))
             }
         }
-    }
-    
-    private var buildVersionView: some View {
-        let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "Unknown"
-
-        return Text(String(format: String(localized: "SmartTemplateSelectionView.BuildNumber", bundle: .module), build))
-            .font(.caption2)
-            .foregroundStyle(.secondary)
-            .padding(.bottom, 8)
     }
     
     private var headerView: some View {
@@ -266,17 +227,17 @@ struct SmartTemplateSelectionView: View {
         .padding(.horizontal, 20)
         .padding(.vertical, 18)
         .background(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(.regularMaterial)
-                .shadow(color: .black.opacity(0.06), radius: 8, x: 0, y: 4)
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .fill(Theme.cardSurface)
+                .shadow(color: .black.opacity(0.07), radius: 10, x: 0, y: 5)
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
                 .stroke(
                     LinearGradient(
                         colors: [
-                            themeManager.currentAccentColor.opacity(0.4),
-                            themeManager.currentAccentColor.opacity(0.15)
+                            themeManager.currentAccentColor.opacity(0.45),
+                            themeManager.currentAccentColor.opacity(0.12)
                         ],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
@@ -529,38 +490,26 @@ private struct CompactTemplateCard: View {
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 11)
         .background(
-            RoundedRectangle(cornerRadius: 8)
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .fill(
-                    isSelected ? 
-                    LinearGradient(
-                        colors: [
-                            themeManager.currentAccentColor.opacity(0.1),
-                            themeManager.currentAccentColor.opacity(0.05)
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    ) :
-                    LinearGradient(
-                        colors: [Color.clear, Color.clear],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
+                    isSelected
+                        ? AnyShapeStyle(themeManager.currentAccentColor.opacity(0.08))
+                        : AnyShapeStyle(Theme.cardSurface)
                 )
-                .background(.regularMaterial)
                 .matchedGeometry(
-                    id: .templateCard(templateId: template.id), 
+                    id: .templateCard(templateId: template.id),
                     in: namespace,
                     isSource: true
                 )
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 8)
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .stroke(
-                    isSelected ? themeManager.currentAccentColor.opacity(0.3) : Color.clear,
-                    lineWidth: isSelected ? 1 : 0
+                    isSelected ? themeManager.currentAccentColor.opacity(0.35) : Theme.hairline,
+                    lineWidth: 1
                 )
         )
         .contentShape(Rectangle())

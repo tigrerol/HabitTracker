@@ -104,6 +104,8 @@ struct DayTypeEditorView: View {
                     .foregroundStyle(.blue)
                 }
             }
+            .scrollContentBackground(.hidden)
+            .appBackground()
             .navigationTitle("Day Categories")
 
             .toolbar {
@@ -499,6 +501,8 @@ private struct CategoryCreatorView: View {
                     }
                 }
             }
+            .scrollContentBackground(.hidden)
+            .appBackground()
             .navigationTitle(editingCategory != nil ? "Edit Category" : "New Category")
 
             .toolbar {
@@ -604,6 +608,8 @@ private struct DayCategoryPresetsView: View {
                     .buttonStyle(.plain)
                 }
             }
+            .scrollContentBackground(.hidden)
+            .appBackground()
             .navigationTitle("Preset Schedules")
 
             .toolbar {

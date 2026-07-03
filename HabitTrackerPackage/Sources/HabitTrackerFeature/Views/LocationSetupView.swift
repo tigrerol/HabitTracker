@@ -226,6 +226,8 @@ struct LocationSetupView: View {
     var body: some View {
         NavigationStack {
             contentView
+                .scrollContentBackground(.hidden)
+                .appBackground()
                 .navigationTitle(String(localized: "LocationSetupView.NavigationTitle", bundle: .module))
         }
         .sheet(item: $locationState.activeSheet) { sheet in
@@ -484,6 +486,8 @@ private struct CustomLocationPickerView: View {
                 }
             }
             .padding()
+            .scrollContentBackground(.hidden)
+            .appBackground()
             .navigationTitle("Set Location")
 
         }
@@ -609,6 +613,8 @@ private struct LocationPickerView: View {
                 }
             }
             .padding()
+            .scrollContentBackground(.hidden)
+            .appBackground()
             .navigationTitle("Set Location")
             
         }

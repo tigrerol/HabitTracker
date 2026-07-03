@@ -234,6 +234,8 @@ struct ContextSettingsView: View {
                     Text("Data Management")
                 }
             }
+            .scrollContentBackground(.hidden)
+            .appBackground()
             .navigationTitle(String(localized: "ContextSettingsView.NavigationTitle", bundle: .module))
             
             .toolbar {

@@ -26,6 +26,7 @@ public struct SnippetLibraryView: View {
                     snippetList
                 }
             }
+            .appBackground()
             .navigationTitle("Snippet Library")
             .searchable(text: $searchText, prompt: "Search snippets")
             
@@ -117,6 +118,7 @@ public struct SnippetLibraryView: View {
             }
         }
         .listStyle(.plain)
+        .scrollContentBackground(.hidden)
     }
 }
 

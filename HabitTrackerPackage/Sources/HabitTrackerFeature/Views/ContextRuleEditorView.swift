@@ -136,6 +136,8 @@ struct ContextRuleEditorView: View {
                     }
                 }
             }
+            .scrollContentBackground(.hidden)
+            .appBackground()
             .navigationTitle(String(localized: "ContextRuleEditorView.NavigationTitle", bundle: .module))
             
             .toolbar {

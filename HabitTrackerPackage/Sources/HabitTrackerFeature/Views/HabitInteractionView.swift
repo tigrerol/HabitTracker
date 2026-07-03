@@ -341,21 +341,20 @@ struct TimerHabitView: View {
                                 Image(systemName: "play.fill")
                                 Text(String(localized: "HabitInteractionView.Timer.Start", bundle: .module))
                             }
-                            .font(.headline)
-                            .foregroundStyle(.white)
+                            .font(.system(.headline, design: .rounded, weight: .semibold))
                             .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(habit.swiftUIColor, in: RoundedRectangle(cornerRadius: 12))
+                            .frame(minHeight: 38)
                         }
+                        .buttonStyle(.glassProminent)
+                        .tint(habit.swiftUIColor)
                     }
-                    
+
                     // Quick timer shortcuts
                     HStack(spacing: 8) {
                         quickTimerButton(seconds: 30, label: "30s")
                         quickTimerButton(seconds: 60, label: "1m")
                         quickTimerButton(seconds: 120, label: "2m")
                     }
-                    .opacity(0.8)
                 } else {
                     HStack(spacing: 12) {
                         Button {
@@ -369,22 +368,22 @@ struct TimerHabitView: View {
                                 Image(systemName: isPaused ? "play.fill" : "pause.fill")
                                 Text(isPaused ? String(localized: "HabitInteractionView.Timer.Resume", bundle: .module) : String(localized: "HabitInteractionView.Timer.Pause", bundle: .module))
                             }
-                            .font(.headline)
-                            .foregroundStyle(.white)
+                            .font(.system(.headline, design: .rounded, weight: .semibold))
                             .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(habit.swiftUIColor, in: RoundedRectangle(cornerRadius: 12))
+                            .frame(minHeight: 38)
                         }
-                        
+                        .buttonStyle(.glassProminent)
+                        .tint(habit.swiftUIColor)
+
                         Button {
                             stopTimer()
                         } label: {
                             Image(systemName: "stop.fill")
                                 .font(.headline)
-                                .foregroundStyle(.white)
-                                .frame(minWidth: 50, minHeight: 50)
-                                .background(.red, in: RoundedRectangle(cornerRadius: 12))
+                                .frame(minWidth: 38, minHeight: 38)
                         }
+                        .buttonStyle(.glassProminent)
+                        .tint(.red)
                     }
                 }
             }
@@ -417,14 +416,11 @@ struct TimerHabitView: View {
             onComplete(habit.id, seconds, String(localized: "HabitInteractionView.Timer.QuickCompletion", bundle: .module).replacingOccurrences(of: "%@", with: label))
         } label: {
             Text(label)
-                .font(.caption)
-                .fontWeight(.medium)
+                .font(.system(.caption, design: .rounded, weight: .medium))
                 .foregroundStyle(.secondary)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
-                .background(.regularMaterial, in: Capsule())
+                .padding(.horizontal, 6)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.glass)
     }
     
     private func startTimer() {
@@ -558,24 +554,24 @@ struct AppLaunchHabitView: View {
                     launchApp()
                 } label: {
                     Text(isShortcut ? String(localized: "HabitInteractionView.AppLaunch.RunShortcut", bundle: .module) : String(localized: "HabitInteractionView.AppLaunch.Launch", bundle: .module).replacingOccurrences(of: "%@", with: appName))
-                        .font(.headline)
-                        .foregroundStyle(.white)
+                        .font(.system(.headline, design: .rounded, weight: .semibold))
                         .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(habit.swiftUIColor, in: RoundedRectangle(cornerRadius: 12))
+                        .frame(minHeight: 38)
                 }
+                .buttonStyle(.glassProminent)
+                .tint(habit.swiftUIColor)
             } else {
                 Button {
                     let duration = startTime.map { Date().timeIntervalSince($0) }
                     onComplete(habit.id, duration, nil)
                 } label: {
                     Text(String(localized: "HabitInteractionView.AppLaunch.ImDone", bundle: .module))
-                        .font(.headline)
-                        .foregroundStyle(.white)
+                        .font(.system(.headline, design: .rounded, weight: .semibold))
                         .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(habit.swiftUIColor, in: RoundedRectangle(cornerRadius: 12))
+                        .frame(minHeight: 38)
                 }
+                .buttonStyle(.glassProminent)
+                .tint(habit.swiftUIColor)
             }
         }
     }
@@ -653,24 +649,24 @@ struct WebsiteHabitView: View {
                     openWebsite()
                 } label: {
                     Text(String(localized: "HabitInteractionView.Website.Open", bundle: .module).replacingOccurrences(of: "%@", with: title))
-                        .font(.headline)
-                        .foregroundStyle(.white)
+                        .font(.system(.headline, design: .rounded, weight: .semibold))
                         .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(habit.swiftUIColor, in: RoundedRectangle(cornerRadius: 12))
+                        .frame(minHeight: 38)
                 }
+                .buttonStyle(.glassProminent)
+                .tint(habit.swiftUIColor)
             } else {
                 Button {
                     let duration = startTime.map { Date().timeIntervalSince($0) }
                     onComplete(habit.id, duration, nil)
                 } label: {
                     Text(String(localized: "HabitInteractionView.AppLaunch.ImDone", bundle: .module))
-                        .font(.headline)
-                        .foregroundStyle(.white)
+                        .font(.system(.headline, design: .rounded, weight: .semibold))
                         .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(habit.swiftUIColor, in: RoundedRectangle(cornerRadius: 12))
+                        .frame(minHeight: 38)
                 }
+                .buttonStyle(.glassProminent)
+                .tint(habit.swiftUIColor)
             }
         }
     }
@@ -765,24 +761,24 @@ struct ActionHabitView: View {
                     performAction()
                 } label: {
                     Text(buttonText)
-                        .font(.headline)
-                        .foregroundStyle(.white)
+                        .font(.system(.headline, design: .rounded, weight: .semibold))
                         .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(habit.swiftUIColor, in: RoundedRectangle(cornerRadius: 12))
+                        .frame(minHeight: 38)
                 }
+                .buttonStyle(.glassProminent)
+                .tint(habit.swiftUIColor)
             } else {
                 Button {
                     let duration = startTime.map { Date().timeIntervalSince($0) }
                     onComplete(habit.id, duration, nil)
                 } label: {
                     Text(String(localized: "HabitInteractionView.Action.ImDone", bundle: .module))
-                        .font(.headline)
-                        .foregroundStyle(.white)
+                        .font(.system(.headline, design: .rounded, weight: .semibold))
                         .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(habit.swiftUIColor, in: RoundedRectangle(cornerRadius: 12))
+                        .frame(minHeight: 38)
                 }
+                .buttonStyle(.glassProminent)
+                .tint(habit.swiftUIColor)
             }
         }
     }
@@ -1164,12 +1160,12 @@ struct GuidedSequenceHabitView: View {
                                 Image(systemName: "play.fill")
                                 Text(String(localized: "HabitInteractionView.Timer.Start", bundle: .module))
                             }
-                            .font(.headline)
-                            .foregroundStyle(.white)
+                            .font(.system(.headline, design: .rounded, weight: .semibold))
                             .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(habit.swiftUIColor, in: RoundedRectangle(cornerRadius: 12))
+                            .frame(minHeight: 38)
                         }
+                        .buttonStyle(.glassProminent)
+                        .tint(habit.swiftUIColor)
                     } else {
                         Button {
                             if isPaused {
@@ -1182,12 +1178,12 @@ struct GuidedSequenceHabitView: View {
                                 Image(systemName: isPaused ? "play.fill" : "pause.fill")
                                 Text(isPaused ? String(localized: "HabitInteractionView.Timer.Resume", bundle: .module) : String(localized: "HabitInteractionView.Timer.Pause", bundle: .module))
                             }
-                            .font(.headline)
-                            .foregroundStyle(.white)
+                            .font(.system(.headline, design: .rounded, weight: .semibold))
                             .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(habit.swiftUIColor, in: RoundedRectangle(cornerRadius: 12))
+                            .frame(minHeight: 38)
                         }
+                        .buttonStyle(.glassProminent)
+                        .tint(habit.swiftUIColor)
                     }
                     
                     Button {
@@ -1221,12 +1217,12 @@ struct GuidedSequenceHabitView: View {
                         onComplete(habit.id, totalElapsed, "Completed all \(steps.count) steps")
                     } label: {
                         Text(String(localized: "HabitInteractionView.Sequence.Done", bundle: .module))
-                            .font(.headline)
-                            .foregroundStyle(.white)
+                            .font(.system(.headline, design: .rounded, weight: .semibold))
                             .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(.green, in: RoundedRectangle(cornerRadius: 12))
+                            .frame(minHeight: 38)
                     }
+                    .buttonStyle(.glassProminent)
+                    .tint(Color.green)
                 }
             }
         }

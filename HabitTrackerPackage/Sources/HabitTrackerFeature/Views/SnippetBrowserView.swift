@@ -69,6 +69,7 @@ struct SnippetBrowserView: View {
                     }
                 }
             }
+            .appBackground()
             .navigationTitle("Add Habits")
             .searchable(text: $searchText, prompt: sourceMode == .snippets ? "Search snippets" : "Search routines")
 

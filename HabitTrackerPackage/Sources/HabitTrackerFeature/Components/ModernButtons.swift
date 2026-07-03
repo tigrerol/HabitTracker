@@ -2,107 +2,72 @@ import SwiftUI
 
 // MARK: - Primary Action Button
 
+/// Prominent Liquid Glass capsule button tinted with the current accent color
 public struct PrimaryButton: View {
     let title: String
     let action: () -> Void
     let isEnabled: Bool
     let isLoading: Bool
     @Environment(ThemeManager.self) private var themeManager
-    
+
     public init(_ title: String, isEnabled: Bool = true, isLoading: Bool = false, action: @escaping () -> Void) {
         self.title = title
         self.isEnabled = isEnabled
         self.isLoading = isLoading
         self.action = action
     }
-    
+
     public var body: some View {
-        Button(action: {
+        Button {
             if isEnabled && !isLoading {
                 HapticManager.trigger(.light)
                 action()
             }
-        }) {
+        } label: {
             HStack(spacing: 8) {
                 if isLoading {
                     ProgressView()
-                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                        .tint(.white)
                         .scaleEffect(0.8)
                 } else {
                     Text(title)
-                        .customSubheadline()
-                        .foregroundStyle(.white)
+                        .font(.system(.headline, design: .rounded, weight: .semibold))
                 }
             }
             .frame(maxWidth: .infinity)
-            .frame(minHeight: 50)
-            .background(
-                Capsule()
-                    .fill(
-                        isEnabled ?
-                        LinearGradient(
-                            colors: [
-                                themeManager.currentAccentColor,
-                                themeManager.currentAccentColor.opacity(0.8)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ) :
-                        LinearGradient(
-                            colors: [Color.gray, Color.gray.opacity(0.8)],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-            )
+            .frame(minHeight: 38)
         }
+        .buttonStyle(.glassProminent)
+        .tint(isEnabled ? themeManager.currentAccentColor : .gray)
         .disabled(!isEnabled || isLoading)
-        .buttonStyle(ScaleButtonStyle())
     }
 }
 
 // MARK: - Secondary Action Button
 
+/// Liquid Glass capsule button with accent-tinted label
 public struct SecondaryButton: View {
     let title: String
     let action: () -> Void
     @Environment(ThemeManager.self) private var themeManager
-    
+
     public init(_ title: String, action: @escaping () -> Void) {
         self.title = title
         self.action = action
     }
-    
+
     public var body: some View {
-        Button(action: {
+        Button {
             HapticManager.trigger(.selection)
             action()
-        }) {
+        } label: {
             Text(title)
-                .customSubheadline()
+                .font(.system(.headline, design: .rounded, weight: .medium))
                 .foregroundStyle(themeManager.currentAccentColor)
                 .frame(maxWidth: .infinity)
-                .frame(minHeight: 50)
-                .background(
-                    Capsule()
-                        .fill(themeManager.currentAccentColor.opacity(0.1))
-                        .overlay(
-                            Capsule()
-                                .stroke(
-                                    LinearGradient(
-                                        colors: [
-                                            themeManager.currentAccentColor,
-                                            themeManager.currentAccentColor.opacity(0.7)
-                                        ],
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    ),
-                                    lineWidth: 2
-                                )
-                        )
-                )
+                .frame(minHeight: 38)
         }
-        .buttonStyle(ScaleButtonStyle())
+        .buttonStyle(.glass)
     }
 }
 
@@ -114,103 +79,87 @@ public struct IconButton: View {
     let action: () -> Void
     let style: ButtonStyle
     @Environment(ThemeManager.self) private var themeManager
-    
+
     public enum ButtonStyle {
         case primary
         case secondary
         case minimal
     }
-    
+
     public init(icon: String, title: String? = nil, style: ButtonStyle = .primary, action: @escaping () -> Void) {
         self.icon = icon
         self.title = title
         self.style = style
         self.action = action
     }
-    
+
     public var body: some View {
-        Button(action: {
+        Button {
             HapticManager.trigger(.light)
             action()
-        }) {
+        } label: {
             HStack(spacing: 8) {
                 Image(systemName: icon)
                     .font(.subheadline.weight(.semibold))
-                
+
                 if let title = title {
                     Text(title)
-                        .customBody()
+                        .font(.system(.body, design: .rounded))
                 }
             }
-            .padding(.horizontal, title != nil ? 16 : 12)
-            .padding(.vertical, 12)
-            .foregroundStyle(foregroundColor)
-            .background(background)
+            .padding(.horizontal, title != nil ? 4 : 0)
         }
-        .buttonStyle(ScaleButtonStyle())
+        .modifier(IconButtonGlassStyle(style: style, accent: themeManager.currentAccentColor))
     }
-    
-    private var foregroundColor: Color {
+}
+
+private struct IconButtonGlassStyle: ViewModifier {
+    let style: IconButton.ButtonStyle
+    let accent: Color
+
+    func body(content: Content) -> some View {
         switch style {
         case .primary:
-            return .white
+            content
+                .buttonStyle(.glassProminent)
+                .tint(accent)
         case .secondary:
-            return themeManager.currentAccentColor
+            content
+                .buttonStyle(.glass)
+                .tint(accent)
         case .minimal:
-            return Theme.text
-        }
-    }
-    
-    @ViewBuilder
-    private var background: some View {
-        switch style {
-        case .primary:
-            Capsule()
-                .fill(themeManager.currentAccentColor)
-        case .secondary:
-            Capsule()
-                .stroke(themeManager.currentAccentColor, lineWidth: 2)
-        case .minimal:
-            Capsule()
-                .fill(Color.gray.opacity(0.1))
+            content
+                .buttonStyle(.glass)
+                .tint(.primary)
         }
     }
 }
 
 // MARK: - Floating Action Button
 
+/// Circular prominent glass button for the main screen action
 public struct FloatingActionButton: View {
     let icon: String
     let action: () -> Void
     @Environment(ThemeManager.self) private var themeManager
-    
+
     public init(icon: String, action: @escaping () -> Void) {
         self.icon = icon
         self.action = action
     }
-    
+
     public var body: some View {
-        Button(action: {
+        Button {
             HapticManager.trigger(.medium)
             action()
-        }) {
+        } label: {
             Image(systemName: icon)
                 .font(.title2.weight(.semibold))
-                .foregroundStyle(.white)
-                .frame(minWidth: 56, minHeight: 56)
-                .background(
-                    Circle()
-                        .fill(
-                            LinearGradient(
-                                colors: [themeManager.currentAccentColor, themeManager.currentAccentColor.opacity(0.8)],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                )
-                .shadow(color: themeManager.currentAccentColor.opacity(0.3), radius: 8, x: 0, y: 4)
+                .frame(minWidth: 44, minHeight: 44)
         }
-        .buttonStyle(BounceButtonStyle())
+        .buttonStyle(.glassProminent)
+        .buttonBorderShape(.circle)
+        .tint(themeManager.currentAccentColor)
     }
 }
 
@@ -218,7 +167,7 @@ public struct FloatingActionButton: View {
 
 public struct ScaleButtonStyle: ButtonStyle {
     public init() {}
-    
+
     public func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .scaleEffect(configuration.isPressed ? 0.95 : 1.0)
@@ -230,7 +179,7 @@ public struct ScaleButtonStyle: ButtonStyle {
 
 public struct BounceButtonStyle: ButtonStyle {
     public init() {}
-    
+
     public func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .scaleEffect(configuration.isPressed ? 0.9 : 1.0)
@@ -244,19 +193,20 @@ public struct AnimatedToggle: View {
     @Binding var isOn: Bool
     let label: String
     @Environment(ThemeManager.self) private var themeManager
-    
+
     public init(_ label: String, isOn: Binding<Bool>) {
         self.label = label
         self._isOn = isOn
     }
-    
+
     public var body: some View {
         HStack {
             Text(label)
-                .customBody()
-            
+                .font(.system(.body, design: .rounded))
+                .foregroundStyle(Theme.text)
+
             Spacer()
-            
+
             Toggle("", isOn: $isOn)
                 .labelsHidden()
                 .toggleStyle(SwitchToggleStyle(tint: themeManager.currentAccentColor))

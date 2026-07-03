@@ -64,6 +64,7 @@ public struct RoutineBuilderView: View {
                 }
             }
             .animation(.easeInOut(duration: 0.3), value: currentStep)
+            .appBackground()
             .navigationTitle(editingTemplate != nil ? String(localized: "RoutineBuilderView.EditRoutine.NavigationTitle", bundle: .module) : String(localized: "RoutineBuilderView.CreateRoutine.NavigationTitle", bundle: .module))
             
             .toolbar {
@@ -160,7 +161,7 @@ public struct RoutineBuilderView: View {
                                                 .foregroundColor(templateName == suggestion ? .white : Theme.text)
                                                 .padding(.horizontal, 16)
                                                 .padding(.vertical, 8)
-                                                .background(templateName == suggestion ? Theme.Colors.accentTeal : Theme.cardBackground, in: Capsule())
+                                                .background(templateName == suggestion ? Theme.Colors.accentTeal : Theme.cardSurface, in: Capsule())
                                         }
                                         .buttonStyle(ModernButtonStyle())
                                     }
@@ -401,7 +402,7 @@ public struct RoutineBuilderView: View {
                         Image(systemName: selectedHabitsForSnippet.contains(habit.id) ? "checkmark.circle.fill" : "circle")
                             .foregroundStyle(selectedHabitsForSnippet.contains(habit.id) ? .blue : .secondary)
                             .font(.title3)
-                            .background(Theme.cardBackground, in: Circle())
+                            .background(Theme.cardSurface, in: Circle())
                     }
                     .frame(width: 44, height: 44)
                     .contentShape(Rectangle())
@@ -462,7 +463,7 @@ public struct RoutineBuilderView: View {
                         Image(systemName: selectedHabitsForSnippet.contains(habit.id) ? "checkmark.circle.fill" : "circle")
                             .foregroundStyle(selectedHabitsForSnippet.contains(habit.id) ? .blue : .secondary)
                             .font(.title3)
-                            .background(Theme.cardBackground, in: Circle())
+                            .background(Theme.cardSurface, in: Circle())
                     }
                     .frame(width: 44, height: 44)
                     .contentShape(Rectangle())
@@ -571,6 +572,7 @@ public struct RoutineBuilderView: View {
                                 .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 4, trailing: 0))
                             }
                             .listStyle(.plain)
+                            .scrollContentBackground(.hidden)
                             .frame(height: min(CGFloat(habits.count) * 60, 360))
                             .padding(.horizontal)
                         }

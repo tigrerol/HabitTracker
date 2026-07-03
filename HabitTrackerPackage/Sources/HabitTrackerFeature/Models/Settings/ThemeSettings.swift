@@ -1,84 +1,57 @@
 import SwiftUI
 
-// MARK: - App Theme
+// MARK: - Appearance Mode
 
-public enum AppTheme: String, CaseIterable, Sendable {
-    case sunstone
-    case slate
+public enum AppearanceMode: String, CaseIterable, Sendable {
+    case system
+    case light
+    case dark
 
     public var displayName: String {
         switch self {
-        case .sunstone: return "Sunstone"
-        case .slate: return "Slate"
+        case .system: return "Auto"
+        case .light: return "Light"
+        case .dark: return "Dark"
         }
     }
 
-    public var modeLabel: String {
+    public var icon: String {
         switch self {
-        case .sunstone: return "Light"
-        case .slate: return "Dark"
+        case .system: return "circle.lefthalf.filled"
+        case .light: return "sun.max.fill"
+        case .dark: return "moon.fill"
         }
     }
 
-    public var tagline: String {
+    /// nil follows the system setting
+    public var colorScheme: ColorScheme? {
         switch self {
-        case .sunstone: return "Warm and grounded"
-        case .slate: return "Focused and deep"
+        case .system: return nil
+        case .light: return .light
+        case .dark: return .dark
         }
     }
+}
 
-    public var accentColor: Color {
-        switch self {
-        case .sunstone: return Color(hex: "C4702B") ?? .orange
-        case .slate: return Color(hex: "7FC8A9") ?? .green
-        }
-    }
+// MARK: - Accent Preset
 
-    public var accentHex: String {
-        switch self {
-        case .sunstone: return "C4702B"
-        case .slate: return "7FC8A9"
-        }
-    }
+public struct AccentPreset: Identifiable, Equatable, Sendable {
+    public let name: String
+    public let hex: String
 
-    public var preferredColorScheme: ColorScheme {
-        switch self {
-        case .sunstone: return .light
-        case .slate: return .dark
-        }
-    }
+    public var id: String { hex }
+    public var color: Color { Color(hex: hex) ?? Theme.Colors.accentTeal }
 
-    /// Background color for theme preview rendering
-    public var previewBackground: Color {
-        switch self {
-        case .sunstone: return Color(hex: "EDE3CE") ?? .white
-        case .slate: return Color(hex: "0C1B2E") ?? .black
-        }
-    }
+    public static let all: [AccentPreset] = [
+        AccentPreset(name: "Teal", hex: "2B8C84"),
+        AccentPreset(name: "Amber", hex: "C4702B"),
+        AccentPreset(name: "Mint", hex: "7FC8A9"),
+        AccentPreset(name: "Lavender", hex: "9F7AEA"),
+        AccentPreset(name: "Coral", hex: "F56565"),
+        AccentPreset(name: "Ocean", hex: "3A7BD5"),
+    ]
 
-    /// Card surface for theme preview rendering
-    public var previewSurface: Color {
-        switch self {
-        case .sunstone: return Color(hex: "FAF3E4") ?? .white
-        case .slate: return Color(hex: "162840") ?? Color(white: 0.12)
-        }
-    }
-
-    /// Primary text color for theme preview rendering
-    public var previewTextPrimary: Color {
-        switch self {
-        case .sunstone: return Color(hex: "1A1717") ?? .black
-        case .slate: return Color(hex: "EFEFEF") ?? .white
-        }
-    }
-
-    /// Secondary text color for theme preview rendering
-    public var previewTextSecondary: Color {
-        switch self {
-        case .sunstone: return (Color(hex: "1A1717") ?? .black).opacity(0.45)
-        case .slate: return (Color(hex: "EFEFEF") ?? .white).opacity(0.45)
-        }
-    }
+    public static let `default` = all[0]
 }
 
 // MARK: - Theme Manager
@@ -92,41 +65,41 @@ public final class ThemeManager {
 
     // MARK: - Properties
 
-    public private(set) var currentTheme: AppTheme = .sunstone
-    public private(set) var currentAccentColor: Color = AppTheme.sunstone.accentColor
-    public var preferredColorScheme: ColorScheme { currentTheme.preferredColorScheme }
+    public private(set) var accentHex: String
+    public private(set) var currentAccentColor: Color
+    public private(set) var appearanceMode: AppearanceMode
 
-    // MARK: - Available Themes
+    /// nil follows the system setting
+    public var preferredColorScheme: ColorScheme? { appearanceMode.colorScheme }
 
-    public let availableThemes: [AppTheme] = AppTheme.allCases
+    // MARK: - Persistence Keys
+
+    private static let accentKey = "accentColorHex"
+    private static let appearanceKey = "appearanceMode"
 
     // MARK: - Initialization
 
     private init() {
-        loadThemeSettings()
+        let savedHex = UserDefaults.standard.string(forKey: Self.accentKey) ?? AccentPreset.default.hex
+        self.accentHex = savedHex
+        self.currentAccentColor = Color(hex: savedHex) ?? AccentPreset.default.color
+
+        let savedMode = UserDefaults.standard.string(forKey: Self.appearanceKey) ?? ""
+        self.appearanceMode = AppearanceMode(rawValue: savedMode) ?? .system
     }
 
     // MARK: - Public Methods
 
-    public func updateTheme(_ theme: AppTheme) {
-        currentTheme = theme
-        currentAccentColor = theme.accentColor
-        UserDefaults.standard.set(theme.accentHex, forKey: "accentColorHex")
-    }
-
     public func updateAccentColor(hex: String) {
-        let matched = AppTheme.allCases.first { $0.accentHex.lowercased() == hex.lowercased() }
-        updateTheme(matched ?? .sunstone)
+        guard let color = Color(hex: hex) else { return }
+        accentHex = hex
+        currentAccentColor = color
+        UserDefaults.standard.set(hex, forKey: Self.accentKey)
     }
 
-    // MARK: - Private Methods
-
-    private func loadThemeSettings() {
-        if let savedHex = UserDefaults.standard.string(forKey: "accentColorHex") {
-            let matched = AppTheme.allCases.first { $0.accentHex.lowercased() == savedHex.lowercased() }
-            currentTheme = matched ?? .sunstone
-            currentAccentColor = currentTheme.accentColor
-        }
+    public func updateAppearanceMode(_ mode: AppearanceMode) {
+        appearanceMode = mode
+        UserDefaults.standard.set(mode.rawValue, forKey: Self.appearanceKey)
     }
 }
 
@@ -138,4 +111,3 @@ extension Theme {
         ThemeManager.shared.currentAccentColor
     }
 }
-

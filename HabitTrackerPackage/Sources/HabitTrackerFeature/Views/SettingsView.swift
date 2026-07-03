@@ -8,8 +8,12 @@ public struct SettingsView: View {
     @State private var showingThemeCustomization = false
     @State private var showingContextSettings = false
     @AppStorage(FeedbackManager.soundEnabledKey) private var timerSoundEnabled: Bool = true
-    
+
     public init() {}
+
+    private var accentName: String {
+        AccentPreset.all.first { $0.hex.lowercased() == themeManager.accentHex.lowercased() }?.name ?? "Custom"
+    }
     
     public var body: some View {
         NavigationStack {
@@ -35,7 +39,7 @@ public struct SettingsView: View {
                                 Text("Appearance")
                                     .customSubheadline()
 
-                                Text(themeManager.currentTheme.displayName + " · " + themeManager.currentTheme.modeLabel)
+                                Text(accentName + " · " + themeManager.appearanceMode.displayName)
                                     .customCaption()
                                     .foregroundStyle(.secondary)
                             }
@@ -149,6 +153,8 @@ public struct SettingsView: View {
                     }
                 }
             }
+            .scrollContentBackground(.hidden)
+            .appBackground()
             .navigationTitle("Settings")
             #if os(iOS)
             .navigationBarTitleDisplayMode(.large)

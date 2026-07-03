@@ -82,6 +82,8 @@ struct AIRoutineImportView: View {
                     Text("Or import from a file")
                 }
             }
+            .scrollContentBackground(.hidden)
+            .appBackground()
             .navigationTitle("Import Routine from AI")
             #if canImport(UIKit)
             .navigationBarTitleDisplayMode(.inline)

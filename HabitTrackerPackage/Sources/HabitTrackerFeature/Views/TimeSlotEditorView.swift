@@ -67,6 +67,8 @@ struct TimeSlotEditorView: View {
                     Text(String(localized: "TimeSlotEditorView.Tips.Title", bundle: .module))
                 }
             }
+            .scrollContentBackground(.hidden)
+            .appBackground()
             .navigationTitle(String(localized: "TimeSlotEditorView.NavigationTitle", bundle: .module))
             
             .toolbar {
@@ -309,6 +311,8 @@ private struct AddTimeSlotView: View {
                     }
                 }
             }
+            .scrollContentBackground(.hidden)
+            .appBackground()
             .navigationTitle(String(localized: "TimeSlotEditorView.AddTimeSlot.NavigationTitle", bundle: .module))
             
             .toolbar {

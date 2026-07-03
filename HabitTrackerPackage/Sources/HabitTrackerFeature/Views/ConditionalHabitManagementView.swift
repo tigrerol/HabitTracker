@@ -38,6 +38,8 @@ public struct ConditionalHabitManagementView: View {
                     }
                     .tag(2)
             }
+            .scrollContentBackground(.hidden)
+            .appBackground()
             .navigationTitle("Conditional Habits")
         }
         .sheet(isPresented: $showingExportSheet) {

@@ -66,7 +66,6 @@ struct HabitOverviewView: View {
             .padding(.horizontal, 16)
             .padding(.vertical, 10)
         }
-        .background(.regularMaterial)
     }
 
     private func habitStatusLabel(for habit: Habit) -> String {

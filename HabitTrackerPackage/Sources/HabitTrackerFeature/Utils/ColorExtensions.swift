@@ -115,16 +115,22 @@ public struct ColorUtils {
 // MARK: - Modern Theme System
 
 public struct Theme {
-    
+
     // MARK: - Color Palette
     public struct Colors {
         // Primary Backgrounds
-        public static let primaryBackground = Color(hex: "EDE3CE") ?? .clear     // Warm sand linen (Sunstone)
-        public static let darkPrimaryBackground = Color(hex: "0C1B2E") ?? .clear // Midnight navy (Slate)
+        public static let primaryBackground = Color(hex: "EDE3CE") ?? .clear     // Warm sand linen
+        public static let darkPrimaryBackground = Color(hex: "0C1B2E") ?? .clear // Midnight navy
+
+        // Background gradient endpoints
+        public static let gradientTopLight = Color(hex: "F4EBDA") ?? .clear
+        public static let gradientBottomLight = Color(hex: "E4D1AF") ?? .clear
+        public static let gradientTopDark = Color(hex: "13253F") ?? .clear
+        public static let gradientBottomDark = Color(hex: "081422") ?? .clear
 
         // Card Backgrounds
-        public static let cardBackground = Color(hex: "FAF3E4") ?? .white        // Warm parchment (Sunstone)
-        public static let darkCardBackground = Color(hex: "162840") ?? .clear    // Deep navy surface (Slate)
+        public static let cardBackground = Color(hex: "FAF3E4") ?? .white        // Warm parchment
+        public static let darkCardBackground = Color(hex: "162840") ?? .clear    // Deep navy surface
 
         // Accent Colors - Choose one as primary
         public static let accentTeal = Color(hex: "2B8C84") ?? .clear      // WCAG AA compliant teal
@@ -167,7 +173,47 @@ public struct Theme {
         light: Colors.secondaryText,
         dark: Colors.darkSecondaryText
     )
-    
+
+    /// Translucent warm surface for content cards sitting on the background gradient
+    public static let cardSurface = dynamicColor(
+        light: (Color(hex: "FFFBF0") ?? .white).opacity(0.62),
+        dark: Color.white.opacity(0.07)
+    )
+
+    /// Hairline border for cards and chips
+    public static let hairline = dynamicColor(
+        light: Color.black.opacity(0.07),
+        dark: Color.white.opacity(0.13)
+    )
+
     // Primary accent - will be overridden by ThemeManager
     public static let accent = Colors.accentTeal
+}
+
+// MARK: - App Background
+
+/// Warm gradient canvas that sits behind every screen. Liquid Glass surfaces
+/// pick up this gradient, so it defines the app's overall mood.
+public struct AppBackground: View {
+    @Environment(\.colorScheme) private var colorScheme
+
+    public init() {}
+
+    public var body: some View {
+        LinearGradient(
+            colors: colorScheme == .dark
+                ? [Theme.Colors.gradientTopDark, Theme.Colors.darkPrimaryBackground, Theme.Colors.gradientBottomDark]
+                : [Theme.Colors.gradientTopLight, Theme.Colors.primaryBackground, Theme.Colors.gradientBottomLight],
+            startPoint: .top,
+            endPoint: .bottom
+        )
+        .ignoresSafeArea()
+    }
+}
+
+extension View {
+    /// Place the shared warm gradient behind this view
+    public func appBackground() -> some View {
+        background(AppBackground())
+    }
 }

@@ -125,13 +125,12 @@ struct AccessibleTimerHabitView: View {
                         isRunning ? "Pause" : "Start",
                         systemImage: isRunning ? "pause.fill" : "play.fill"
                     )
-                    .font(.headline)
-                    .foregroundStyle(.white)
-                    .padding(.vertical, 12)
-                    .padding(.horizontal, 24)
-                    .background(isRunning ? Color.orange : Color.green)
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .font(.system(.headline, design: .rounded, weight: .semibold))
+                    .padding(.horizontal, 12)
+                    .frame(minHeight: 38)
                 }
+                .buttonStyle(.glassProminent)
+                .tint(isRunning ? Color.orange : Color.green)
                 .accessibilityButton(
                     identifier: isRunning ? 
                         AccessibilityConfiguration.Identifiers.timerStopButton(habitId: habit.id) :
@@ -391,13 +390,12 @@ struct AccessibleCounterHabitView: View {
                     completeHabit()
                 } label: {
                     Text(String(localized: "HabitInteractionView.Complete.Button", bundle: .module))
-                        .font(.headline)
-                        .foregroundStyle(.white)
-                        .padding()
+                        .font(.system(.headline, design: .rounded, weight: .semibold))
                         .frame(maxWidth: .infinity)
-                        .background(Color.green)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .frame(minHeight: 38)
                 }
+                .buttonStyle(.glassProminent)
+                .tint(Color.green)
                 .accessibilityButton(
                     identifier: AccessibilityConfiguration.Identifiers.completeHabitButton(habitId: habit.id),
                     label: AccessibilityConfiguration.Labels.completeHabitButton(habitName: habit.name),

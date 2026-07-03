@@ -51,6 +51,8 @@ public struct ConditionalHabitEditorView: View {
                 optionsSection
                 depthWarningSection
             }
+            .scrollContentBackground(.hidden)
+            .appBackground()
             .navigationTitle(existingHabit == nil ? String(localized: "ConditionalHabitEditorView.NewQuestion.NavigationTitle", bundle: .module) : String(localized: "ConditionalHabitEditorView.EditQuestion.NavigationTitle", bundle: .module))
             
             .toolbar {
@@ -452,6 +454,8 @@ struct PathBuilderView: View {
                     }
                 }
             }
+            .scrollContentBackground(.hidden)
+            .appBackground()
             .navigationTitle(String(format: String(localized: "ConditionalHabitEditorView.PathFor.NavigationTitle", bundle: .module), optionText))
             
             .toolbar {
@@ -638,6 +642,8 @@ struct HabitPickerView: View {
                     }
                 }
             }
+            .scrollContentBackground(.hidden)
+            .appBackground()
             .navigationTitle(String(localized: "ConditionalHabitEditorView.AddHabit.NavigationTitle", bundle: .module))
             
             .toolbar {

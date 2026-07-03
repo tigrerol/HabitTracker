@@ -6,7 +6,7 @@ import PackageDescription
 let package = Package(
     name: "HabitTrackerFeature",
     defaultLocalization: "en",
-    platforms: [.iOS(.v18), .macOS(.v14)],
+    platforms: [.iOS("26.0")],
     products: [
         .library(
             name: "HabitTrackerFeature",

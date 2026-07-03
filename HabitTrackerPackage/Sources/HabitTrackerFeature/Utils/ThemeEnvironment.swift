@@ -13,7 +13,7 @@ public struct DynamicThemeView<Content: View>: View {
     public var body: some View {
         content
             .environment(themeManager)
-            .accentColor(themeManager.currentAccentColor)
+            .tint(themeManager.currentAccentColor)
             .preferredColorScheme(themeManager.preferredColorScheme)
     }
 }
@@ -41,45 +41,45 @@ struct DynamicAccentColorModifier: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .accentColor(themeManager.currentAccentColor)
+            .tint(themeManager.currentAccentColor)
     }
 }
 
 // MARK: - Theme-Aware Button Styles
 
-public struct DynamicPrimaryButtonStyle: ButtonStyle {
+/// Prominent glass capsule tinted with the current accent — apply directly to Button
+public struct DynamicPrimaryButtonStyle: PrimitiveButtonStyle {
     @Environment(ThemeManager.self) private var themeManager
 
     public init() {}
 
     public func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .foregroundStyle(.white)
-            .padding(.horizontal, 20)
-            .padding(.vertical, 12)
-            .background(themeManager.currentAccentColor)
-            .cornerRadius(10)
-            .scaleEffect(configuration.isPressed ? 0.95 : 1.0)
-            .animation(.spring(response: 0.3, dampingFraction: 0.6), value: configuration.isPressed)
+        Button(role: configuration.role) {
+            configuration.trigger()
+        } label: {
+            configuration.label
+                .padding(.horizontal, 8)
+        }
+        .buttonStyle(.glassProminent)
+        .tint(themeManager.currentAccentColor)
     }
 }
 
-public struct DynamicSecondaryButtonStyle: ButtonStyle {
+/// Plain glass capsule with accent-tinted label — apply directly to Button
+public struct DynamicSecondaryButtonStyle: PrimitiveButtonStyle {
     @Environment(ThemeManager.self) private var themeManager
 
     public init() {}
 
     public func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .foregroundStyle(themeManager.currentAccentColor)
-            .padding(.horizontal, 20)
-            .padding(.vertical, 12)
-            .background(
-                RoundedRectangle(cornerRadius: 10)
-                    .stroke(themeManager.currentAccentColor, lineWidth: 2)
-            )
-            .scaleEffect(configuration.isPressed ? 0.95 : 1.0)
-            .animation(.spring(response: 0.3, dampingFraction: 0.6), value: configuration.isPressed)
+        Button(role: configuration.role) {
+            configuration.trigger()
+        } label: {
+            configuration.label
+                .padding(.horizontal, 8)
+        }
+        .buttonStyle(.glass)
+        .tint(themeManager.currentAccentColor)
     }
 }
 
@@ -99,11 +99,20 @@ public struct DynamicProgressView: View {
         GeometryReader { geometry in
             ZStack(alignment: .leading) {
                 Capsule()
-                    .fill(Color.gray.opacity(0.2))
+                    .fill(Theme.hairline)
                     .frame(height: height)
 
                 Capsule()
-                    .fill(themeManager.currentAccentColor)
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                themeManager.currentAccentColor,
+                                themeManager.currentAccentColor.opacity(0.75)
+                            ],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
                     .frame(width: geometry.size.width * progress, height: height)
                     .animation(.spring(response: 0.5, dampingFraction: 0.8), value: progress)
             }

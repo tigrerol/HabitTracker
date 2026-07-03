@@ -72,10 +72,10 @@ struct RoutineCompletionView: View {
             .padding(.vertical, 16)
             .background(
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .fill(.regularMaterial)
+                    .fill(Theme.cardSurface)
                     .overlay(
                         RoundedRectangle(cornerRadius: 16, style: .continuous)
-                            .stroke(Color.primary.opacity(0.06), lineWidth: 1)
+                            .stroke(Theme.hairline, lineWidth: 1)
                     )
             )
 
@@ -92,24 +92,11 @@ struct RoutineCompletionView: View {
                     Text(String(localized: "RoutineExecutionView.AllDone", bundle: .module))
                         .font(.system(.headline, design: .rounded, weight: .semibold))
                 }
-                .foregroundStyle(.white)
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 16)
-                .background(
-                    RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .fill(
-                            LinearGradient(
-                                colors: [
-                                    themeManager.currentAccentColor,
-                                    themeManager.currentAccentColor.opacity(0.85)
-                                ],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                )
+                .frame(minHeight: 38)
             }
-            .buttonStyle(ScaleButtonStyle())
+            .buttonStyle(.glassProminent)
+            .tint(themeManager.currentAccentColor)
         }
         .padding()
     }

@@ -28,6 +28,8 @@ public struct MoodRatingView: View {
                 saveButton
             }
             .padding()
+            .scrollContentBackground(.hidden)
+            .appBackground()
             .navigationTitle(String(localized: "MoodRatingView.NavigationTitle", bundle: .module))
             
             .toolbar {

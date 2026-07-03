@@ -31,6 +31,8 @@ struct AIPromptCopyView: View {
                 }
                 .padding()
             }
+            .scrollContentBackground(.hidden)
+            .appBackground()
             .navigationTitle("AI Prompt")
             #if canImport(UIKit)
             .navigationBarTitleDisplayMode(.inline)

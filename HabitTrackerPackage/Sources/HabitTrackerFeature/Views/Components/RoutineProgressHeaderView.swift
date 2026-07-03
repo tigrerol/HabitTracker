@@ -101,13 +101,10 @@ struct RoutineProgressHeaderView: View {
         .padding(.vertical, 14)
         .background(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(.regularMaterial)
+                .fill(Theme.cardSurface)
                 .overlay(
                     RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .stroke(
-                            themeManager.currentAccentColor.opacity(0.15),
-                            lineWidth: 1
-                        )
+                        .stroke(Theme.hairline, lineWidth: 1)
                 )
         )
     }

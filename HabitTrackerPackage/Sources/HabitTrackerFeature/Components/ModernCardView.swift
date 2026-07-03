@@ -28,76 +28,60 @@ public struct ModernCard<Content: View>: View {
         .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
         .shadow(color: shadowColor, radius: shadowRadius, x: 0, y: shadowOffset)
     }
-    
+
     @ViewBuilder
     private var backgroundView: some View {
+        let shape = RoundedRectangle(cornerRadius: 20, style: .continuous)
         switch style {
         case .standard:
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .fill(Theme.cardBackground)
-        
+            shape
+                .fill(Theme.cardSurface)
+                .overlay(shape.stroke(Theme.hairline, lineWidth: 1))
+
         case .frosted:
-            ZStack {
-                RoundedRectangle(cornerRadius: 20, style: .continuous)
-                    .fill(.ultraThinMaterial)
-                
-                // Subtle inner glow for depth
-                RoundedRectangle(cornerRadius: 20, style: .continuous)
-                    .stroke(
+            shape
+                .fill(.ultraThinMaterial)
+                .overlay(shape.stroke(Theme.hairline, lineWidth: 1))
+
+        case .elevated:
+            shape
+                .fill(Theme.cardSurface)
+                .overlay(
+                    shape.stroke(
                         LinearGradient(
                             colors: [
-                                themeManager.currentAccentColor.opacity(0.3),
-                                .white.opacity(0.5),
-                                .clear
+                                themeManager.currentAccentColor.opacity(0.45),
+                                themeManager.currentAccentColor.opacity(0.12)
                             ],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         ),
-                        lineWidth: 1
+                        lineWidth: 1.5
                     )
-            }
-        
-        case .elevated:
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .fill(Theme.cardBackground)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 20, style: .continuous)
-                        .stroke(
-                            LinearGradient(
-                                colors: [
-                                    themeManager.currentAccentColor.opacity(0.2),
-                                    themeManager.currentAccentColor.opacity(0.05),
-                                    Color.gray.opacity(0.1)
-                                ],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            ),
-                            lineWidth: 1
-                        )
                 )
         }
     }
-    
+
     private var shadowColor: Color {
         switch style {
-        case .elevated: Color.black.opacity(0.12)
-        case .standard: Color.black.opacity(0.06)
+        case .elevated: Color.black.opacity(0.10)
+        case .standard: Color.black.opacity(0.05)
         case .frosted: Color.black.opacity(0.04)
         }
     }
 
     private var shadowRadius: CGFloat {
         switch style {
-        case .elevated: 20
-        case .standard: 10
-        case .frosted: 6
+        case .elevated: 14
+        case .standard: 6
+        case .frosted: 5
         }
     }
 
     private var shadowOffset: CGFloat {
         switch style {
-        case .elevated: 6
-        case .standard: 3
+        case .elevated: 5
+        case .standard: 2
         case .frosted: 2
         }
     }

@@ -100,6 +100,8 @@ public struct ContextCoverageView: View {
                 
                 Spacer()
             }
+            .scrollContentBackground(.hidden)
+            .appBackground()
             .navigationTitle("Coverage Overview")
             #if os(iOS)
             .navigationBarTitleDisplayMode(.large)
@@ -145,7 +147,7 @@ public struct ContextCoverageView: View {
                     }
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
-                    .background(Theme.cardBackground, in: Capsule())
+                    .background(Theme.cardSurface, in: Capsule())
                 }
             }
             
@@ -176,7 +178,7 @@ public struct ContextCoverageView: View {
                     }
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
-                    .background(Theme.cardBackground, in: Capsule())
+                    .background(Theme.cardSurface, in: Capsule())
                 }
             }
             
@@ -207,7 +209,7 @@ public struct ContextCoverageView: View {
                     }
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
-                    .background(Theme.cardBackground, in: Capsule())
+                    .background(Theme.cardSurface, in: Capsule())
                 }
             }
         }
@@ -411,6 +413,8 @@ public struct ContextCoverageView: View {
                     .padding(.horizontal)
                 }
             }
+            .scrollContentBackground(.hidden)
+            .appBackground()
             .navigationTitle("Routine Details")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

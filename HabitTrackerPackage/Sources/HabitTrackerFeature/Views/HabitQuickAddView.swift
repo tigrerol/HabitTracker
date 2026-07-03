@@ -478,8 +478,10 @@ private struct HabitTypePickerView: View {
                     }
                 }
             }
+            .scrollContentBackground(.hidden)
+            .appBackground()
             .navigationTitle(String(localized: "HabitTypePickerView.NavigationTitle", bundle: .module))
-            
+
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(String(localized: "HabitTypePickerView.Cancel.Button", bundle: .module)) {

@@ -205,7 +205,7 @@ public struct RoutineExecutionView: View {
                 refreshSessionData()
             }
         }
-        .background(Theme.background)
+        .appBackground()
     }
     
     // MARK: - Helper Methods
