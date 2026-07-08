@@ -311,7 +311,7 @@ struct HabitQuickAddView: View {
         previewHabit = Habit(
             name: name,
             type: type,
-            color: getColorForType(type)
+            color: HabitTypeCatalog.defaultColor(for: type)
         )
     }
     
@@ -337,31 +337,9 @@ struct HabitQuickAddView: View {
         let habit = Habit(
             name: name,
             type: type,
-            color: getColorForType(type)
+            color: HabitTypeCatalog.defaultColor(for: type)
         )
         onAdd(habit)
-    }
-    
-    private func getColorForType(_ type: HabitType) -> String {
-        switch type {
-        case .task:
-            return "#34C759" // Green
-        case .timer:
-            return "#007AFF" // Blue
-        case .action:
-            return "#FF3B30" // Red
-        case .tracking(let trackingType):
-            switch trackingType {
-            case .counter:
-                return "#FFD60A" // Yellow
-            case .measurement:
-                return "#BF5AF2" // Purple
-            }
-        case .guidedSequence:
-            return "#64D2FF" // Light Blue
-        case .conditional:
-            return "#5856D6" // Indigo
-        }
     }
     
     private func getDefaultName(for type: HabitType) -> String {

@@ -884,10 +884,10 @@ public struct RoutineBuilderView: View {
                 GridItem(.flexible()),
                 GridItem(.flexible())
             ], spacing: 12) {
-                ForEach(basicHabitTypeOptions, id: \.type) { habitType in
+                ForEach(HabitTypeCatalog.basicOptions, id: \.type) { habitType in
                     Button {
                         withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
-                            let newHabit = createHabitFromType(habitType.type)
+                            let newHabit = HabitTypeCatalog.makeHabit(ofType: habitType.type)
                             
                             // Set new habit creation state instead of adding to array immediately
                             newHabitBeingCreated = newHabit
@@ -926,10 +926,10 @@ public struct RoutineBuilderView: View {
             .padding(.horizontal)
             
             // Question type centered below at full width
-            if let questionOption = questionHabitTypeOption {
+            if let questionOption = HabitTypeCatalog.questionOption {
                 Button {
                     withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
-                        let newHabit = createHabitFromType(questionOption.type)
+                        let newHabit = HabitTypeCatalog.makeHabit(ofType: questionOption.type)
                         
                         // Set new habit creation state instead of adding to array immediately
                         newHabitBeingCreated = newHabit
@@ -965,128 +965,6 @@ public struct RoutineBuilderView: View {
                 .padding(.horizontal)
                 .padding(.top, 12)
             }
-        }
-    }
-    
-    private struct HabitTypeOption {
-        let name: String
-        let description: String
-        let type: HabitType
-        let color: Color
-    }
-    
-    private var basicHabitTypeOptions: [HabitTypeOption] {
-        [
-            HabitTypeOption(
-                name: String(localized: "HabitType.Task.Name", bundle: .module),
-                description: String(localized: "HabitType.Task.Description", bundle: .module),
-                type: .task(subtasks: []),
-                color: .green
-            ),
-            HabitTypeOption(
-                name: String(localized: "HabitType.Timer.Name", bundle: .module),
-                description: String(localized: "HabitType.Timer.Description", bundle: .module),
-                type: .timer(style: .down, duration: 300),
-                color: .blue
-            ),
-            HabitTypeOption(
-                name: String(localized: "HabitType.Action.Name", bundle: .module),
-                description: String(localized: "HabitType.Action.Description", bundle: .module),
-                type: .action(type: .app, identifier: "", displayName: ""),
-                color: .red
-            ),
-            HabitTypeOption(
-                name: String(localized: "HabitType.Tracking.Name", bundle: .module),
-                description: String(localized: "HabitType.Tracking.Description", bundle: .module),
-                type: .tracking(.counter(items: ["Item 1"])),
-                color: .orange
-            )
-        ]
-    }
-    
-    private var questionHabitTypeOption: HabitTypeOption? {
-        HabitTypeOption(
-            name: "Question",
-            description: "Conditional path",
-            type: .conditional(ConditionalHabitInfo(
-                question: "", 
-                options: [
-                    ConditionalOption(text: "Yes", habits: []),
-                    ConditionalOption(text: "No", habits: [])
-                ]
-            )),
-            color: .indigo
-        )
-    }
-    
-    // Legacy property for backward compatibility
-    private var habitTypeOptions: [HabitTypeOption] {
-        basicHabitTypeOptions + [questionHabitTypeOption].compactMap { $0 }
-    }
-    
-    private func createHabitFromType(_ type: HabitType) -> Habit {
-        let name = getDefaultNameForType(type)
-        let color = getColorForType(type)
-        
-        return Habit(
-            name: name,
-            type: type,
-            color: color
-        )
-    }
-    
-    private func getDefaultNameForType(_ type: HabitType) -> String {
-        switch type {
-        case .task:
-            return "New Task"
-        case .timer(let style, _, _, _, _):
-            switch style {
-            case .down: return "Timed Activity"
-            case .up: return "Rest Period"
-            case .multiple: return "Multiple Timers"
-            }
-        case .action(let type, _, _, _):
-            switch type {
-            case .app:
-                return "Launch App"
-            case .website:
-                return "Open Website"
-            case .shortcut:
-                return "Run Shortcut"
-            }
-        case .tracking(let trackingType):
-            switch trackingType {
-            case .counter:
-                return "Track Items"
-            case .measurement:
-                return "Record Measurement"
-            }
-        case .guidedSequence:
-            return "Guided Activity"
-        case .conditional:
-            return "Question"
-        }
-    }
-    
-    private func getColorForType(_ type: HabitType) -> String {
-        switch type {
-        case .task:
-            return "#34C759" // Green
-        case .timer:
-            return "#007AFF" // Blue
-        case .action:
-            return "#FF3B30" // Red
-        case .tracking(let trackingType):
-            switch trackingType {
-            case .counter:
-                return "#FFD60A" // Yellow
-            case .measurement:
-                return "#BF5AF2" // Purple
-            }
-        case .guidedSequence:
-            return "#64D2FF" // Light Blue
-        case .conditional:
-            return "#5856D6" // Indigo
         }
     }
     
@@ -1689,69 +1567,47 @@ public struct RoutineBuilderView: View {
         }
     }
     
+    /// Single dispatch point for "conditional → ConditionalHabitEditorView,
+    /// anything else → HabitEditorView". Every builder sheet routes through
+    /// this instead of duplicating the branch.
     @ViewBuilder
-    private func newHabitEditorView(for newHabit: Habit) -> some View {
-        switch newHabit.type {
-        case .conditional:
-            ConditionalHabitEditorView(
-                existingHabit: newHabit,
-                habitLibrary: getAllAvailableHabits(),
-                existingConditionalDepth: 0
-            ) { updatedHabit in
-                withAnimation(.easeInOut) {
-                    habits.append(updatedHabit)
-                    updateHabitOrder()
-                }
-                newHabitBeingCreated = nil // Clear creation state
-            }
-        default:
-            HabitEditorView(habit: newHabit) { updatedHabit in
-                withAnimation(.easeInOut) {
-                    habits.append(updatedHabit)
-                    updateHabitOrder()
-                }
-                newHabitBeingCreated = nil // Clear creation state
-            }
-        }
-    }
-    
-    @ViewBuilder
-    private func newOptionHabitEditorView(for newHabit: Habit, optionId: UUID, habitId: UUID) -> some View {
-        switch newHabit.type {
-        case .conditional:
-            ConditionalHabitEditorView(
-                existingHabit: newHabit,
-                habitLibrary: getAllAvailableHabits(),
-                existingConditionalDepth: 1
-            ) { updatedHabit in
-                addHabitToOption(updatedHabit, optionId: optionId, habitId: habitId)
-                newOptionHabitBeingCreated = nil // Clear creation state
-            }
-        default:
-            HabitEditorView(habit: newHabit) { updatedHabit in
-                addHabitToOption(updatedHabit, optionId: optionId, habitId: habitId)
-                newOptionHabitBeingCreated = nil // Clear creation state
-            }
-        }
-    }
-    
-    @ViewBuilder
-    private func habitEditorView(for habitBinding: Binding<Habit>) -> some View {
-        let habit = habitBinding.wrappedValue
-
+    private func habitEditor(for habit: Habit, conditionalDepth: Int, onSave: @escaping (Habit) -> Void) -> some View {
         switch habit.type {
         case .conditional:
             ConditionalHabitEditorView(
                 existingHabit: habit,
                 habitLibrary: getAllAvailableHabits(),
-                existingConditionalDepth: 0
-            ) { updatedHabit in
-                habitBinding.wrappedValue = updatedHabit
-            }
+                existingConditionalDepth: conditionalDepth,
+                onSave: onSave
+            )
         default:
-            HabitEditorView(habit: habit) { updatedHabit in
-                habitBinding.wrappedValue = updatedHabit
+            HabitEditorView(habit: habit, onSave: onSave)
+        }
+    }
+
+    @ViewBuilder
+    private func newHabitEditorView(for newHabit: Habit) -> some View {
+        habitEditor(for: newHabit, conditionalDepth: 0) { updatedHabit in
+            withAnimation(.easeInOut) {
+                habits.append(updatedHabit)
+                updateHabitOrder()
             }
+            newHabitBeingCreated = nil // Clear creation state
+        }
+    }
+
+    @ViewBuilder
+    private func newOptionHabitEditorView(for newHabit: Habit, optionId: UUID, habitId: UUID) -> some View {
+        habitEditor(for: newHabit, conditionalDepth: 1) { updatedHabit in
+            addHabitToOption(updatedHabit, optionId: optionId, habitId: habitId)
+            newOptionHabitBeingCreated = nil // Clear creation state
+        }
+    }
+
+    @ViewBuilder
+    private func habitEditorView(for habitBinding: Binding<Habit>) -> some View {
+        habitEditor(for: habitBinding.wrappedValue, conditionalDepth: 0) { updatedHabit in
+            habitBinding.wrappedValue = updatedHabit
         }
     }
     
@@ -1786,21 +1642,8 @@ public struct RoutineBuilderView: View {
             }
         )
         
-        let subHabit = subHabitBinding.wrappedValue
-        
-        switch subHabit.type {
-        case .conditional:
-            ConditionalHabitEditorView(
-                existingHabit: subHabit,
-                habitLibrary: getAllAvailableHabits(),
-                existingConditionalDepth: 1
-            ) { updatedHabit in
-                subHabitBinding.wrappedValue = updatedHabit
-            }
-        default:
-            HabitEditorView(habit: subHabit) { updatedHabit in
-                subHabitBinding.wrappedValue = updatedHabit
-            }
+        habitEditor(for: subHabitBinding.wrappedValue, conditionalDepth: 1) { updatedHabit in
+            subHabitBinding.wrappedValue = updatedHabit
         }
     }
     
@@ -1828,21 +1671,8 @@ public struct RoutineBuilderView: View {
             }
         )
         
-        let fallbackSubHabit = fallbackBinding.wrappedValue
-        
-        switch fallbackSubHabit.type {
-        case .conditional:
-            ConditionalHabitEditorView(
-                existingHabit: fallbackSubHabit,
-                habitLibrary: getAllAvailableHabits(),
-                existingConditionalDepth: 1
-            ) { updatedHabit in
-                fallbackBinding.wrappedValue = updatedHabit
-            }
-        default:
-            HabitEditorView(habit: fallbackSubHabit, onSave: { updatedHabit in
-                fallbackBinding.wrappedValue = updatedHabit
-            })
+        habitEditor(for: fallbackBinding.wrappedValue, conditionalDepth: 1) { updatedHabit in
+            fallbackBinding.wrappedValue = updatedHabit
         }
     }
     
@@ -1999,10 +1829,10 @@ public struct RoutineBuilderView: View {
                 GridItem(.flexible()),
                 GridItem(.flexible())
             ], spacing: 12) {
-                ForEach(basicHabitTypeOptions, id: \.type) { habitType in
+                ForEach(HabitTypeCatalog.basicOptions, id: \.type) { habitType in
                     Button {
                         withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
-                            let newHabit = createHabitFromType(habitType.type)
+                            let newHabit = HabitTypeCatalog.makeHabit(ofType: habitType.type)
                             if let selectedOption = selectedOption {
                                 newOptionHabitBeingCreated = (habit: newHabit, optionId: selectedOption.optionId, habitId: selectedOption.habitId)
                             }
@@ -2041,10 +1871,10 @@ public struct RoutineBuilderView: View {
             .padding(.horizontal)
             
             // Question type centered below at full width
-            if let questionOption = questionHabitTypeOption {
+            if let questionOption = HabitTypeCatalog.questionOption {
                 Button {
                     withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
-                        let newHabit = createHabitFromType(questionOption.type)
+                        let newHabit = HabitTypeCatalog.makeHabit(ofType: questionOption.type)
                         if let selectedOption = selectedOption {
                             newOptionHabitBeingCreated = (habit: newHabit, optionId: selectedOption.optionId, habitId: selectedOption.habitId)
                         }
