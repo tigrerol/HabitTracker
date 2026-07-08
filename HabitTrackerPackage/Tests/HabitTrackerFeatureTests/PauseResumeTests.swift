@@ -347,4 +347,91 @@ struct PauseResumeTests {
         #expect(service.pausedSessions[0].completions.count == 1)
         #expect(service.pausedSessions[1].completions.count == 2)
     }
+
+    // MARK: - Interruption Recovery
+
+    @Test("Autosaved session is recovered into paused sessions by a fresh service")
+    @MainActor func interruptedSessionRecovery() async throws {
+        let persistence = InMemoryPersistenceService()
+        let service = RoutineService(persistenceService: persistence)
+        let template = createTestTemplate()
+        service.addTemplate(template)
+        try service.startSession(with: template)
+        service.currentSession?.completeCurrentHabit()
+        let sessionId = try #require(service.currentSession?.id)
+
+        await service.autosaveCurrentSession()
+        #expect(await persistence.exists(forKey: PersistenceKeys.interruptedSession))
+
+        // Simulate an app relaunch after termination: a fresh service on the same store.
+        // Recovery also runs from init's async load task, so poll rather than assume
+        // the explicit call is the one that lands the snapshot.
+        let relaunched = RoutineService(persistenceService: persistence)
+        await relaunched.recoverInterruptedSession()
+        for _ in 0..<200 where !relaunched.pausedSessions.contains(where: { $0.id == sessionId }) {
+            try await Task.sleep(for: .milliseconds(10))
+        }
+
+        let recovered = try #require(relaunched.pausedSessions.first(where: { $0.id == sessionId }))
+        #expect(recovered.completions.count == 1)
+        #expect(recovered.currentHabitIndex == 1)
+        #expect(await !persistence.exists(forKey: PersistenceKeys.interruptedSession))
+    }
+
+    @Test("Recovery does not duplicate an already-paused session")
+    @MainActor func interruptedRecoveryDeduplicates() async throws {
+        let persistence = InMemoryPersistenceService()
+        let service = RoutineService(persistenceService: persistence)
+        let template = createTestTemplate()
+        service.addTemplate(template)
+        try service.startSession(with: template)
+        let sessionId = try #require(service.currentSession?.id)
+
+        // Autosave, then also explicitly pause (which clears the autosave asynchronously);
+        // even if the snapshot were still present, recovery must not duplicate the id.
+        await service.autosaveCurrentSession()
+        try service.pauseCurrentSession()
+
+        await service.recoverInterruptedSession()
+
+        #expect(service.pausedSessions.filter { $0.id == sessionId }.count == 1)
+    }
+
+    @Test("Recovery is a no-op when no interrupted snapshot exists")
+    @MainActor func recoveryNoopWithoutSnapshot() async {
+        let persistence = InMemoryPersistenceService()
+        let service = RoutineService(persistenceService: persistence)
+
+        await service.recoverInterruptedSession()
+
+        #expect(service.pausedSessions.isEmpty)
+    }
+}
+
+// MARK: - In-Memory Persistence Mock
+
+private actor InMemoryPersistenceService: PersistenceServiceProtocol {
+    private var storage: [String: Data] = [:]
+    private let encoder = JSONEncoder()
+    private let decoder = JSONDecoder()
+
+    func save<T: Codable & Sendable>(_ object: T, forKey key: String) async throws {
+        storage[key] = try encoder.encode(object)
+    }
+
+    func load<T: Codable & Sendable>(_ type: T.Type, forKey key: String) async throws -> T? {
+        guard let data = storage[key] else { return nil }
+        return try decoder.decode(type, from: data)
+    }
+
+    func delete(forKey key: String) async {
+        storage[key] = nil
+    }
+
+    func exists(forKey key: String) async -> Bool {
+        storage[key] != nil
+    }
+
+    func loadRoutineSessions(for templateId: UUID) async -> [RoutineSessionData] { [] }
+    func saveRoutineSession(_ session: RoutineSessionData, for templateId: UUID) async { }
 }

@@ -94,6 +94,7 @@ public enum PersistenceKeys {
     public static let routineTemplates = "RoutineTemplates"
     public static let pausedSessions = "PausedSessions"
     public static let routineSessionHistory = "RoutineSessionHistory"
+    public static let interruptedSession = "InterruptedSession"
 }
 
 /// Error types for persistence operations

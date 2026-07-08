@@ -155,6 +155,7 @@ public final class RoutineService {
         }
 
         currentSession = nil
+        clearInterruptedSessionSnapshot()
     }
     
     /// Cancel the current session
@@ -176,6 +177,7 @@ public final class RoutineService {
         
         // Clear the current session without completing it
         currentSession = nil
+        clearInterruptedSessionSnapshot()
     }
     
     /// Add a mood rating for the completed session
@@ -369,6 +371,7 @@ public final class RoutineService {
         let snapshot = session.toPausedSnapshot()
         pausedSessions.append(snapshot)
         currentSession = nil
+        clearInterruptedSessionSnapshot()
         Task { await persistPausedSessions() }
 
         LoggingService.shared.info("Routine session paused", category: .routine, metadata: [
@@ -433,7 +436,47 @@ public final class RoutineService {
                     operation: "load"
                 )
             }
+            await recoverInterruptedSession()
         }
+    }
+
+    // MARK: - Interruption Recovery
+
+    /// Snapshot the active session so it survives app termination.
+    /// Called when the app leaves the foreground; the snapshot is discarded
+    /// when the session ends normally (complete, cancel, or explicit pause).
+    public func autosaveCurrentSession() async {
+        guard let session = currentSession else { return }
+        let snapshot = session.toPausedSnapshot()
+        do {
+            try await persistenceService.save(snapshot, forKey: PersistenceKeys.interruptedSession)
+        } catch {
+            ErrorHandlingService.shared.handleDataError(
+                .encodingFailed(type: "PausedSessionSnapshot", underlyingError: error),
+                key: PersistenceKeys.interruptedSession,
+                operation: "save"
+            )
+        }
+    }
+
+    private func clearInterruptedSessionSnapshot() {
+        Task { await persistenceService.delete(forKey: PersistenceKeys.interruptedSession) }
+    }
+
+    /// Move an interrupted-session snapshot (app killed mid-routine) into the
+    /// paused list so the user can resume it from the Today tab.
+    func recoverInterruptedSession() async {
+        guard let snapshot = try? await persistenceService.load(PausedSessionSnapshot.self, forKey: PersistenceKeys.interruptedSession) else { return }
+        await persistenceService.delete(forKey: PersistenceKeys.interruptedSession)
+        guard !pausedSessions.contains(where: { $0.id == snapshot.id }) else { return }
+
+        pausedSessions.append(snapshot)
+        await persistPausedSessions()
+        LoggingService.shared.info("Recovered interrupted session into paused list", category: .routine, metadata: [
+            "sessionId": snapshot.id.uuidString,
+            "templateName": snapshot.template.name,
+            "progress": String(snapshot.progress)
+        ])
     }
 
     /// Persist paused sessions

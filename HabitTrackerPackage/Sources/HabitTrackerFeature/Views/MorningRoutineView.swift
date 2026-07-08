@@ -4,6 +4,7 @@ import SwiftUI
 @MainActor
 public struct MorningRoutineView: View {
     @State private var routineService = RoutineService.shared
+    @Environment(\.scenePhase) private var scenePhase
 
     public init() {}
 
@@ -18,6 +19,13 @@ public struct MorningRoutineView: View {
             }
         }
         .animation(AnimationPresets.smoothSpring, value: routineService.currentSession != nil)
+        .onChange(of: scenePhase) { _, newPhase in
+            // Snapshot the running session whenever the app leaves the foreground,
+            // so progress survives if iOS terminates the app mid-routine.
+            if newPhase == .inactive || newPhase == .background {
+                Task { await routineService.autosaveCurrentSession() }
+            }
+        }
         .environment(routineService)
         .environment(DayCategoryManager.shared)
         .withDynamicTheme()
