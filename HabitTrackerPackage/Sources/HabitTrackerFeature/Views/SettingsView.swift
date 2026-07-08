@@ -33,8 +33,6 @@ public struct SettingsView: View {
     @State private var showingFilePicker = false
     @State private var showingImportResult = false
     @State private var importResult: ImportResult?
-    @State private var showingAIRoutineImport = false
-    @State private var showingAIPromptCopy = false
 
     public init() {}
 
@@ -89,13 +87,6 @@ public struct SettingsView: View {
             if let exportedFileURL = exportedFileURL {
                 ShareSheet(items: [exportedFileURL])
             }
-        }
-        .sheet(isPresented: $showingAIPromptCopy) {
-            AIPromptCopyView()
-        }
-        .sheet(isPresented: $showingAIRoutineImport) {
-            AIRoutineImportView()
-                .environment(routineService)
         }
         .fileImporter(
             isPresented: $showingFilePicker,
@@ -361,7 +352,7 @@ public struct SettingsView: View {
     }
 
     private var dataSection: some View {
-        Section("Data & AI") {
+        Section {
             Button {
                 exportData()
             } label: {
@@ -385,30 +376,10 @@ public struct SettingsView: View {
                 )
             }
             .buttonStyle(.plain)
-
-            Button {
-                showingAIPromptCopy = true
-            } label: {
-                SettingsRow(
-                    title: "Copy AI Prompt",
-                    subtitle: "Get a prompt to ask any AI for a routine JSON",
-                    icon: "doc.on.doc",
-                    detail: ""
-                )
-            }
-            .buttonStyle(.plain)
-
-            Button {
-                showingAIRoutineImport = true
-            } label: {
-                SettingsRow(
-                    title: "Import Routine from AI",
-                    subtitle: "Paste AI-generated JSON to add a new routine",
-                    icon: "sparkles",
-                    detail: ""
-                )
-            }
-            .buttonStyle(.plain)
+        } header: {
+            Text("Data")
+        } footer: {
+            Text("To create a routine with AI, use the + menu on the Today tab.")
         }
     }
 

@@ -16,6 +16,7 @@ struct AIRoutineImportView: View {
     @State private var importedHabitCount: Int = 0
     @State private var showingSuccessAlert = false
     @State private var errorMessage: String?
+    @State private var showingPromptCopy = false
 
     private let importService = RoutineImportService()
 
@@ -26,6 +27,12 @@ struct AIRoutineImportView: View {
                     Text("Paste the JSON your AI returned, or choose a .json file. You'll get a fresh routine added to your list.")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
+
+                    Button {
+                        showingPromptCopy = true
+                    } label: {
+                        Label("Get the AI Prompt", systemImage: "doc.on.doc")
+                    }
                 } header: {
                     Text("How it works")
                 }
@@ -96,6 +103,9 @@ struct AIRoutineImportView: View {
                     Button("Import") { performImport() }
                         .disabled(pastedText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 }
+            }
+            .sheet(isPresented: $showingPromptCopy) {
+                AIPromptCopyView()
             }
             .fileImporter(
                 isPresented: $showingFilePicker,
