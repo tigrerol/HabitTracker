@@ -1,6 +1,7 @@
 import Testing
 import Foundation
 import SwiftData
+import CoreLocation
 @testable import HabitTrackerFeature
 
 @Suite("SwiftData Persistence Round-Trip Tests", .serialized)
@@ -339,7 +340,7 @@ struct SwiftDataPersistenceTests {
             MoodRating(sessionId: UUID(), rating: .neutral, notes: "Meh")
         ]
 
-        try service.saveMoodRatings(ratings)
+        await service.saveMoodRatings(ratings)
         let loaded = await service.loadMoodRatings()
 
         #expect(loaded.count == 3)
@@ -358,14 +359,14 @@ struct SwiftDataPersistenceTests {
             MoodRating(sessionId: UUID(), rating: .bad),
             MoodRating(sessionId: UUID(), rating: .neutral)
         ]
-        try service.saveMoodRatings(ratings1)
+        await service.saveMoodRatings(ratings1)
 
         // Save 2 different ratings (overwrites all)
         let ratings2 = [
             MoodRating(sessionId: UUID(), rating: .excellent),
             MoodRating(sessionId: UUID(), rating: .terrible)
         ]
-        try service.saveMoodRatings(ratings2)
+        await service.saveMoodRatings(ratings2)
 
         let loaded = await service.loadMoodRatings()
         #expect(loaded.count == 2, "Should replace all previous ratings")
@@ -391,6 +392,57 @@ struct SwiftDataPersistenceTests {
 
         let existsAfter = await service.exists(forKey: PersistenceKeys.routineTemplates)
         #expect(existsAfter)
+    }
+
+    // MARK: - Location Persistence
+
+    @Test("Saved and custom locations round-trip through the SwiftData store")
+    @MainActor func testLocationRoundTrip() async throws {
+        let store = try createTestService(); let service = store.service
+
+        let saved: [LocationType: SavedLocation] = [
+            .office: SavedLocation(
+                location: CLLocation(latitude: 48.2082, longitude: 16.3738),
+                name: "Office",
+                radius: 150
+            )
+        ]
+        let custom = CustomLocation(name: "Gym", icon: "dumbbell.fill", coordinate: LocationCoordinate(latitude: 48.21, longitude: 16.37), radius: 200)
+
+        try await service.save(saved, forKey: PersistenceKeys.savedLocations)
+        try await service.save([custom.id: custom], forKey: PersistenceKeys.customLocations)
+
+        let loadedSaved: [LocationType: SavedLocation]? = try await service.load([LocationType: SavedLocation].self, forKey: PersistenceKeys.savedLocations)
+        let loadedCustom: [UUID: CustomLocation]? = try await service.load([UUID: CustomLocation].self, forKey: PersistenceKeys.customLocations)
+
+        #expect(loadedSaved?[.office]?.name == "Office")
+        #expect(loadedSaved?[.office]?.radius == 150)
+        #expect(loadedCustom?[custom.id]?.name == "Gym")
+        #expect(loadedCustom?[custom.id]?.coordinate?.latitude == 48.21)
+    }
+
+    @Test("Legacy UserDefaults locations migrate on first load, exactly once")
+    @MainActor func testLegacyLocationMigration() async throws {
+        let suiteName = "test-location-migration-\(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        // Seed the legacy store
+        let legacy = UserDefaultsPersistenceService(userDefaults: defaults)
+        let saved: [LocationType: SavedLocation] = [
+            .home: SavedLocation(location: CLLocation(latitude: 48.0, longitude: 16.0), name: "Home", radius: 100)
+        ]
+        try await legacy.save(saved, forKey: PersistenceKeys.savedLocations)
+
+        let store = try createMigratingService(defaults: defaults); let service = store.service
+        let loaded: [LocationType: SavedLocation]? = try await service.load([LocationType: SavedLocation].self, forKey: PersistenceKeys.savedLocations)
+
+        #expect(loaded?[.home]?.name == "Home")
+
+        // One-shot: emptying the store must not resurrect legacy data
+        await service.delete(forKey: PersistenceKeys.savedLocations)
+        let afterDelete: [LocationType: SavedLocation]? = try await service.load([LocationType: SavedLocation].self, forKey: PersistenceKeys.savedLocations)
+        #expect(afterDelete == nil)
     }
 
     // MARK: - Legacy UserDefaults Migration

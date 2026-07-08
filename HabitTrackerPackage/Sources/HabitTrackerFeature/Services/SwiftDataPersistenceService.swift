@@ -42,6 +42,20 @@ public final class SwiftDataPersistenceService: PersistenceServiceProtocol {
                 throw PersistenceError.encodingFailed(NSError(domain: "Invalid type for routine templates", code: 1))
             }
 
+        case PersistenceKeys.savedLocations:
+            if let locations = object as? [LocationType: SavedLocation] {
+                try saveSavedLocations(locations)
+            } else {
+                throw PersistenceError.encodingFailed(NSError(domain: "Invalid type for saved locations", code: 1))
+            }
+
+        case PersistenceKeys.customLocations:
+            if let locations = object as? [UUID: CustomLocation] {
+                try saveCustomLocations(locations)
+            } else {
+                throw PersistenceError.encodingFailed(NSError(domain: "Invalid type for custom locations", code: 1))
+            }
+
         default:
             let data = try JSONEncoder().encode(object)
             userDefaults.set(data, forKey: key)
@@ -55,6 +69,18 @@ public final class SwiftDataPersistenceService: PersistenceServiceProtocol {
             guard let templates = try await loadTemplatesMigratingIfNeeded() else { return nil }
             return templates as? T
 
+        case PersistenceKeys.savedLocations:
+            guard type == [LocationType: SavedLocation].self else { return nil }
+            await migrateLegacyLocationsIfNeeded()
+            let locations = loadSavedLocations()
+            return locations.isEmpty ? nil : locations as? T
+
+        case PersistenceKeys.customLocations:
+            guard type == [UUID: CustomLocation].self else { return nil }
+            await migrateLegacyLocationsIfNeeded()
+            let locations = loadCustomLocations()
+            return locations.isEmpty ? nil : locations as? T
+
         default:
             guard let data = userDefaults.data(forKey: key) else { return nil }
             return try JSONDecoder().decode(type, from: data)
@@ -66,6 +92,12 @@ public final class SwiftDataPersistenceService: PersistenceServiceProtocol {
         case PersistenceKeys.routineTemplates:
             deleteAllRoutineTemplates()
 
+        case PersistenceKeys.savedLocations:
+            try? saveSavedLocations([:])
+
+        case PersistenceKeys.customLocations:
+            try? saveCustomLocations([:])
+
         default:
             userDefaults.removeObject(forKey: key)
         }
@@ -75,6 +107,12 @@ public final class SwiftDataPersistenceService: PersistenceServiceProtocol {
         switch key {
         case PersistenceKeys.routineTemplates:
             return !getAllPersistedTemplates().isEmpty
+
+        case PersistenceKeys.savedLocations:
+            return !loadSavedLocations().isEmpty
+
+        case PersistenceKeys.customLocations:
+            return !loadCustomLocations().isEmpty
 
         default:
             return userDefaults.object(forKey: key) != nil
@@ -275,10 +313,79 @@ public final class SwiftDataPersistenceService: PersistenceServiceProtocol {
         return try? modelContext.fetch(descriptor).first
     }
 
+    // MARK: - Location Operations
+
+    private static let legacyLocationMigrationFlagKey = "HasMigratedLocationsToSwiftData"
+
+    /// One-shot import of locations from the pre-SwiftData UserDefaults store.
+    /// Gated on the same opt-in as the template migration so tests and
+    /// previews never touch real UserDefaults.
+    private func migrateLegacyLocationsIfNeeded() async {
+        guard migratesLegacyUserDefaults,
+              !userDefaults.bool(forKey: Self.legacyLocationMigrationFlagKey) else { return }
+        userDefaults.set(true, forKey: Self.legacyLocationMigrationFlagKey)
+
+        let legacy = UserDefaultsPersistenceService(userDefaults: userDefaults)
+        let saved = (try? await legacy.load([LocationType: SavedLocation].self, forKey: PersistenceKeys.savedLocations)) ?? [:]
+        let custom = (try? await legacy.load([UUID: CustomLocation].self, forKey: PersistenceKeys.customLocations)) ?? [:]
+        guard !saved.isEmpty || !custom.isEmpty else { return }
+
+        try? saveSavedLocations(saved)
+        try? saveCustomLocations(custom)
+        LoggingService.shared.info(
+            "Migrated legacy locations to SwiftData",
+            category: .app,
+            metadata: ["saved": String(saved.count), "custom": String(custom.count)]
+        )
+    }
+
+    private func saveSavedLocations(_ locations: [LocationType: SavedLocation]) throws {
+        let existing = (try? modelContext.fetch(FetchDescriptor<PersistedSavedLocation>())) ?? []
+        for location in existing {
+            modelContext.delete(location)
+        }
+        for (type, location) in locations {
+            modelContext.insert(PersistedSavedLocation(from: location, locationType: type))
+        }
+        try modelContext.save()
+    }
+
+    private func loadSavedLocations() -> [LocationType: SavedLocation] {
+        let persisted = (try? modelContext.fetch(FetchDescriptor<PersistedSavedLocation>())) ?? []
+        var result: [LocationType: SavedLocation] = [:]
+        for entry in persisted {
+            if let (location, type) = entry.toDomainModel() {
+                result[type] = location
+            }
+        }
+        return result
+    }
+
+    private func saveCustomLocations(_ locations: [UUID: CustomLocation]) throws {
+        let existing = (try? modelContext.fetch(FetchDescriptor<PersistedCustomLocation>())) ?? []
+        for location in existing {
+            modelContext.delete(location)
+        }
+        for (_, location) in locations {
+            modelContext.insert(PersistedCustomLocation(from: location))
+        }
+        try modelContext.save()
+    }
+
+    private func loadCustomLocations() -> [UUID: CustomLocation] {
+        let persisted = (try? modelContext.fetch(FetchDescriptor<PersistedCustomLocation>())) ?? []
+        var result: [UUID: CustomLocation] = [:]
+        for entry in persisted {
+            let location = entry.toDomainModel()
+            result[location.id] = location
+        }
+        return result
+    }
+
     // MARK: - Mood Rating Operations
 
-    /// Save mood ratings
-    public func saveMoodRatings(_ ratings: [MoodRating]) throws {
+    /// Save mood ratings (replace semantics), stored as PersistedMoodRating rows.
+    public func saveMoodRatings(_ ratings: [MoodRating]) async {
         // Remove existing ratings and replace with new ones
         let existingRatings = getAllPersistedMoodRatings()
         for rating in existingRatings {
@@ -291,7 +398,15 @@ public final class SwiftDataPersistenceService: PersistenceServiceProtocol {
             modelContext.insert(persistedRating)
         }
 
-        try modelContext.save()
+        do {
+            try modelContext.save()
+        } catch {
+            LoggingService.shared.error(
+                "Failed to save mood ratings",
+                category: .app,
+                metadata: ["error": String(describing: error)]
+            )
+        }
     }
 
     /// Load mood ratings

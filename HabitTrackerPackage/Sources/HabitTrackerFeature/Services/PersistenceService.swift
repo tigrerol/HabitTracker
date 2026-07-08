@@ -14,6 +14,25 @@ public protocol PersistenceServiceProtocol: Sendable {
     /// Append a session record to the history for a given template.
     /// Used by the streak calculator.
     func saveRoutineSession(_ session: RoutineSessionData, for templateId: UUID) async
+
+    /// Persist the full set of mood ratings (replace semantics).
+    func saveMoodRatings(_ ratings: [MoodRating]) async
+
+    /// Load all persisted mood ratings.
+    func loadMoodRatings() async -> [MoodRating]
+}
+
+// Default implementations route mood ratings through the generic key-value
+// API, so UserDefaults-backed stores (and test mocks) get them for free.
+// The SwiftData service overrides these with PersistedMoodRating rows.
+public extension PersistenceServiceProtocol {
+    func saveMoodRatings(_ ratings: [MoodRating]) async {
+        try? await save(ratings, forKey: PersistenceKeys.moodRatings)
+    }
+
+    func loadMoodRatings() async -> [MoodRating] {
+        (try? await load([MoodRating].self, forKey: PersistenceKeys.moodRatings)) ?? []
+    }
 }
 
 /// UserDefaults-based implementation of PersistenceService
@@ -95,6 +114,9 @@ public enum PersistenceKeys {
     public static let pausedSessions = "PausedSessions"
     public static let routineSessionHistory = "RoutineSessionHistory"
     public static let interruptedSession = "InterruptedSession"
+    public static let moodRatings = "MoodRatings"
+    public static let savedLocations = "SavedLocations"
+    public static let customLocations = "CustomLocations"
 }
 
 /// Error types for persistence operations

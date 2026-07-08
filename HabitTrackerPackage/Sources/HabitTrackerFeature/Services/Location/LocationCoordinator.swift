@@ -4,7 +4,15 @@ import CoreLocation
 /// Coordinator that orchestrates location services
 @MainActor
 public final class LocationCoordinator: ObservableObject {
-    public static let shared = LocationCoordinator()
+    /// Runs on SwiftData (saved + custom locations) with one-shot legacy
+    /// migration; the default init below stays UserDefaults-backed for
+    /// previews and tests.
+    public static let shared = LocationCoordinator(
+        persistenceService: SwiftDataPersistenceService(
+            modelContext: DataModelConfiguration.sharedContainer.mainContext,
+            migratesLegacyUserDefaults: true
+        )
+    )
     
     /// Individual focused services
     private let trackingService: LocationTrackingService

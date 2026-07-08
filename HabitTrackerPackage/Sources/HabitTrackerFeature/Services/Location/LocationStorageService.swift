@@ -8,8 +8,8 @@ public final class LocationStorageService: ObservableObject {
     @Published private(set) var customLocations: [UUID: CustomLocation] = [:]
     
     private let persistenceService: any PersistenceServiceProtocol
-    private let savedLocationsKey = "SavedLocations"
-    private let customLocationsKey = "CustomLocations"
+    private let savedLocationsKey = PersistenceKeys.savedLocations
+    private let customLocationsKey = PersistenceKeys.customLocations
 
     /// Task handle for the initial persistence load — callers can await this to ensure data is ready
     private var loadTask: Task<Void, Never>?

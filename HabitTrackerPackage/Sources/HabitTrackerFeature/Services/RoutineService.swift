@@ -42,6 +42,7 @@ public final class RoutineService {
         self.persistenceService = persistenceService
         loadTemplates()
         loadPausedSessions()
+        loadMoodRatings()
 
         // Refresh widget snapshot when location updates land, so the smart-selected
         // template the widget shows matches the in-app Quick Start once GPS resolves.
@@ -195,6 +196,19 @@ public final class RoutineService {
             notes: notes
         )
         moodRatings.append(rating)
+
+        let snapshot = moodRatings
+        Task { await persistenceService.saveMoodRatings(snapshot) }
+    }
+
+    /// Load persisted mood ratings
+    private func loadMoodRatings() {
+        Task { @MainActor in
+            let loaded = await persistenceService.loadMoodRatings()
+            // Merge: ratings added before the load finished must survive
+            let known = Set(moodRatings.map(\.id))
+            moodRatings = loaded.filter { !known.contains($0.id) } + moodRatings
+        }
     }
     
     /// Get the most recently used template (for quick start)

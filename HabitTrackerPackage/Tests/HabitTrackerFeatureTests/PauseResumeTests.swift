@@ -408,6 +408,36 @@ struct PauseResumeTests {
     }
 }
 
+// MARK: - Mood Rating Persistence
+
+@Suite("Mood Rating Persistence Tests")
+struct MoodRatingPersistenceTests {
+
+    @Test("Mood ratings persist and reload through RoutineService")
+    @MainActor func moodRatingsPersistAcrossServiceInstances() async throws {
+        let persistence = InMemoryPersistenceService()
+        let service = RoutineService(persistenceService: persistence)
+        let sessionId = UUID()
+
+        service.addMoodRating(.good, for: sessionId, notes: "Solid morning")
+
+        // Persist happens in a fire-and-forget Task — wait for the stored copy
+        for _ in 0..<100 where await persistence.loadMoodRatings().isEmpty {
+            try await Task.sleep(for: .milliseconds(10))
+        }
+
+        // A fresh service on the same store loads the rating back
+        let relaunched = RoutineService(persistenceService: persistence)
+        for _ in 0..<100 where relaunched.moodRatings.isEmpty {
+            try await Task.sleep(for: .milliseconds(10))
+        }
+
+        let rating = try #require(relaunched.moodRatings.first { $0.sessionId == sessionId })
+        #expect(rating.rating == .good)
+        #expect(rating.notes == "Solid morning")
+    }
+}
+
 // MARK: - In-Memory Persistence Mock
 
 private actor InMemoryPersistenceService: PersistenceServiceProtocol {
