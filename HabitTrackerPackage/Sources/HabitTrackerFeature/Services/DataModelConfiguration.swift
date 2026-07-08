@@ -34,6 +34,27 @@ public enum HabitTrackerMigrationPlan: SchemaMigrationPlan {
 /// Configuration for the SwiftData model container
 public enum DataModelConfiguration {
 
+    /// The app-wide container backing `RoutineService.shared` and the SwiftUI
+    /// environment. Falls back to an in-memory store (with a logged error)
+    /// rather than crashing if the persistent store cannot be opened.
+    @MainActor
+    public static let sharedContainer: ModelContainer = {
+        do {
+            return try createModelContainer()
+        } catch {
+            LoggingService.shared.error(
+                "Failed to open persistent SwiftData store — falling back to in-memory (data will not persist this launch)",
+                category: .app,
+                metadata: ["error": String(describing: error)]
+            )
+            do {
+                return try createTestModelContainer()
+            } catch {
+                fatalError("Unable to create any ModelContainer: \(error)")
+            }
+        }
+    }()
+
     /// All model types used in the schema
     static let allModelTypes: [any PersistentModel.Type] = [
         PersistedHabit.self,
@@ -62,7 +83,11 @@ public enum DataModelConfiguration {
         )
     }
 
-    /// Create a model container for testing (in-memory)
+    /// Create a model container for testing (in-memory).
+    ///
+    /// IMPORTANT: keep the returned container alive for as long as any of its
+    /// contexts are in use — ModelContext does not retain its container, and
+    /// fetching through a context whose container was deallocated crashes.
     public static func createTestModelContainer() throws -> ModelContainer {
         let schema = Schema(allModelTypes)
 
@@ -74,44 +99,8 @@ public enum DataModelConfiguration {
         return try ModelContainer(for: schema, configurations: [modelConfiguration])
     }
     
-    /// Migration helper for moving from UserDefaults to SwiftData
-    @MainActor
-    public static func migrateFromUserDefaults(
-        to persistenceService: SwiftDataPersistenceService
-    ) async throws {
-        let userDefaultsService = UserDefaultsPersistenceService()
-        
-        // Migrate routine templates
-        if let templates = try await userDefaultsService.load([RoutineTemplate].self, forKey: PersistenceKeys.routineTemplates) {
-            try await persistenceService.save(templates, forKey: PersistenceKeys.routineTemplates)
-            LoggingService.shared.info("Migrated \(templates.count) routine templates to SwiftData", category: .app)
-        }
-        
-        // Migrate location data (from UserDefaults keys used by LocationService)
-        if let savedLocationsData = UserDefaults.standard.data(forKey: "SavedLocations"),
-           let savedLocations = try? JSONDecoder().decode([LocationType: SavedLocation].self, from: savedLocationsData) {
-            
-            var customLocations: [UUID: CustomLocation] = [:]
-            if let customLocationsData = UserDefaults.standard.data(forKey: "CustomLocations") {
-                customLocations = (try? JSONDecoder().decode([UUID: CustomLocation].self, from: customLocationsData)) ?? [:]
-            }
-            
-            try await persistenceService.saveLocationData(
-                savedLocations: savedLocations,
-                customLocations: customLocations
-            )
-            LoggingService.shared.info("Migrated location data to SwiftData", category: .app)
-        }
-        
-        // Mark migration as complete
-        UserDefaults.standard.set(true, forKey: "HasMigratedToSwiftData")
-        LoggingService.shared.info("Migration to SwiftData completed", category: .app)
-    }
-    
-    /// Check if migration from UserDefaults has been completed
-    public static func hasMigratedFromUserDefaults() -> Bool {
-        UserDefaults.standard.bool(forKey: "HasMigratedToSwiftData")
-    }
+    // Legacy UserDefaults → SwiftData migration lives in
+    // SwiftDataPersistenceService (one-shot, on first templates load).
 }
 
 /// Extension to help with CloudKit setup if needed in the future

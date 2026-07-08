@@ -3,16 +3,26 @@ import Foundation
 import SwiftData
 @testable import HabitTrackerFeature
 
-@Suite("SwiftData Persistence Round-Trip Tests")
+@Suite("SwiftData Persistence Round-Trip Tests", .serialized)
 struct SwiftDataPersistenceTests {
 
     // MARK: - Helper
 
+    /// Bundles the container with the service: ModelContext does NOT retain
+    /// its ModelContainer, so returning only the service would let the
+    /// container deallocate — and the next fetch crashes (EXC_BREAKPOINT).
+    private struct TestStore {
+        let container: ModelContainer
+        let service: SwiftDataPersistenceService
+    }
+
     @MainActor
-    private func createTestService() throws -> SwiftDataPersistenceService {
+    private func createTestService() throws -> TestStore {
         let container = try DataModelConfiguration.createTestModelContainer()
-        let context = container.mainContext
-        return SwiftDataPersistenceService(modelContext: context)
+        return TestStore(
+            container: container,
+            service: SwiftDataPersistenceService(modelContext: container.mainContext)
+        )
     }
 
     // MARK: - PersistedHabit Round-Trip
@@ -236,7 +246,7 @@ struct SwiftDataPersistenceTests {
 
     @Test("Save and load routine templates via persistence service")
     @MainActor func testSaveLoadTemplates() async throws {
-        let service = try createTestService()
+        let store = try createTestService(); let service = store.service
 
         let templates = [
             RoutineTemplate(
@@ -272,7 +282,7 @@ struct SwiftDataPersistenceTests {
 
     @Test("Save templates twice performs upsert, not duplication")
     @MainActor func testUpsertTemplates() async throws {
-        let service = try createTestService()
+        let store = try createTestService(); let service = store.service
         let templateId = UUID()
 
         // Save initial
@@ -301,7 +311,7 @@ struct SwiftDataPersistenceTests {
 
     @Test("Deleting a template removes it from persistence")
     @MainActor func testDeleteTemplate() async throws {
-        let service = try createTestService()
+        let store = try createTestService(); let service = store.service
 
         let templates = [
             RoutineTemplate(name: "Keep"),
@@ -321,7 +331,7 @@ struct SwiftDataPersistenceTests {
 
     @Test("Save and load mood ratings")
     @MainActor func testSaveLoadMoodRatings() async throws {
-        let service = try createTestService()
+        let store = try createTestService(); let service = store.service
 
         let ratings = [
             MoodRating(sessionId: UUID(), rating: .excellent, notes: "Great morning"),
@@ -340,7 +350,7 @@ struct SwiftDataPersistenceTests {
 
     @Test("Mood ratings overwrite preserves correct count")
     @MainActor func testMoodRatingsOverwrite() async throws {
-        let service = try createTestService()
+        let store = try createTestService(); let service = store.service
 
         // Save 3 ratings
         let ratings1 = [
@@ -363,7 +373,7 @@ struct SwiftDataPersistenceTests {
 
     @Test("Empty load returns nil or empty array")
     @MainActor func testEmptyLoad() async throws {
-        let service = try createTestService()
+        let store = try createTestService(); let service = store.service
 
         let templates: [RoutineTemplate]? = try await service.load([RoutineTemplate].self, forKey: PersistenceKeys.routineTemplates)
         #expect(templates?.isEmpty == true || templates == nil)
@@ -371,7 +381,7 @@ struct SwiftDataPersistenceTests {
 
     @Test("Exists returns false for empty store, true after save")
     @MainActor func testExists() async throws {
-        let service = try createTestService()
+        let store = try createTestService(); let service = store.service
 
         let existsBefore = await service.exists(forKey: PersistenceKeys.routineTemplates)
         #expect(!existsBefore)
@@ -381,5 +391,94 @@ struct SwiftDataPersistenceTests {
 
         let existsAfter = await service.exists(forKey: PersistenceKeys.routineTemplates)
         #expect(existsAfter)
+    }
+
+    // MARK: - Legacy UserDefaults Migration
+
+    @MainActor
+    private func createMigratingService(defaults: UserDefaults) throws -> TestStore {
+        let container = try DataModelConfiguration.createTestModelContainer()
+        return TestStore(
+            container: container,
+            service: SwiftDataPersistenceService(
+                modelContext: container.mainContext,
+                migratesLegacyUserDefaults: true,
+                userDefaults: defaults
+            )
+        )
+    }
+
+    @Test("Legacy templates and session history migrate on first load, exactly once")
+    @MainActor func testLegacyMigration() async throws {
+        let suiteName = "test-migration-\(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        // Seed the legacy store: one template with a habit, plus a completed session
+        let legacy = UserDefaultsPersistenceService(userDefaults: defaults)
+        let habit = Habit(name: "Old habit", type: .task(subtasks: []), order: 0)
+        let template = RoutineTemplate(name: "Legacy", habits: [habit])
+        try await legacy.save([template], forKey: PersistenceKeys.routineTemplates)
+
+        let session = RoutineSessionData(
+            id: UUID(),
+            startedAt: Date().addingTimeInterval(-3600),
+            completedAt: Date(),
+            currentHabitIndex: 1,
+            completions: [HabitCompletion(habitId: habit.id, completedAt: Date())],
+            modifications: []
+        )
+        await legacy.saveRoutineSession(session, for: template.id)
+
+        // First load through a migrating service imports templates and history
+        let store = try createMigratingService(defaults: defaults); let service = store.service
+        let loaded: [RoutineTemplate]? = try await service.load([RoutineTemplate].self, forKey: PersistenceKeys.routineTemplates)
+
+        #expect(loaded?.count == 1)
+        #expect(loaded?.first?.name == "Legacy")
+        #expect(loaded?.first?.habits.count == 1)
+
+        let sessions = await service.loadRoutineSessions(for: template.id)
+        #expect(sessions.count == 1)
+        #expect(sessions.first?.id == session.id)
+        #expect(sessions.first?.completions.count == 1)
+
+        // Migration is one-shot: deleting everything must not resurrect legacy data
+        try await service.save([RoutineTemplate](), forKey: PersistenceKeys.routineTemplates)
+        let afterDeletion: [RoutineTemplate]? = try await service.load([RoutineTemplate].self, forKey: PersistenceKeys.routineTemplates)
+        #expect(afterDeletion?.isEmpty == true)
+    }
+
+    @Test("Fresh install (nothing to migrate) loads nil so samples get created")
+    @MainActor func testFreshInstallLoadsNil() async throws {
+        let suiteName = "test-fresh-\(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        let store = try createMigratingService(defaults: defaults); let service = store.service
+
+        let first: [RoutineTemplate]? = try await service.load([RoutineTemplate].self, forKey: PersistenceKeys.routineTemplates)
+        #expect(first == nil)
+
+        // After the first save, an emptied store is a deliberate state → []
+        try await service.save([RoutineTemplate(name: "Mine")], forKey: PersistenceKeys.routineTemplates)
+        try await service.save([RoutineTemplate](), forKey: PersistenceKeys.routineTemplates)
+        let emptied: [RoutineTemplate]? = try await service.load([RoutineTemplate].self, forKey: PersistenceKeys.routineTemplates)
+        #expect(emptied?.isEmpty == true)
+    }
+
+    @Test("Non-template keys round-trip through the injected UserDefaults")
+    @MainActor func testFallbackKeysUseInjectedDefaults() async throws {
+        let suiteName = "test-fallback-\(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        let container = try DataModelConfiguration.createTestModelContainer()
+        let service = SwiftDataPersistenceService(modelContext: container.mainContext, userDefaults: defaults)
+
+        try await service.save(["a", "b"], forKey: "SomeSettingsKey")
+        let loaded: [String]? = try await service.load([String].self, forKey: "SomeSettingsKey")
+        #expect(loaded == ["a", "b"])
+        #expect(UserDefaults.standard.data(forKey: "SomeSettingsKey") == nil)
     }
 }

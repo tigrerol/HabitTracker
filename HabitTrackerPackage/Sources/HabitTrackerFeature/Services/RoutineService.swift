@@ -16,7 +16,14 @@ extension Notification.Name {
 public final class RoutineService {
     /// App-wide singleton — ensures only one RoutineSelector is ever created,
     /// preventing zombie Tasks from overwriting LocationCoordinator's callback.
-    public static let shared = RoutineService()
+    /// Runs on SwiftData (templates + session history); the default init below
+    /// stays UserDefaults-backed for previews and tests.
+    public static let shared = RoutineService(
+        persistenceService: SwiftDataPersistenceService(
+            modelContext: DataModelConfiguration.sharedContainer.mainContext,
+            migratesLegacyUserDefaults: true
+        )
+    )
     public private(set) var templates: [RoutineTemplate] = []
     public private(set) var currentSession: RoutineSession?
     public private(set) var pausedSessions: [PausedSessionSnapshot] = []

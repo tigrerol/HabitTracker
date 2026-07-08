@@ -7,20 +7,10 @@ import ActivityKit
 
 @main
 struct HabitTrackerApp: App {
-    let modelContainer: ModelContainer
-
-    init() {
-        do {
-            modelContainer = try DataModelConfiguration.createModelContainer()
-        } catch {
-            fatalError("Failed to create ModelContainer: \(error)")
-        }
-    }
-
     var body: some Scene {
         WindowGroup {
             HabitTrackerFeature.morningRoutineView()
-                .modelContainer(modelContainer)
+                .modelContainer(HabitTrackerFeature.sharedModelContainer)
         }
     }
 }

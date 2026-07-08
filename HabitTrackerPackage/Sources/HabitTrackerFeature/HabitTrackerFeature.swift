@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftData
 #if canImport(ActivityKit)
 import ActivityKit
 #endif
@@ -9,6 +10,12 @@ public struct HabitTrackerFeature {
     public static func morningRoutineView() -> some View {
         MorningRoutineView()
             .withDynamicTheme()
+    }
+
+    /// The app-wide SwiftData container; inject via `.modelContainer(_:)`.
+    @MainActor
+    public static var sharedModelContainer: ModelContainer {
+        DataModelConfiguration.sharedContainer
     }
     
     @MainActor

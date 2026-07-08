@@ -2,7 +2,7 @@
 
 This is a native **iOS application** built with **Swift 6.1+** and **SwiftUI**. The codebase targets **iOS 26.0 and later** (Liquid Glass APIs available unconditionally). All concurrency is handled with **Swift Concurrency** (async/await, actors, @MainActor isolation) ensuring thread-safe code.
 
-**Persistence reality check:** runtime persistence goes through `UserDefaultsPersistenceService`. The SwiftData layer (`SwiftDataModels.swift`, `SwiftDataPersistenceService.swift`, the `ModelContainer` created in the app target) is compiled but currently unused at runtime — do not assume `@Query`/`ModelContext` works until that migration actually happens.
+**Persistence:** the live app (`RoutineService.shared`) runs on SwiftData for routine templates + session history (`SwiftDataPersistenceService`, container in `DataModelConfiguration.sharedContainer`; one-shot legacy migration from UserDefaults on first load). Everything else — paused/interrupted session snapshots, day/location/time-slot settings, conditional responses — deliberately stays in UserDefaults as simple preference data. `RoutineService()`'s default init is still UserDefaults-backed for previews/tests. SwiftData gotchas encoded in the code: never wire relationships before `modelContext.insert`, keep a `ModelContainer` alive as long as its contexts are used, and fetch by predicate rather than reading inverse arrays right after inserts.
 
 - **Frameworks & Tech:** SwiftUI for UI, Swift Concurrency with strict mode, Swift Package Manager for modular architecture
 - **Architecture:** Model-View (MV) pattern using pure SwiftUI state management. We avoid MVVM and instead leverage SwiftUI's built-in state mechanisms (@State, @Observable, @Environment, @Binding)

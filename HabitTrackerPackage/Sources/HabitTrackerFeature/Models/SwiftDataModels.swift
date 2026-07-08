@@ -20,8 +20,7 @@ public final class PersistedHabit {
     
     // Relationships
     public var template: PersistedRoutineTemplate?
-    public var completions: [PersistedHabitCompletion] = []
-    
+
     public init(from habit: Habit) {
         self.id = habit.id
         self.name = habit.name
@@ -36,14 +35,20 @@ public final class PersistedHabit {
     }
     
     /// Convert back to domain model
+    @MainActor
     public func toDomainModel() -> Habit {
         let habitType: HabitType
         if let decodedType = try? JSONDecoder().decode(HabitType.self, from: typeData) {
             habitType = decodedType
         } else {
             habitType = .task(subtasks: []) // Fallback
+            LoggingService.shared.error(
+                "Failed to decode HabitType — falling back to empty task",
+                category: .app,
+                metadata: ["habitId": id.uuidString, "habitName": name]
+            )
         }
-        
+
         return Habit(
             id: id,
             name: name,
@@ -101,17 +106,28 @@ public final class PersistedRoutineTemplate {
         self.modifiedAt = Date()
         self.contextRuleData = template.contextRule.flatMap { try? JSONEncoder().encode($0) }
         self.weeklyTarget = template.weeklyTarget
+        // NOTE: habits are NOT converted here — relationships must only be
+        // established after the model is inserted into a ModelContext
+        // (SwiftDataPersistenceService.saveRoutineTemplates does this).
     }
 
     /// Convert back to domain model
+    @MainActor
     public func toDomainModel() -> RoutineTemplate {
         let contextRule: RoutineContextRule?
         if let ruleData = contextRuleData {
             contextRule = try? JSONDecoder().decode(RoutineContextRule.self, from: ruleData)
+            if contextRule == nil {
+                LoggingService.shared.error(
+                    "Failed to decode RoutineContextRule — template loses its context rule",
+                    category: .app,
+                    metadata: ["templateId": id.uuidString, "templateName": name]
+                )
+            }
         } else {
             contextRule = nil
         }
-        
+
         let domainHabits = habits.map { $0.toDomainModel() }.sorted { $0.order < $1.order }
         
         return RoutineTemplate(
@@ -173,33 +189,23 @@ public final class PersistedRoutineSession {
     
     // Relationships
     public var template: PersistedRoutineTemplate?
-    
-    @Relationship(deleteRule: .cascade)
+
+    @Relationship(deleteRule: .cascade, inverse: \PersistedHabitCompletion.session)
     public var completions: [PersistedHabitCompletion] = []
     
-    @MainActor
-    public init(from session: RoutineSession, template: PersistedRoutineTemplate) {
-        self.id = session.id
-        self.startedAt = session.startedAt
-        self.completedAt = session.completedAt
-        self.currentHabitIndex = session.currentHabitIndex
-        self.modificationsData = (try? JSONEncoder().encode(session.modifications)) ?? Data()
-        self.template = template
-    }
-
+    /// NOTE: the `template` relationship is deliberately not an init parameter —
+    /// set it only after the session is inserted into a ModelContext.
     public init(
         id: UUID,
         startedAt: Date,
         completedAt: Date?,
-        currentHabitIndex: Int,
-        template: PersistedRoutineTemplate
+        currentHabitIndex: Int
     ) {
         self.id = id
         self.startedAt = startedAt
         self.completedAt = completedAt
         self.currentHabitIndex = currentHabitIndex
         self.modificationsData = Data()
-        self.template = template
     }
     
     /// Update from domain model
