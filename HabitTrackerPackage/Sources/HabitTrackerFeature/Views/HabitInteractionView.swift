@@ -110,6 +110,8 @@ struct TimerHabitView: View {
     @State private var currentRound: Int
     @State private var totalElapsed: TimeInterval
 
+    @ScaledMetric(relativeTo: .largeTitle) private var timerFontSize: CGFloat = 48
+
     init(
         habit: Habit,
         style: TimerStyle,
@@ -226,29 +228,34 @@ struct TimerHabitView: View {
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
-                    
+
                     Text(step.name)
                         .font(.title2)
                         .fontWeight(.semibold)
                         .multilineTextAlignment(.center)
                 }
+                .accessibilityElement(children: .combine)
             }
-            
+
             // Timer display
             VStack(spacing: 8) {
                 Text(displayTime.formattedMinutesSeconds)
-                    .font(.system(size: 48, weight: .bold, design: .monospaced))
-                    .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
+                    .font(.system(size: timerFontSize, weight: .bold, design: .monospaced))
                     .foregroundStyle(habit.swiftUIColor)
+                    .accessibilityLabel("Timer")
+                    .accessibilityValue(accessibleTimeValue)
+                    .accessibilityAddTraits(.updatesFrequently)
 
                 ProgressView(value: progressValue)
                     .tint(habit.swiftUIColor)
                     .scaleEffect(y: 3)
+                    .accessibilityHidden(true)
 
                 if let target = target, style == .up {
                     Text("Target: \(target.formattedMinutesSeconds)")
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                        .accessibilityLabel("Target: \(target.accessibleDuration)")
                 }
             }
             
@@ -306,6 +313,8 @@ struct TimerHabitView: View {
                         }
                         .buttonStyle(.glassProminent)
                         .tint(.red)
+                        .accessibilityLabel("Stop timer")
+                        .accessibilityHint("Ends the timer and logs the elapsed time")
                     }
                 }
             }
@@ -337,12 +346,22 @@ struct TimerHabitView: View {
         Button {
             onComplete(habit.id, seconds, String(localized: "HabitInteractionView.Timer.QuickCompletion", bundle: .module).replacingOccurrences(of: "%@", with: label))
         } label: {
-            Text(label)
+            // "Log" prefix: these complete the habit with the given duration,
+            // they do not start a timer of that length.
+            Text("Log \(label)")
                 .font(.system(.caption, design: .rounded, weight: .medium))
                 .foregroundStyle(.secondary)
                 .padding(.horizontal, 6)
         }
         .buttonStyle(.glass)
+        .accessibilityLabel("Log \(seconds.accessibleDuration)")
+        .accessibilityHint("Completes this habit immediately with \(seconds.accessibleDuration) recorded")
+    }
+
+    /// Spoken description of the timer state, e.g. "2 minutes, 5 seconds remaining".
+    private var accessibleTimeValue: String {
+        let time = displayTime.accessibleDuration
+        return style == .up ? "\(time) elapsed" : "\(time) remaining"
     }
     
     private func startTimer() {
@@ -458,6 +477,7 @@ struct AppLaunchHabitView: View {
                     .font(.largeTitle)
                     .imageScale(.large)
                     .foregroundStyle(habit.swiftUIColor)
+                    .accessibilityHidden(true)
                 
                 if hasLaunchedApp {
                     Text(String(localized: "HabitInteractionView.AppLaunch.ReturnWhenFinished", bundle: .module))
@@ -553,6 +573,7 @@ struct WebsiteHabitView: View {
                     .font(.largeTitle)
                     .imageScale(.large)
                     .foregroundStyle(habit.swiftUIColor)
+                    .accessibilityHidden(true)
                 
                 if hasOpenedWebsite {
                     Text(String(localized: "HabitInteractionView.Website.ReturnWhenFinished", bundle: .module).replacingOccurrences(of: "%@", with: title))
@@ -664,6 +685,7 @@ struct ActionHabitView: View {
                     .font(.largeTitle)
                     .imageScale(.large)
                     .foregroundStyle(habit.swiftUIColor)
+                    .accessibilityHidden(true)
                 
                 if hasPerformedAction {
                     Text(completionText)
@@ -749,6 +771,22 @@ extension TimeInterval {
         let seconds = Int(duration) % 60
         return String(format: "%d:%02d", minutes, seconds)
     }
+
+    /// Spoken form for VoiceOver, e.g. "2 minutes, 5 seconds".
+    var accessibleDuration: String {
+        guard self.isFinite, !self.isNaN else { return "0 seconds" }
+        let duration = max(0, self)
+        let minutes = Int(duration) / 60
+        let seconds = Int(duration) % 60
+        switch (minutes, seconds) {
+        case (0, _):
+            return "\(seconds) second\(seconds == 1 ? "" : "s")"
+        case (_, 0):
+            return "\(minutes) minute\(minutes == 1 ? "" : "s")"
+        default:
+            return "\(minutes) minute\(minutes == 1 ? "" : "s"), \(seconds) second\(seconds == 1 ? "" : "s")"
+        }
+    }
 }
 
 /// Subtasks habit interaction
@@ -831,6 +869,9 @@ struct SubtasksHabitView: View {
                         )
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel(showOptionalBadges && subtask.isOptional ? "\(subtask.name), optional" : subtask.name)
+                    .accessibilityValue(completedSubtasks.contains(subtask.id) ? "completed" : "not completed")
+                    .accessibilityHint("Double tap to toggle")
                 }
             }
 
@@ -898,24 +939,25 @@ struct MeasurementHabitView: View {
     
     @State private var inputValue: String = ""
     @FocusState private var isInputFocused: Bool
-    
+    @ScaledMetric(relativeTo: .largeTitle) private var inputFontSize: CGFloat = 48
+
     var body: some View {
         VStack(spacing: 24) {
             VStack(spacing: 12) {
                 Text(String(localized: "HabitInteractionView.Measurement.Enter", bundle: .module).replacingOccurrences(of: "%@", with: unit))
                     .font(.headline)
                     .foregroundStyle(.secondary)
-                
+
                 HStack {
                     TextField("0", text: $inputValue)
-                        .font(.system(size: 48, weight: .bold, design: .monospaced))
-                        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
+                        .font(.system(size: inputFontSize, weight: .bold, design: .monospaced))
                         .multilineTextAlignment(.center)
                         #if canImport(UIKit)
                         .keyboardType(.decimalPad)
                         #endif
                         .focused($isInputFocused)
-                    
+                        .accessibilityLabel("Measurement value in \(unit)")
+
                     Text(unit)
                         .font(.title2)
                         .foregroundStyle(.secondary)
@@ -965,12 +1007,14 @@ struct GuidedSequenceHabitView: View {
     @State private var isRunning = false
     @State private var isPaused = false
     @State private var totalElapsed: TimeInterval = 0
-    
+
+    @ScaledMetric(relativeTo: .largeTitle) private var timerFontSize: CGFloat = 48
+
     private var currentStep: SequenceStep? {
         guard currentStepIndex < steps.count else { return nil }
         return steps[currentStepIndex]
     }
-    
+
     var body: some View {
         VStack(spacing: 24) {
             if let step = currentStep {
@@ -979,12 +1023,12 @@ struct GuidedSequenceHabitView: View {
                     Text(String(format: String(localized: "HabitInteractionView.Sequence.StepProgress", bundle: .module), currentStepIndex + 1, steps.count))
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                    
+
                     Text(step.name)
                         .font(.title2)
                         .fontWeight(.semibold)
                         .multilineTextAlignment(.center)
-                    
+
                     if let instructions = step.instructions {
                         Text(instructions)
                             .font(.subheadline)
@@ -992,17 +1036,21 @@ struct GuidedSequenceHabitView: View {
                             .multilineTextAlignment(.center)
                     }
                 }
-                
+                .accessibilityElement(children: .combine)
+
                 // Timer display
                 VStack(spacing: 8) {
                     Text(timeRemaining.formattedMinutesSeconds)
-                        .font(.system(size: 48, weight: .bold, design: .monospaced))
-                        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
+                        .font(.system(size: timerFontSize, weight: .bold, design: .monospaced))
                         .foregroundStyle(habit.swiftUIColor)
-                    
+                        .accessibilityLabel("Step timer")
+                        .accessibilityValue("\(timeRemaining.accessibleDuration) remaining")
+                        .accessibilityAddTraits(.updatesFrequently)
+
                     ProgressView(value: step.duration > 0 ? max(0, min(1, 1.0 - (timeRemaining / step.duration))) : 0)
                         .tint(habit.swiftUIColor)
                         .scaleEffect(y: 3)
+                        .accessibilityHidden(true)
                 }
                 
                 // Controls
@@ -1050,6 +1098,7 @@ struct GuidedSequenceHabitView: View {
                             .padding()
                             .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
                     }
+                    .accessibilityHint("Advances to the next step without waiting for the timer")
                 }
             } else {
                 // Completion view

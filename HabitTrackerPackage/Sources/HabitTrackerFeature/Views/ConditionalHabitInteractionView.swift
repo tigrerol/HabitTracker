@@ -29,12 +29,14 @@ public struct ConditionalHabitInteractionView: View {
                 Image(systemName: "questionmark.circle.fill")
                     .font(.system(size: 48))
                     .foregroundStyle(Color(hex: habit.color) ?? .blue)
-                
+                    .accessibilityHidden(true)
+
                 Text(conditionalInfo.question)
                     .font(.title2)
                     .fontWeight(.semibold)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal)
+                    .accessibilityAddTraits(.isHeader)
             }
             .padding(.top, AppConstants.Spacing.page)
             
@@ -63,6 +65,7 @@ public struct ConditionalHabitInteractionView: View {
                     .font(.callout)
                     .foregroundStyle(.secondary)
             }
+            .accessibilityHint("Skips the question without adding any habits")
             .disabled(isProcessing)
             .padding(.bottom, AppConstants.Padding.extraLarge)
         }
@@ -126,6 +129,14 @@ private struct OptionButton: View {
             )
         }
         .buttonStyle(OptionButtonStyle())
+        .accessibilityLabel(accessibilityText)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
+    }
+
+    private var accessibilityText: String {
+        let count = option.habits.count
+        guard count > 0 else { return option.text }
+        return "\(option.text), adds \(count) habit\(count == 1 ? "" : "s")"
     }
 }
 

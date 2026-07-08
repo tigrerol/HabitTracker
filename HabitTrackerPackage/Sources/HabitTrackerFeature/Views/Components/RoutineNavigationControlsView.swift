@@ -24,6 +24,7 @@ struct RoutineNavigationControlsView: View {
             .buttonStyle(.glass)
             .tint(.primary)
             .disabled(data.currentHabitIndex <= 0)
+            .accessibilityHint("Returns to the previous habit and clears its completion")
 
             Spacer()
 
@@ -41,6 +42,7 @@ struct RoutineNavigationControlsView: View {
             }
             .buttonStyle(.glass)
             .tint(.orange)
+            .accessibilityHint("Skips the current habit without completing it")
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 12)
