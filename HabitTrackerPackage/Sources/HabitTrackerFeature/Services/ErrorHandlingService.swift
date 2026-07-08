@@ -5,7 +5,7 @@ import os.log
 
 /// Centralized error handling and reporting service
 @MainActor
-public final class ErrorHandlingService: @unchecked Sendable {
+public final class ErrorHandlingService {
     public static let shared = ErrorHandlingService()
     
     private let logger: Logger

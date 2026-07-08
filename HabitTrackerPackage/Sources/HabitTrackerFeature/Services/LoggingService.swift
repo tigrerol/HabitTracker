@@ -5,7 +5,7 @@ import os.log
 
 /// Centralized logging service for structured application logging
 @MainActor
-public final class LoggingService: @unchecked Sendable {
+public final class LoggingService {
     public static let shared = LoggingService()
     
     private let subsystem = "com.habittracker.app"

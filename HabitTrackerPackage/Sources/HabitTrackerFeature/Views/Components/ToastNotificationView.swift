@@ -281,52 +281,7 @@ extension View {
     }
 }
 
-// MARK: - Error Integration
 
-extension ErrorPresentationService {
-    /// Show an error as a toast notification
-    public func showErrorToast(
-        _ error: any HabitTrackerError,
-        actionLabel: String? = nil,
-        actionHandler: (() -> Void)? = nil
-    ) {
-        let action: ToastAction? = if let actionLabel = actionLabel,
-                                     let actionHandler = actionHandler {
-            ToastAction(title: actionLabel, handler: actionHandler)
-        } else {
-            nil
-        }
-        
-        ToastManager.shared.show(
-            message: error.userMessage,
-            type: toastTypeForError(error),
-            duration: durationForError(error),
-            action: action
-        )
-    }
-    
-    private func toastTypeForError(_ error: any HabitTrackerError) -> ToastType {
-        switch error.severity {
-        case .critical, .high:
-            return .error
-        case .medium:
-            return .warning
-        case .low:
-            return .info
-        }
-    }
-    
-    private func durationForError(_ error: any HabitTrackerError) -> TimeInterval {
-        switch error.severity {
-        case .critical, .high:
-            return 6.0
-        case .medium:
-            return 4.0
-        case .low:
-            return 3.0
-        }
-    }
-}
 
 // MARK: - Toast Accessibility
 

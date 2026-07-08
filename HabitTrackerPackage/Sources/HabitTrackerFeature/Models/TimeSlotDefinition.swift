@@ -141,140 +141,90 @@ public struct TimeSlotDefinition: Codable, Identifiable, Sendable {
 }
 
 /// Manager for customizable time slot definitions
-public final class TimeSlotManager: ObservableObject, @unchecked Sendable {
+@MainActor
+@Observable
+public final class TimeSlotManager {
     public static let shared = TimeSlotManager()
-    
-    @Published private var timeSlots: [TimeSlotDefinition] = []
-    private let queue = DispatchQueue(label: "TimeSlotManager", qos: .userInitiated)
+
+    private var timeSlots: [TimeSlotDefinition] = []
     private let persistenceService: any PersistenceServiceProtocol
     private let timeSlotsKey = "CustomTimeSlots"
-    private var hasLoaded = false
-    
+
     /// Initialize with dependency injection
     public init(persistenceService: (any PersistenceServiceProtocol)? = nil) {
-        if let service = persistenceService {
-            self.persistenceService = service
-        } else {
-            self.persistenceService = UserDefaultsPersistenceService()
-        }
+        self.persistenceService = persistenceService ?? UserDefaultsPersistenceService()
         loadTimeSlots()
     }
-    
-    private convenience init() {
-        self.init(persistenceService: nil)
-    }
-    
+
     /// Get all time slot definitions
     public func getAllTimeSlots() -> [TimeSlotDefinition] {
-        queue.sync { timeSlots }
+        timeSlots
     }
-    
+
     /// Update time slot definitions
     public func updateTimeSlots(_ newTimeSlots: [TimeSlotDefinition]) {
-        queue.sync {
-            timeSlots = newTimeSlots
-        }
-        DispatchQueue.main.async {
-            self.persistTimeSlots()
-        }
+        timeSlots = newTimeSlots
+        persistTimeSlots()
     }
-    
+
     /// Get the current time slot definition based on current time
     public func getCurrentTimeSlotDefinition() -> TimeSlotDefinition? {
         let now = TimeOfDay.from(date: Date())
-        let currentSlots = queue.sync { timeSlots }
-        
-        for definition in currentSlots {
-            if definition.contains(time: now) {
-                return definition
-            }
-        }
-        
-        return nil
+        return timeSlots.first { $0.contains(time: now) }
     }
-    
+
     /// Get the current time slot enum (for backwards compatibility)
     public func getCurrentTimeSlot() -> TimeSlot {
-        if let definition = getCurrentTimeSlotDefinition() {
-            // Try to match to existing TimeSlot enum
-            for timeSlot in TimeSlot.allCases {
-                if definition.id == timeSlot.rawValue {
-                    return timeSlot
-                }
-            }
+        if let definition = getCurrentTimeSlotDefinition(),
+           let timeSlot = TimeSlot.allCases.first(where: { definition.id == $0.rawValue }) {
+            return timeSlot
         }
-        
+
         // Fallback to default logic if no custom slots match
         return TimeSlot.from(date: Date())
     }
-    
+
     /// Add a new custom time slot
     public func addTimeSlot(_ timeSlot: TimeSlotDefinition) {
-        queue.sync {
-            timeSlots.append(timeSlot)
-        }
-        DispatchQueue.main.async {
-            self.persistTimeSlots()
-        }
+        timeSlots.append(timeSlot)
+        persistTimeSlots()
     }
-    
+
     /// Update an existing time slot
     public func updateTimeSlot(_ updatedTimeSlot: TimeSlotDefinition) {
-        queue.sync {
-            if let index = timeSlots.firstIndex(where: { $0.id == updatedTimeSlot.id }) {
-                timeSlots[index] = updatedTimeSlot
-            }
+        if let index = timeSlots.firstIndex(where: { $0.id == updatedTimeSlot.id }) {
+            timeSlots[index] = updatedTimeSlot
         }
-        DispatchQueue.main.async {
-            self.persistTimeSlots()
-        }
+        persistTimeSlots()
     }
-    
+
     /// Delete a time slot (only custom ones can be deleted)
     public func deleteTimeSlot(withId id: String) {
-        queue.sync {
-            timeSlots.removeAll { $0.id == id && !$0.isBuiltIn }
-        }
-        DispatchQueue.main.async {
-            self.persistTimeSlots()
-        }
+        timeSlots.removeAll { $0.id == id && !$0.isBuiltIn }
+        persistTimeSlots()
     }
-    
+
     /// Reset to default time slots
     public func resetToDefaults() {
-        queue.sync {
-            timeSlots = TimeSlotDefinition.defaults
-        }
-        DispatchQueue.main.async {
-            self.persistTimeSlots()
-        }
+        timeSlots = TimeSlotDefinition.defaults
+        persistTimeSlots()
     }
-    
+
     // MARK: - Persistence
-    
+
     private func loadTimeSlots() {
         Task { @MainActor in
             do {
-                if let loadedSlots = try await persistenceService.load([TimeSlotDefinition].self, forKey: timeSlotsKey) {
-                    queue.sync {
-                        timeSlots = loadedSlots
-                    }
-                } else {
-                    queue.sync {
-                        timeSlots = TimeSlotDefinition.defaults
-                    }
-                }
+                timeSlots = try await persistenceService.load([TimeSlotDefinition].self, forKey: timeSlotsKey) ?? TimeSlotDefinition.defaults
             } catch {
                 LoggingService.shared.error("Failed to load custom time slots: \(error.localizedDescription)", category: .app)
-                queue.sync {
-                    timeSlots = TimeSlotDefinition.defaults
-                }
+                timeSlots = TimeSlotDefinition.defaults
             }
         }
     }
-    
+
     private func persistTimeSlots() {
-        let slotsToSave = queue.sync { timeSlots }
+        let slotsToSave = timeSlots
         Task { @MainActor in
             do {
                 try await persistenceService.save(slotsToSave, forKey: timeSlotsKey)
