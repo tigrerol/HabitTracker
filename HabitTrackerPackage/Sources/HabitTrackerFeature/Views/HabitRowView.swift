@@ -87,7 +87,7 @@ public struct HabitRowView: View {
             // Options displayed exactly like main habit rows
             if !info.options.isEmpty {
                 List(Array(info.options.enumerated()), id: \.element.id) { index, option in
-                    let optionColor = optionColors[index % optionColors.count]
+                    let optionColor = ConditionalOptionPalette.color(at: index)
                     
                     VStack(spacing: 8) {
                         // Option in identical format to main habit row
@@ -176,7 +176,4 @@ public struct HabitRowView: View {
         }
     }
     
-    private var optionColors: [Color] {
-        [.blue, .green, .orange, .purple, .red, .pink, .yellow, .cyan]
-    }
 }
