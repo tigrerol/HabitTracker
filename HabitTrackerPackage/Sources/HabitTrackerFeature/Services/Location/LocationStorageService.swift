@@ -65,6 +65,7 @@ public final class LocationStorageService: ObservableObject {
             radius: finalRadius
         )
         knownLocations[type] = savedLocation
+        hasLocalMutations = true
         
         // Log location save event
         LoggingService.shared.logLocationEvent(
@@ -82,6 +83,7 @@ public final class LocationStorageService: ObservableObject {
     
     /// Remove a saved location
     public func removeLocation(for type: LocationType) async {
+        hasLocalMutations = true
         knownLocations.removeValue(forKey: type)
         await persistLocations()
     }
@@ -100,8 +102,12 @@ public final class LocationStorageService: ObservableObject {
     
     /// Create a new custom location
     public func createCustomLocation(name: String, icon: String = "location.fill") async -> CustomLocation {
-        let customLocation = CustomLocation(name: name, icon: icon)
+        // Sanitize: fall back for empty names, cap length
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        let sanitizedName = trimmed.isEmpty ? "Unnamed Location" : String(trimmed.prefix(50))
+        let customLocation = CustomLocation(name: sanitizedName, icon: icon)
         customLocations[customLocation.id] = customLocation
+        hasLocalMutations = true
         await persistLocations()
         return customLocation
     }
@@ -109,6 +115,7 @@ public final class LocationStorageService: ObservableObject {
     /// Update an existing custom location
     public func updateCustomLocation(_ customLocation: CustomLocation) async {
         customLocations[customLocation.id] = customLocation
+        hasLocalMutations = true
         await persistLocations()
     }
     
@@ -129,11 +136,13 @@ public final class LocationStorageService: ObservableObject {
         }
         
         customLocations[id] = customLocation
+        hasLocalMutations = true
         await persistLocations()
     }
     
     /// Delete a custom location
     public func deleteCustomLocation(id: UUID) async {
+        hasLocalMutations = true
         customLocations.removeValue(forKey: id)
         await persistLocations()
     }
@@ -163,13 +172,17 @@ public final class LocationStorageService: ObservableObject {
         }
     }
     
+    /// True once any in-memory mutation happened; the async init load must not
+    /// clobber newer state when it completes afterwards.
+    private var hasLocalMutations = false
+
     private func loadFromPersistence() async {
         // Load both location types in parallel
         async let knownResult = persistenceService.load([LocationType: SavedLocation].self, forKey: savedLocationsKey)
         async let customResult = persistenceService.load([UUID: CustomLocation].self, forKey: customLocationsKey)
 
         do {
-            if let known = try await knownResult {
+            if let known = try await knownResult, !hasLocalMutations {
                 knownLocations = known
             }
         } catch {
@@ -181,7 +194,7 @@ public final class LocationStorageService: ObservableObject {
         }
 
         do {
-            if let custom = try await customResult {
+            if let custom = try await customResult, !hasLocalMutations {
                 customLocations = custom
             }
         } catch {

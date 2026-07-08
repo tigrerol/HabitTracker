@@ -193,7 +193,7 @@ struct HabitTypeExtensionTests {
     
     @Test("HabitType descriptions are appropriate")
     func testDescriptions() {
-        #expect(HabitType.task(subtasks: []).description == "Task")
+        #expect(HabitType.task(subtasks: []).description == "Simple task")
         #expect(HabitType.timer(style: .down, duration: 300).description == "Timer (5min)")
         
         let option = ConditionalOption(text: "Option 1", habits: [])

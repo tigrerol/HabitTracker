@@ -7,10 +7,11 @@ struct LoggingServiceTests {
     
     @Test("LoggingService initializes correctly")
     @MainActor func testLoggingServiceInitialization() {
-        let service = LoggingService.shared
+        let service = LoggingService()
+        service.clearHistory() // drop the init-configuration log entry
         
         #expect(service.getLogHistory().isEmpty)
-        #expect(service.getCurrentLogLevel() == .info) // Release mode default
+        #expect(service.getCurrentLogLevel() == .debug) // tests build in Debug configuration
         
         let stats = service.getLogStatistics()
         #expect(stats.totalLogs == 0)
@@ -18,8 +19,8 @@ struct LoggingServiceTests {
     
     @Test("LoggingService logs at different levels")
     @MainActor func testLogLevels() {
-        let service = LoggingService.shared
-        service.clearHistory()
+        let service = LoggingService()
+        service.clearHistory() // drop the init-configuration log entry
         
         service.trace("Test trace message")
         service.debug("Test debug message")
@@ -45,8 +46,8 @@ struct LoggingServiceTests {
     
     @Test("LoggingService respects log level filtering")
     @MainActor func testLogLevelFiltering() {
-        let service = LoggingService.shared
-        service.clearHistory()
+        let service = LoggingService()
+        service.clearHistory() // drop the init-configuration log entry
         
         // Set to warning level
         service.setLogLevel(.warning)
@@ -67,9 +68,9 @@ struct LoggingServiceTests {
     }
     
     @Test("LoggingService includes metadata in logs")
-    @MainActor func testLogMetadata() {
-        let service = LoggingService.shared
-        service.clearHistory()
+    @MainActor func testLogMetadata() throws {
+        let service = LoggingService()
+        service.clearHistory() // drop the init-configuration log entry
         
         let metadata = [
             "user_id": "12345",
@@ -82,7 +83,7 @@ struct LoggingServiceTests {
         let history = service.getLogHistory()
         #expect(history.count == 1)
         
-        let logEntry = history.first!
+        let logEntry = try #require(history.first)
         #expect(logEntry.metadata["user_id"] == "12345")
         #expect(logEntry.metadata["session_id"] == "abc-def-ghi")
         #expect(logEntry.metadata["feature"] == "routine_execution")
@@ -90,8 +91,8 @@ struct LoggingServiceTests {
     
     @Test("LoggingService categorizes logs correctly")
     @MainActor func testLogCategories() {
-        let service = LoggingService.shared
-        service.clearHistory()
+        let service = LoggingService()
+        service.clearHistory() // drop the init-configuration log entry
         
         service.info("App message", category: .app)
         service.info("UI message", category: .ui)
@@ -120,8 +121,8 @@ struct LoggingServiceTests {
     
     @Test("LoggingService maintains log history limit")
     @MainActor func testLogHistoryLimit() {
-        let service = LoggingService.shared
-        service.clearHistory()
+        let service = LoggingService()
+        service.clearHistory() // drop the init-configuration log entry
         
         // Add more logs than the history limit (500)
         for i in 0..<600 {
@@ -137,12 +138,8 @@ struct LoggingServiceTests {
     
     @Test("LoggingService filters logs by time range")
     @MainActor func testTimeRangeFiltering() {
-        let service = LoggingService.shared
-        service.clearHistory()
-        
-        let now = Date()
-        let oneHourAgo = now.addingTimeInterval(-3600)
-        let twoHoursAgo = now.addingTimeInterval(-7200)
+        let service = LoggingService()
+        service.clearHistory() // drop the init-configuration log entry
         
         service.info("Old message")
         
@@ -151,17 +148,21 @@ struct LoggingServiceTests {
         
         service.info("Recent message")
         
-        let recentLogs = service.getLogs(from: oneHourAgo, to: now)
+        // Capture the window end AFTER logging so both entries fall inside it
+        let now = Date()
+        let oneHourAgo = now.addingTimeInterval(-3600)
+        
+        let recentLogs = service.getLogs(from: oneHourAgo, to: now.addingTimeInterval(1))
         #expect(recentLogs.count == 2) // Both messages should be in this range
         
-        let veryRecentLogs = service.getLogs(from: Date(), to: Date().addingTimeInterval(1))
-        #expect(veryRecentLogs.count == 0) // No logs in the future
+        let futureLogs = service.getLogs(from: now.addingTimeInterval(60), to: now.addingTimeInterval(120))
+        #expect(futureLogs.count == 0) // No logs in the future
     }
     
     @Test("LoggingService filters logs by level")
     @MainActor func testLevelFiltering() {
-        let service = LoggingService.shared
-        service.clearHistory()
+        let service = LoggingService()
+        service.clearHistory() // drop the init-configuration log entry
         service.setLogLevel(.trace) // Allow all levels
         
         service.info("Info message")
@@ -179,9 +180,9 @@ struct LoggingServiceTests {
     
     @Test("LoggingService provides accurate statistics")
     @MainActor func testLogStatistics() {
-        let service = LoggingService.shared
-        service.clearHistory()
+        let service = LoggingService()
         service.setLogLevel(.trace) // Allow all levels
+        service.clearHistory() // drop the init-configuration and level-change log entries
         
         service.info("Message 1", category: .app)
         service.warning("Message 2", category: .app)
@@ -207,8 +208,8 @@ struct SpecializedLoggingTests {
     
     @Test("LoggingService logs app lifecycle events")
     @MainActor func testAppLifecycleLogging() {
-        let service = LoggingService.shared
-        service.clearHistory()
+        let service = LoggingService()
+        service.clearHistory() // drop the init-configuration log entry
         
         service.logAppLifecycle(.launched, metadata: ["version": "1.0.0"])
         service.logAppLifecycle(.backgrounded)
@@ -226,8 +227,8 @@ struct SpecializedLoggingTests {
     
     @Test("LoggingService logs user actions")
     @MainActor func testUserActionLogging() {
-        let service = LoggingService.shared
-        service.clearHistory()
+        let service = LoggingService()
+        service.clearHistory() // drop the init-configuration log entry
         
         service.logUserAction("tap_button", screen: "routine_view", metadata: ["button": "start"])
         service.logUserAction("swipe_left", screen: "habit_list")
@@ -242,8 +243,8 @@ struct SpecializedLoggingTests {
     
     @Test("LoggingService logs performance metrics")
     @MainActor func testPerformanceLogging() {
-        let service = LoggingService.shared
-        service.clearHistory()
+        let service = LoggingService()
+        service.clearHistory() // drop the init-configuration log entry
         
         service.logPerformance("routine_load_time", value: 125.5, unit: "ms")
         service.logPerformance("memory_usage", value: 64.2, unit: "MB", metadata: ["context": "startup"])
@@ -261,8 +262,8 @@ struct SpecializedLoggingTests {
     
     @Test("LoggingService logs routine events")
     @MainActor func testRoutineEventLogging() {
-        let service = LoggingService.shared
-        service.clearHistory()
+        let service = LoggingService()
+        service.clearHistory() // drop the init-configuration log entry
         
         let sessionId = UUID()
         let templateId = UUID()
@@ -284,8 +285,8 @@ struct SpecializedLoggingTests {
     
     @Test("LoggingService logs location events")
     @MainActor func testLocationEventLogging() {
-        let service = LoggingService.shared
-        service.clearHistory()
+        let service = LoggingService()
+        service.clearHistory() // drop the init-configuration log entry
         
         service.logLocationEvent(.permissionRequested)
         service.logLocationEvent(.locationSaved, metadata: ["type": "home", "radius": "100"])
@@ -301,8 +302,8 @@ struct SpecializedLoggingTests {
     
     @Test("LoggingService logs data operations")
     @MainActor func testDataOperationLogging() {
-        let service = LoggingService.shared
-        service.clearHistory()
+        let service = LoggingService()
+        service.clearHistory() // drop the init-configuration log entry
         
         service.logDataOperation(.save, key: "routine_templates", success: true)
         service.logDataOperation(.load, key: "user_preferences", success: false, metadata: ["error": "not_found"])
@@ -325,9 +326,9 @@ struct SpecializedLoggingTests {
 struct PerformanceMeasurementTests {
     
     @Test("LoggingService measures synchronous operation time")
-    @MainActor func testSyncPerformanceMeasurement() {
-        let service = LoggingService.shared
-        service.clearHistory()
+    @MainActor func testSyncPerformanceMeasurement() throws {
+        let service = LoggingService()
+        service.clearHistory() // drop the init-configuration log entry
         
         let result = service.measureTime("test_operation") {
             // Simulate some work
@@ -340,7 +341,7 @@ struct PerformanceMeasurementTests {
         let performanceLogs = service.getLogs(for: .performance)
         #expect(performanceLogs.count == 1)
         
-        let log = performanceLogs.first!
+        let log = try #require(performanceLogs.first)
         #expect(log.message.contains("test_operation"))
         #expect(log.metadata["unit"] == "ms")
         
@@ -353,9 +354,9 @@ struct PerformanceMeasurementTests {
     }
     
     @Test("LoggingService measures asynchronous operation time")
-    @MainActor func testAsyncPerformanceMeasurement() async {
-        let service = LoggingService.shared
-        service.clearHistory()
+    @MainActor func testAsyncPerformanceMeasurement() async throws {
+        let service = LoggingService()
+        service.clearHistory() // drop the init-configuration log entry
         
         let result = await service.measureTimeAsync("async_test_operation") {
             // Simulate async work
@@ -368,22 +369,22 @@ struct PerformanceMeasurementTests {
         let performanceLogs = service.getLogs(for: .performance)
         #expect(performanceLogs.count == 1)
         
-        let log = performanceLogs.first!
+        let log = try #require(performanceLogs.first)
         #expect(log.message.contains("async_test_operation"))
         #expect(log.metadata["unit"] == "ms")
     }
     
     @Test("LoggingService logs memory usage")
-    @MainActor func testMemoryUsageLogging() {
-        let service = LoggingService.shared
-        service.clearHistory()
+    @MainActor func testMemoryUsageLogging() throws {
+        let service = LoggingService()
+        service.clearHistory() // drop the init-configuration log entry
         
         service.logMemoryUsage(context: "test_context")
         
         let performanceLogs = service.getLogs(for: .performance)
         #expect(performanceLogs.count == 1)
         
-        let log = performanceLogs.first!
+        let log = try #require(performanceLogs.first)
         #expect(log.message.contains("Memory usage"))
         #expect(log.metadata["context"] == "test_context")
         #expect(log.metadata["used_mb"] != nil)
@@ -395,17 +396,14 @@ struct PerformanceMeasurementTests {
 struct GlobalConvenienceFunctionTests {
     
     @Test("Global log function works correctly")
-    @MainActor func testGlobalLogFunction() {
-        let service = LoggingService.shared
-        service.clearHistory()
-        
-        log("Global test message", level: .info, category: .app, metadata: ["global": "true"])
-        
-        let history = service.getLogHistory()
-        #expect(history.count == 1)
-        
-        let logEntry = history.first!
-        #expect(logEntry.message == "Global test message")
+    @MainActor func testGlobalLogFunction() throws {
+        // The global log() writes to LoggingService.shared; other tests run in
+        // parallel, so find our entry by marker instead of asserting counts.
+        let marker = UUID().uuidString
+
+        log("Global test message \(marker)", level: .info, category: .app, metadata: ["global": "true"])
+
+        let logEntry = try #require(LoggingService.shared.getLogHistory().first { $0.message.contains(marker) })
         #expect(logEntry.level == .info)
         #expect(logEntry.category == .app)
         #expect(logEntry.metadata["global"] == "true")
@@ -418,8 +416,8 @@ struct DebugTestingSupportTests {
     
     @Test("LoggingService debug helpers work correctly")
     @MainActor func testDebugHelpers() {
-        let service = LoggingService.shared
-        service.clearHistory()
+        let service = LoggingService()
+        service.clearHistory() // drop the init-configuration log entry
         
         let initialCount = service.getLogCount()
         #expect(initialCount == 0)
@@ -439,10 +437,10 @@ struct DebugTestingSupportTests {
     
     @Test("LoggingService test all log levels helper")
     @MainActor func testAllLogLevelsHelper() {
-        let service = LoggingService.shared
-        service.clearHistory()
+        let service = LoggingService()
         service.setLogLevel(.trace) // Allow all levels
-        
+        service.clearHistory() // drop the init-configuration and level-change log entries
+
         service.testAllLogLevels()
         
         let history = service.getLogHistory()

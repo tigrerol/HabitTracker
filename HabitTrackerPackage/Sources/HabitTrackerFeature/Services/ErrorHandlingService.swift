@@ -13,7 +13,8 @@ public final class ErrorHandlingService {
     private var errorHistory: [ErrorRecord] = []
     private let maxHistoryCount = 100
     
-    private init() {
+    /// Internal so tests can create isolated instances; production uses `.shared`.
+    init() {
         self.logger = Logger(subsystem: "com.habittracker.errorhandling", category: "errors")
     }
     

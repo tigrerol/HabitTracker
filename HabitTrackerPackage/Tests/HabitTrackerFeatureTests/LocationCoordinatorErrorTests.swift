@@ -10,7 +10,7 @@ struct LocationCoordinatorErrorTests {
     @MainActor func testLocationCoordinatorInvalidCoordinates() async {
         let coordinator = LocationCoordinator()
         let errorService = ErrorHandlingService.shared
-        errorService.clearHistory()
+        let start = Date()
         
         let invalidLocation = CLLocation(latitude: 999.0, longitude: -999.0)
         
@@ -19,7 +19,7 @@ struct LocationCoordinatorErrorTests {
             Issue.record("Expected error for invalid coordinates")
         } catch let error as LocationError {
             #expect(error.category == .location)
-            #expect(errorService.getErrorHistory().count == 1)
+            #expect(errorService.getErrorHistory().contains { $0.timestamp >= start })
         } catch {
             Issue.record("Expected LocationError but got \(error)")
         }
@@ -29,7 +29,7 @@ struct LocationCoordinatorErrorTests {
     @MainActor func testLocationCoordinatorInvalidRadius() async {
         let coordinator = LocationCoordinator()
         let errorService = ErrorHandlingService.shared
-        errorService.clearHistory()
+        let start = Date()
         
         let validLocation = CLLocation(latitude: 37.7749, longitude: -122.4194)
         
@@ -38,7 +38,7 @@ struct LocationCoordinatorErrorTests {
             Issue.record("Expected error for invalid radius")
         } catch let error as LocationError {
             #expect(error.category == .location)
-            #expect(errorService.getErrorHistory().count == 1)
+            #expect(errorService.getErrorHistory().contains { $0.timestamp >= start })
         } catch {
             Issue.record("Expected LocationError but got \(error)")
         }
@@ -48,7 +48,7 @@ struct LocationCoordinatorErrorTests {
     @MainActor func testLocationCoordinatorInvalidName() async {
         let coordinator = LocationCoordinator()
         let errorService = ErrorHandlingService.shared
-        errorService.clearHistory()
+        let start = Date()
         
         let validLocation = CLLocation(latitude: 37.7749, longitude: -122.4194)
         let invalidName = String(repeating: "a", count: 50) // Too long
@@ -58,7 +58,7 @@ struct LocationCoordinatorErrorTests {
             Issue.record("Expected error for invalid name")
         } catch let error as ValidationError {
             #expect(error.category == .validation)
-            #expect(errorService.getErrorHistory().count == 1)
+            #expect(errorService.getErrorHistory().contains { $0.timestamp >= start })
         } catch {
             Issue.record("Expected ValidationError but got \(error)")
         }
@@ -72,7 +72,7 @@ struct LocationTrackingServiceErrorTests {
     @MainActor func testLocationTrackingPermissionDenied() async {
         let trackingService = LocationTrackingService()
         let errorService = ErrorHandlingService.shared
-        errorService.clearHistory()
+        let start = Date()
         
         // Setup the location manager without permissions
         await trackingService.setupLocationManager()
@@ -108,17 +108,16 @@ struct LocationStorageServiceErrorTests {
         let failingPersistence = FailingPersistenceService()
         let storageService = LocationStorageService(persistenceService: failingPersistence)
         let errorService = ErrorHandlingService.shared
-        errorService.clearHistory()
+        let start = Date()
         
         let validLocation = CLLocation(latitude: 37.7749, longitude: -122.4194)
-        
-        do {
-            try await storageService.saveLocation(validLocation, as: .office)
-            Issue.record("Expected persistence error")
-        } catch {
-            // Should gracefully handle persistence failures
-            #expect(errorService.getErrorHistory().count > 0)
-        }
+
+        // Persistence failures are swallowed (memory stays consistent, error is
+        // logged) — saveLocation must NOT throw for them.
+        try? await storageService.saveLocation(validLocation, as: .office)
+
+        #expect(storageService.hasLocation(for: .office))
+        #expect(errorService.getErrorHistory().contains { $0.timestamp >= start && $0.error.category == .data })
     }
     
     @Test("LocationStorageService handles data corruption gracefully")
@@ -127,22 +126,23 @@ struct LocationStorageServiceErrorTests {
         let corruptedPersistence = CorruptedDataPersistenceService()
         let storageService = LocationStorageService(persistenceService: corruptedPersistence)
         let errorService = ErrorHandlingService.shared
-        errorService.clearHistory()
+        let start = Date()
         
         // Try to get locations - should handle corruption gracefully
         let _ = storageService.getSavedLocations()
-        
-        // Should log error but not crash
-        let history = errorService.getErrorHistory()
-        #expect(history.count > 0)
-        #expect(history.first?.error.category == .data)
+
+        // The corrupt load happens in the async init — poll for the logged error
+        for _ in 0..<100 where !errorService.getErrorHistory().contains(where: { $0.timestamp >= start && $0.error.category == .data }) {
+            try? await Task.sleep(for: .milliseconds(10))
+        }
+        #expect(errorService.getErrorHistory().contains { $0.timestamp >= start && $0.error.category == .data })
     }
     
     @Test("LocationStorageService validates custom location names")
     @MainActor func testLocationStorageCustomLocationValidation() async {
         let storageService = LocationStorageService()
         let errorService = ErrorHandlingService.shared
-        errorService.clearHistory()
+        let start = Date()
         
         // Test empty name
         let customLocation1 = await storageService.createCustomLocation(name: "", icon: "location.fill")

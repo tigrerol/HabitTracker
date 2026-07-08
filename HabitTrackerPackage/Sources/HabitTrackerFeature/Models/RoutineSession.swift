@@ -151,7 +151,7 @@ extension RoutineSession {
         let completion = HabitCompletion(
             habitId: habitToComplete.id,
             completedAt: Date(),
-            duration: duration,
+            duration: duration.map { max(0, $0) }, // clamp: negative durations are timer glitches
             notes: notes
         )
         

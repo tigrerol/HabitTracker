@@ -89,7 +89,8 @@ public final class LoggingService {
         }
     }
     
-    private init() {
+    /// Internal so tests can create isolated instances; production uses `.shared`.
+    init() {
         setupLoggers()
         configureLogLevel()
     }
@@ -297,7 +298,6 @@ public final class LoggingService {
     /// Clear log history
     public func clearHistory() {
         logHistory.removeAll()
-        info("Log history cleared", category: .app)
     }
     
     // MARK: - Log Statistics

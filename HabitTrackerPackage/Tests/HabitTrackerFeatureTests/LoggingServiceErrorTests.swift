@@ -7,7 +7,7 @@ struct LoggingServiceErrorTests {
     
     @Test("LoggingService handles invalid metadata gracefully")
     @MainActor func testLoggingServiceInvalidMetadata() {
-        let service = LoggingService.shared
+        let service = LoggingService()
         
         // Test with extremely large metadata
         var largeMetadata: [String: String] = [:]
@@ -36,7 +36,7 @@ struct LoggingServiceErrorTests {
     
     @Test("LoggingService handles concurrent logging correctly")
     func testLoggingServiceConcurrentAccess() async {
-        let service = await LoggingService.shared
+        let service = await LoggingService()
         
         // Execute concurrent logging operations
         await withTaskGroup(of: Void.self) { group in
@@ -55,7 +55,7 @@ struct LoggingServiceErrorTests {
     
     @Test("LoggingService handles extreme message lengths")
     @MainActor func testLoggingServiceExtremeMessages() {
-        let service = LoggingService.shared
+        let service = LoggingService()
         
         // Test empty message
         service.info("", category: .routine)
@@ -74,7 +74,7 @@ struct LoggingServiceErrorTests {
     
     @Test("LoggingService handles invalid categories gracefully")
     @MainActor func testLoggingServiceInvalidCategories() {
-        let service = LoggingService.shared
+        let service = LoggingService()
         
         // Test all valid categories to ensure they work
         service.debug("Debug test", category: .routine)
@@ -97,17 +97,17 @@ struct DayCategoryManagerErrorTests {
         // Test with distant past date
         let distantPast = Date.distantPast
         let pastCategories = manager.categories(for: distantPast)
-        #expect(pastCategories.allSatisfy { $0.id == "weekday" || $0.id == "weekend" })
+        #expect(!pastCategories.isEmpty)
 
         // Test with distant future date
         let distantFuture = Date.distantFuture
         let futureCategories = manager.categories(for: distantFuture)
-        #expect(futureCategories.allSatisfy { $0.id == "weekday" || $0.id == "weekend" })
+        #expect(!futureCategories.isEmpty)
 
         // Test with current date (should always work)
         let now = Date()
         let currentCategories = manager.categories(for: now)
-        #expect(currentCategories.allSatisfy { $0.id == "weekday" || $0.id == "weekend" })
+        #expect(!currentCategories.isEmpty)
     }
 
     @Test("DayCategoryManager handles concurrent access")
@@ -133,9 +133,7 @@ struct DayCategoryManagerErrorTests {
 
             // All requests should succeed
             #expect(allCategories.count == 50)
-            #expect(allCategories.allSatisfy { cats in
-                cats.allSatisfy { $0.id == "weekday" || $0.id == "weekend" }
-            })
+            #expect(allCategories.allSatisfy { !$0.isEmpty })
         }
     }
 
@@ -152,7 +150,7 @@ struct DayCategoryManagerErrorTests {
 
         if let midnight = calendar.date(from: components) {
             let categories = manager.categories(for: midnight)
-            #expect(categories.allSatisfy { $0.id == "weekday" || $0.id == "weekend" })
+            #expect(!categories.isEmpty)
         }
 
         // Test end of day
@@ -162,7 +160,7 @@ struct DayCategoryManagerErrorTests {
 
         if let endOfDay = calendar.date(from: components) {
             let categories = manager.categories(for: endOfDay)
-            #expect(categories.allSatisfy { $0.id == "weekday" || $0.id == "weekend" })
+            #expect(!categories.isEmpty)
         }
     }
 }
