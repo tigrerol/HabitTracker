@@ -51,11 +51,6 @@ public final class RoutineService {
             do {
                 if let loadedTemplates = try await persistenceService.load([RoutineTemplate].self, forKey: PersistenceKeys.routineTemplates) {
                     templates = loadedTemplates
-
-                    // Send loaded templates to watch on app startup
-                    #if canImport(WatchConnectivity)
-                    WatchConnectivityManager.shared.sendRoutineDataToWatch(templates)
-                    #endif
                     await refreshWidgetSnapshot()
                     return
                 }
@@ -92,13 +87,6 @@ public final class RoutineService {
     private func persistTemplates() async {
         do {
             try await persistenceService.save(templates, forKey: PersistenceKeys.routineTemplates)
-
-            // Send updated templates to watch
-            await MainActor.run {
-                #if canImport(WatchConnectivity)
-                WatchConnectivityManager.shared.sendRoutineDataToWatch(templates)
-                #endif
-            }
         } catch {
             ErrorHandlingService.shared.handleDataError(
                 .encodingFailed(type: "RoutineTemplate", underlyingError: error),
@@ -308,9 +296,8 @@ public final class RoutineService {
             routineId: session.id,
             wasSkipped: false
         )
-        ResponseLoggingService.shared.logResponse(response)
         ConditionalHabitService.shared.recordResponse(response)
-        
+
         // Get the habits from the selected path
         let pathHabits = option.habits
         
@@ -563,7 +550,6 @@ public final class RoutineService {
             question: question,
             routineId: session.id
         )
-        ResponseLoggingService.shared.logResponse(response)
         ConditionalHabitService.shared.recordResponse(response)
     }
 }

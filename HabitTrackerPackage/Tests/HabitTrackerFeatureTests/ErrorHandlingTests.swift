@@ -6,10 +6,11 @@ import CoreLocation
 @Suite("Error Handling Tests")
 struct ErrorHandlingTests {
     
-    @Test("ErrorHandlingService initializes correctly")
+    @Test("ErrorHandlingService starts with empty history after clear")
     @MainActor func testErrorHandlingServiceInitialization() {
         let service = ErrorHandlingService.shared
-        
+        service.clearHistory()
+
         #expect(service.getErrorHistory().isEmpty)
         #expect(service.getErrorStatistics().totalErrors == 0)
     }

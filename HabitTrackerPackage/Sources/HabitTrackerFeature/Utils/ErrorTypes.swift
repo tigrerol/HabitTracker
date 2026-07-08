@@ -239,7 +239,7 @@ public enum RoutineError: HabitTrackerError, Equatable {
         case .habitExecutionFailed(let habitName, let reason):
             return "Habit '\(habitName)' execution failed: \(reason)"
         case .conditionalOptionSelectionFailed:
-            return "ConditionalHabitHandler.handleOptionSelection failed"
+            return "Conditional option selection failed"
         case .routineQueueCorrupted:
             return "RoutineSession.activeHabits queue is corrupted"
         case .pausedSessionNotFound(let id):

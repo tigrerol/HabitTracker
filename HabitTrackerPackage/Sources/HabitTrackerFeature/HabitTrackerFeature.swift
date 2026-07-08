@@ -17,13 +17,6 @@ public struct HabitTrackerFeature {
             .withDynamicTheme()
     }
     
-    // MARK: - Watch Connectivity
-    #if canImport(WatchConnectivity)
-    public static var watchConnectivityManager: WatchConnectivityManager {
-        WatchConnectivityManager.shared
-    }
-    #endif
-    
     // MARK: - Live Activities
     #if canImport(ActivityKit)
     @MainActor

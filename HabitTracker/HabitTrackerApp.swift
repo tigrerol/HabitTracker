@@ -10,9 +10,6 @@ struct HabitTrackerApp: App {
     let modelContainer: ModelContainer
 
     init() {
-        // Initialize WatchConnectivityManager on app startup
-        _ = HabitTrackerFeature.watchConnectivityManager
-
         do {
             modelContainer = try DataModelConfiguration.createModelContainer()
         } catch {

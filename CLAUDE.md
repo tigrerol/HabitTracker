@@ -1,6 +1,8 @@
 # Project Overview
 
-This is a native **iOS application** built with **Swift 6.1+** and **SwiftUI**. The codebase targets **iOS 18.0 and later**, allowing full use of modern Swift and iOS APIs. All concurrency is handled with **Swift Concurrency** (async/await, actors, @MainActor isolation) ensuring thread-safe code.
+This is a native **iOS application** built with **Swift 6.1+** and **SwiftUI**. The codebase targets **iOS 26.0 and later** (Liquid Glass APIs available unconditionally). All concurrency is handled with **Swift Concurrency** (async/await, actors, @MainActor isolation) ensuring thread-safe code.
+
+**Persistence reality check:** runtime persistence goes through `UserDefaultsPersistenceService`. The SwiftData layer (`SwiftDataModels.swift`, `SwiftDataPersistenceService.swift`, the `ModelContainer` created in the app target) is compiled but currently unused at runtime — do not assume `@Query`/`ModelContext` works until that migration actually happens.
 
 - **Frameworks & Tech:** SwiftUI for UI, Swift Concurrency with strict mode, Swift Package Manager for modular architecture
 - **Architecture:** Model-View (MV) pattern using pure SwiftUI state management. We avoid MVVM and instead leverage SwiftUI's built-in state mechanisms (@State, @Observable, @Environment, @Binding)
@@ -49,5 +51,3 @@ HabitTracker/
 ## Project Memories
 
 - **CoreGraphics Interaction:** Avoid passing non-numerical value to CoreGraphics
-
-[Rest of the file remains unchanged...]
