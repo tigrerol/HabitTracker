@@ -11,6 +11,9 @@ struct HabitTrackerApp: App {
         WindowGroup {
             HabitTrackerFeature.morningRoutineView()
                 .modelContainer(HabitTrackerFeature.sharedModelContainer)
+                .onOpenURL { url in
+                    Router.shared.handle(url: url)
+                }
         }
     }
 }

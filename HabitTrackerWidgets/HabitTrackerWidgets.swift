@@ -88,6 +88,7 @@ struct TopRoutineWidgetView: View {
                     .foregroundStyle(.secondary)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .widgetURL(routine.templateId.map { DeepLink.startURL(templateId: $0) })
         } else {
             VStack(spacing: 6) {
                 Image(systemName: "list.bullet.rectangle")
@@ -168,6 +169,7 @@ struct PausedRoutineWidgetView: View {
                     .foregroundStyle(.secondary)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .widgetURL(paused.sessionId.map { DeepLink.resumeURL(sessionId: $0) })
         } else {
             VStack(spacing: 6) {
                 Image(systemName: "checkmark.circle")

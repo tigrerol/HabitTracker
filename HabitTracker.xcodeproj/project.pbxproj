@@ -575,6 +575,7 @@
 				DEVELOPMENT_TEAM = 4389UPKT9V;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Config/HabitTrackerInfo.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = HabitTracker;
 				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "HabitTracker uses your location to automatically select the best routine for your current context, even when the app is in the background";
 				INFOPLIST_KEY_NSLocationAlwaysUsageDescription = "HabitTracker uses your location to automatically select the best routine for your current context, even when the app is in the background";
@@ -610,6 +611,7 @@
 				DEVELOPMENT_TEAM = 4389UPKT9V;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Config/HabitTrackerInfo.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = HabitTracker;
 				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "HabitTracker uses your location to automatically select the best routine for your current context, even when the app is in the background";
 				INFOPLIST_KEY_NSLocationAlwaysUsageDescription = "HabitTracker uses your location to automatically select the best routine for your current context, even when the app is in the background";

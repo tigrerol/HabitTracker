@@ -540,7 +540,8 @@ public final class RoutineService {
             WidgetSnapshot.TopRoutine(
                 name: template.name,
                 habitCount: template.activeHabitsCount,
-                colorHex: template.color
+                colorHex: template.color,
+                templateId: template.id
             )
         }
 
@@ -552,7 +553,8 @@ public final class RoutineService {
                     routineName: snapshot.template.name,
                     pausedAt: snapshot.pausedAt,
                     currentStepIndex: snapshot.currentHabitIndex,
-                    totalSteps: snapshot.activeHabitsSnapshot.count
+                    totalSteps: snapshot.activeHabitsSnapshot.count,
+                    sessionId: snapshot.id
                 )
             }
 

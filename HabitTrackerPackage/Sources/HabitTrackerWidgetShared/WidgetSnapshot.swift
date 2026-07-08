@@ -10,11 +10,14 @@ public struct WidgetSnapshot: Codable, Sendable, Equatable {
         public let name: String
         public let habitCount: Int
         public let colorHex: String
+        /// Optional so snapshots written before deep links existed still decode.
+        public let templateId: UUID?
 
-        public init(name: String, habitCount: Int, colorHex: String) {
+        public init(name: String, habitCount: Int, colorHex: String, templateId: UUID? = nil) {
             self.name = name
             self.habitCount = habitCount
             self.colorHex = colorHex
+            self.templateId = templateId
         }
     }
 
@@ -23,12 +26,15 @@ public struct WidgetSnapshot: Codable, Sendable, Equatable {
         public let pausedAt: Date
         public let currentStepIndex: Int
         public let totalSteps: Int
+        /// Optional so snapshots written before deep links existed still decode.
+        public let sessionId: UUID?
 
-        public init(routineName: String, pausedAt: Date, currentStepIndex: Int, totalSteps: Int) {
+        public init(routineName: String, pausedAt: Date, currentStepIndex: Int, totalSteps: Int, sessionId: UUID? = nil) {
             self.routineName = routineName
             self.pausedAt = pausedAt
             self.currentStepIndex = currentStepIndex
             self.totalSteps = totalSteps
+            self.sessionId = sessionId
         }
     }
 
