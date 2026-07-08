@@ -13,6 +13,7 @@ struct SmartTemplateSelectionView: View {
     @State private var showingDeleteAlert = false
     @State private var showingLocationSetup = false
     @State private var showingContextSettings = false
+    @State private var showingAIImport = false
     @Namespace private var templateTransition
     
     private var timeBasedGreeting: String {
@@ -46,8 +47,18 @@ struct SmartTemplateSelectionView: View {
                 }
 
                 ToolbarItem(placement: .confirmationAction) {
-                    Button {
-                        showingRoutineBuilder = true
+                    Menu {
+                        Button {
+                            showingRoutineBuilder = true
+                        } label: {
+                            Label("New Routine", systemImage: "plus")
+                        }
+
+                        Button {
+                            showingAIImport = true
+                        } label: {
+                            Label("Import from AI", systemImage: "sparkles")
+                        }
                     } label: {
                         Image(systemName: "plus")
                             .fontWeight(.semibold)
@@ -68,7 +79,11 @@ struct SmartTemplateSelectionView: View {
             LocationSetupView()
         }
         .sheet(isPresented: $showingContextSettings) {
-            ContextSettingsView()
+            SettingsView()
+        }
+        .sheet(isPresented: $showingAIImport) {
+            AIRoutineImportView()
+                .environment(routineService)
         }
         .alert(String(localized: "SmartTemplateSelectionView.DeleteAlert.Title", bundle: .module), isPresented: $showingDeleteAlert) {
             Button(String(localized: "SmartTemplateSelectionView.DeleteAlert.Cancel", bundle: .module), role: .cancel) { }

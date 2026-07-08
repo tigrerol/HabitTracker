@@ -843,7 +843,7 @@ public struct RoutineBuilderView: View {
                     .font(.headline)
                     .fontWeight(.semibold)
                 Spacer()
-                Button("Snippets & Routines") {
+                Button("Snippets") {
                     showingSnippetBrowser = true
                 }
                 .font(.caption)
