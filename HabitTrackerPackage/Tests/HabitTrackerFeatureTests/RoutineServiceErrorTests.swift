@@ -28,7 +28,7 @@ struct RoutineServiceErrorTests {
             Issue.record("Expected error for session already active")
         } catch let error as RoutineError {
             #expect(error.category == .technical)
-            #expect(errorService.getErrorHistory().contains { $0.timestamp >= start })
+            expectErrorRecorded(since: start)
         } catch {
             Issue.record("Expected RoutineError but got \(error)")
         }
@@ -51,7 +51,7 @@ struct RoutineServiceErrorTests {
             Issue.record("Expected error for template not found")
         } catch let error as RoutineError {
             #expect(error.category == .technical)
-            #expect(errorService.getErrorHistory().contains { $0.timestamp >= start })
+            expectErrorRecorded(since: start)
         } catch {
             Issue.record("Expected RoutineError but got \(error)")
         }
@@ -77,7 +77,7 @@ struct RoutineServiceErrorTests {
             Issue.record("Expected error for empty template")
         } catch let error as RoutineError {
             #expect(error.category == .technical)
-            #expect(errorService.getErrorHistory().contains { $0.timestamp >= start })
+            expectErrorRecorded(since: start)
         } catch {
             Issue.record("Expected RoutineError but got \(error)")
         }
@@ -97,7 +97,7 @@ struct RoutineServiceErrorTests {
             Issue.record("Expected error for no active session")
         } catch let error as RoutineError {
             #expect(error.category == .technical)
-            #expect(errorService.getErrorHistory().contains { $0.timestamp >= start })
+            expectErrorRecorded(since: start)
         } catch {
             Issue.record("Expected RoutineError but got \(error)")
         }
@@ -129,7 +129,7 @@ struct RoutineServiceErrorTests {
         #expect(service.templates.contains { $0.name == "Test Template" })
         
         // Should log persistence error
-        #expect(errorService.getErrorHistory().contains { $0.timestamp >= start })
+        expectErrorRecorded(since: start)
     }
     
     @Test("RoutineService handles corrupted template data")
@@ -146,7 +146,7 @@ struct RoutineServiceErrorTests {
         #expect(service.templates.count > 0)
         
         // Should log data corruption error
-        #expect(errorService.getErrorHistory().contains { $0.timestamp >= start })
+        expectErrorRecorded(since: start)
     }
     
     @Test("RoutineService handles invalid template modifications")

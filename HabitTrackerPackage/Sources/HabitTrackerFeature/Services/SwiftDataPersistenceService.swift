@@ -378,11 +378,20 @@ public final class SwiftDataPersistenceService: PersistenceServiceProtocol {
     }
 
     private func saveSavedLocations(_ locations: [LocationType: SavedLocation]) throws {
+        // Diff-based upsert keyed by location type — unchanged rows are untouched
         let existing = (try? modelContext.fetch(FetchDescriptor<PersistedSavedLocation>())) ?? []
-        for location in existing {
-            modelContext.delete(location)
+        var remaining = locations
+        for entry in existing {
+            if let type = LocationType(rawValue: entry.locationTypeRawValue),
+               let location = remaining.removeValue(forKey: type) {
+                entry.coordinateData = (try? JSONEncoder().encode(location.coordinate)) ?? Data()
+                entry.name = location.name
+                entry.radius = location.radius
+            } else {
+                modelContext.delete(entry)
+            }
         }
-        for (type, location) in locations {
+        for (type, location) in remaining {
             modelContext.insert(PersistedSavedLocation(from: location, locationType: type))
         }
         try modelContext.save()
@@ -400,11 +409,17 @@ public final class SwiftDataPersistenceService: PersistenceServiceProtocol {
     }
 
     private func saveCustomLocations(_ locations: [UUID: CustomLocation]) throws {
+        // Diff-based upsert keyed by id — unchanged rows are untouched
         let existing = (try? modelContext.fetch(FetchDescriptor<PersistedCustomLocation>())) ?? []
-        for location in existing {
-            modelContext.delete(location)
+        var remaining = locations
+        for entry in existing {
+            if let location = remaining.removeValue(forKey: entry.id) {
+                entry.update(from: location)
+            } else {
+                modelContext.delete(entry)
+            }
         }
-        for (_, location) in locations {
+        for (_, location) in remaining {
             modelContext.insert(PersistedCustomLocation(from: location))
         }
         try modelContext.save()

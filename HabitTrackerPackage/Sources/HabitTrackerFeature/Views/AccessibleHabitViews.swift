@@ -202,22 +202,3 @@ struct AccessibleCounterHabitView: View {
         onComplete(habit.id, nil, "Completed items: \(completedItemNames.joined(separator: ", "))")
     }
 }
-
-// MARK: - Extensions for Formatted Duration
-
-extension TimeInterval {
-    var formattedAccessibleDuration: String {
-        guard self.isFinite, !self.isNaN else {
-            return "0 seconds"
-        }
-        let duration = max(0, self)
-        let minutes = Int(duration) / 60
-        let seconds = Int(duration) % 60
-        
-        if minutes > 0 {
-            return "\(minutes) minutes and \(seconds) seconds"
-        } else {
-            return "\(seconds) seconds"
-        }
-    }
-}

@@ -19,10 +19,7 @@ public final class RoutineService {
     /// Runs on SwiftData (templates + session history); the default init below
     /// stays UserDefaults-backed for previews and tests.
     public static let shared = RoutineService(
-        persistenceService: SwiftDataPersistenceService(
-            modelContext: DataModelConfiguration.sharedContainer.mainContext,
-            migratesLegacyUserDefaults: true
-        )
+        persistenceService: DataModelConfiguration.sharedPersistence
     )
     public private(set) var templates: [RoutineTemplate] = []
     public private(set) var currentSession: RoutineSession?
@@ -41,6 +38,7 @@ public final class RoutineService {
     /// acting on templates or paused sessions (deep links, tests).
     private var templatesLoadTask: Task<Void, Never>?
     private var pausedSessionsLoadTask: Task<Void, Never>?
+    private var moodRatingsLoadTask: Task<Void, Never>?
 
     /// Serializes mood persistence so rapid ratings can't write out of order.
     private var moodPersistTask: Task<Void, Never>?
@@ -70,6 +68,7 @@ public final class RoutineService {
     public func ensureLoaded() async {
         await templatesLoadTask?.value
         await pausedSessionsLoadTask?.value
+        await moodRatingsLoadTask?.value
     }
     
     /// Load templates from persistence, or create sample templates if none exist
@@ -230,7 +229,7 @@ public final class RoutineService {
 
     /// Load persisted mood ratings
     private func loadMoodRatings() {
-        Task { @MainActor in
+        moodRatingsLoadTask = Task { @MainActor in
             let loaded = await persistenceService.loadMoodRatings()
             // Merge: ratings added before the load finished must survive
             let known = Set(moodRatings.map(\.id))

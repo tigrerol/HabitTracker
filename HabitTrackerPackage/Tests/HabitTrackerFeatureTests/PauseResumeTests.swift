@@ -354,6 +354,10 @@ struct PauseResumeTests {
     @MainActor func interruptedSessionRecovery() async throws {
         let persistence = InMemoryPersistenceService()
         let service = RoutineService(persistenceService: persistence)
+        // Let the init loads (incl. the recovery pass) finish first — under
+        // parallel test load a starved init task could otherwise consume the
+        // snapshot this test creates later.
+        await service.ensureLoaded()
         let template = createTestTemplate()
         service.addTemplate(template)
         try service.startSession(with: template)
@@ -364,13 +368,9 @@ struct PauseResumeTests {
         #expect(await persistence.exists(forKey: PersistenceKeys.interruptedSession))
 
         // Simulate an app relaunch after termination: a fresh service on the same store.
-        // Recovery also runs from init's async load task, so poll rather than assume
-        // the explicit call is the one that lands the snapshot.
+        // Recovery runs inside the init load task; ensureLoaded awaits it.
         let relaunched = RoutineService(persistenceService: persistence)
-        await relaunched.recoverInterruptedSession()
-        for _ in 0..<200 where !relaunched.pausedSessions.contains(where: { $0.id == sessionId }) {
-            try await Task.sleep(for: .milliseconds(10))
-        }
+        await relaunched.ensureLoaded()
 
         let recovered = try #require(relaunched.pausedSessions.first(where: { $0.id == sessionId }))
         #expect(recovered.completions.count == 1)
@@ -382,6 +382,10 @@ struct PauseResumeTests {
     @MainActor func interruptedRecoveryDeduplicates() async throws {
         let persistence = InMemoryPersistenceService()
         let service = RoutineService(persistenceService: persistence)
+        // Let the init loads (incl. the recovery pass) finish first — under
+        // parallel test load a starved init task could otherwise consume the
+        // snapshot this test creates later.
+        await service.ensureLoaded()
         let template = createTestTemplate()
         service.addTemplate(template)
         try service.startSession(with: template)
@@ -401,6 +405,10 @@ struct PauseResumeTests {
     @MainActor func recoverySkipsCompletedSession() async throws {
         let persistence = InMemoryPersistenceService()
         let service = RoutineService(persistenceService: persistence)
+        // Let the init loads (incl. the recovery pass) finish first — under
+        // parallel test load a starved init task could otherwise consume the
+        // snapshot this test creates later.
+        await service.ensureLoaded()
         let template = createTestTemplate()
         service.addTemplate(template)
         try service.startSession(with: template)
@@ -455,9 +463,7 @@ struct MoodRatingPersistenceTests {
 
         // A fresh service on the same store loads the rating back
         let relaunched = RoutineService(persistenceService: persistence)
-        for _ in 0..<100 where relaunched.moodRatings.isEmpty {
-            try await Task.sleep(for: .milliseconds(10))
-        }
+        await relaunched.ensureLoaded()
 
         let rating = try #require(relaunched.moodRatings.first { $0.sessionId == sessionId })
         #expect(rating.rating == .good)

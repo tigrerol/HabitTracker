@@ -19,7 +19,7 @@ struct ErrorHandlingIntegrationTests {
             Issue.record("Expected error for invalid coordinates")
         } catch let error as LocationError {
             #expect(error.category == .location)
-            #expect(errorService.getErrorHistory().contains { $0.timestamp >= start })
+            expectErrorRecorded(since: start)
         } catch {
             Issue.record("Expected LocationError but got \(error)")
         }
@@ -38,7 +38,7 @@ struct ErrorHandlingIntegrationTests {
             Issue.record("Expected error for invalid radius")
         } catch let error as LocationError {
             #expect(error.category == .location)
-            #expect(errorService.getErrorHistory().contains { $0.timestamp >= start })
+            expectErrorRecorded(since: start)
         } catch {
             Issue.record("Expected LocationError but got \(error)")
         }
@@ -58,7 +58,7 @@ struct ErrorHandlingIntegrationTests {
             Issue.record("Expected error for invalid name")
         } catch let error as ValidationError {
             #expect(error.category == .validation)
-            #expect(errorService.getErrorHistory().contains { $0.timestamp >= start })
+            expectErrorRecorded(since: start)
         } catch {
             Issue.record("Expected ValidationError but got \(error)")
         }
@@ -86,7 +86,7 @@ struct ErrorHandlingIntegrationTests {
             Issue.record("Expected error for session already active")
         } catch let error as RoutineError {
             #expect(error.category == .technical)
-            #expect(errorService.getErrorHistory().contains { $0.timestamp >= start })
+            expectErrorRecorded(since: start)
         } catch {
             Issue.record("Expected RoutineError but got \(error)")
         }
@@ -109,7 +109,7 @@ struct ErrorHandlingIntegrationTests {
             Issue.record("Expected error for template not found")
         } catch let error as RoutineError {
             #expect(error.category == .technical)
-            #expect(errorService.getErrorHistory().contains { $0.timestamp >= start })
+            expectErrorRecorded(since: start)
         } catch {
             Issue.record("Expected RoutineError but got \(error)")
         }
@@ -135,7 +135,7 @@ struct ErrorHandlingIntegrationTests {
             Issue.record("Expected error for empty template")
         } catch let error as RoutineError {
             #expect(error.category == .technical)
-            #expect(errorService.getErrorHistory().contains { $0.timestamp >= start })
+            expectErrorRecorded(since: start)
         } catch {
             Issue.record("Expected RoutineError but got \(error)")
         }
@@ -155,7 +155,7 @@ struct ErrorHandlingIntegrationTests {
             Issue.record("Expected error for no active session")
         } catch let error as RoutineError {
             #expect(error.category == .technical)
-            #expect(errorService.getErrorHistory().contains { $0.timestamp >= start })
+            expectErrorRecorded(since: start)
         } catch {
             Issue.record("Expected RoutineError but got \(error)")
         }

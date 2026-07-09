@@ -62,6 +62,15 @@ public enum DataModelConfiguration {
         }
     }()
 
+    /// The single SwiftData-backed persistence service used by the live app
+    /// (RoutineService.shared, LocationCoordinator.shared) — one place owns
+    /// the store + legacy-migration policy.
+    @MainActor
+    public static let sharedPersistence = SwiftDataPersistenceService(
+        modelContext: sharedContainer.mainContext,
+        migratesLegacyUserDefaults: true
+    )
+
     /// All model types used in the schema
     static let allModelTypes: [any PersistentModel.Type] = [
         PersistedHabit.self,

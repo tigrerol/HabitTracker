@@ -8,11 +8,8 @@ struct LocationCoordinatorTests {
     /// Coordinator on an isolated UserDefaults suite so parallel tests don't
     /// clobber each other's persisted locations.
     @MainActor
-    private func makeIsolatedCoordinator() -> LocationCoordinator {
-        let suiteName = "test-location-\(UUID().uuidString)"
-        let defaults = UserDefaults(suiteName: suiteName) ?? .standard
-        defaults.removePersistentDomain(forName: suiteName)
-        return LocationCoordinator(persistenceService: UserDefaultsPersistenceService(userDefaults: defaults))
+    private func makeIsolatedCoordinator() throws -> LocationCoordinator {
+        LocationCoordinator(persistenceService: UserDefaultsPersistenceService(userDefaults: try makeIsolatedDefaults("test-location")))
     }
 
     
@@ -50,8 +47,8 @@ struct LocationCoordinatorTests {
     }
     
     @Test("LocationCoordinator initializes with correct state")
-    @MainActor func testLocationCoordinatorInitialization() {
-        let coordinator = makeIsolatedCoordinator()
+    @MainActor func testLocationCoordinatorInitialization() throws {
+        let coordinator = try makeIsolatedCoordinator()
         
         #expect(coordinator.currentLocation == nil)
         #expect(coordinator.currentLocationType == .unknown)
@@ -60,8 +57,8 @@ struct LocationCoordinatorTests {
     }
     
     @Test("LocationCoordinator can save and retrieve locations")
-    @MainActor func testLocationCoordinatorSaveRetrieve() async {
-        let coordinator = makeIsolatedCoordinator()
+    @MainActor func testLocationCoordinatorSaveRetrieve() async throws {
+        let coordinator = try makeIsolatedCoordinator()
         let testLocation = CLLocation(latitude: 37.7749, longitude: -122.4194)
         
         try? await coordinator.saveLocation(testLocation, as: .office, name: "Test Office")
@@ -74,8 +71,8 @@ struct LocationCoordinatorTests {
     }
     
     @Test("LocationCoordinator can remove saved locations")
-    @MainActor func testLocationCoordinatorRemove() async {
-        let coordinator = makeIsolatedCoordinator()
+    @MainActor func testLocationCoordinatorRemove() async throws {
+        let coordinator = try makeIsolatedCoordinator()
         let testLocation = CLLocation(latitude: 37.7749, longitude: -122.4194)
         
         try? await coordinator.saveLocation(testLocation, as: .office, name: "Test Office")
@@ -87,8 +84,8 @@ struct LocationCoordinatorTests {
     }
     
     @Test("LocationCoordinator calculates distance correctly")
-    @MainActor func testLocationCoordinatorDistance() async {
-        let coordinator = makeIsolatedCoordinator()
+    @MainActor func testLocationCoordinatorDistance() async throws {
+        let coordinator = try makeIsolatedCoordinator()
         let officeLocation = CLLocation(latitude: 37.7749, longitude: -122.4194)
         let homeLocation = CLLocation(latitude: 37.7849, longitude: -122.4094)
         
@@ -110,8 +107,8 @@ struct LocationCoordinatorTests {
     }
     
     @Test("LocationCoordinator handles custom locations")
-    @MainActor func testLocationCoordinatorCustomLocations() async {
-        let coordinator = makeIsolatedCoordinator()
+    @MainActor func testLocationCoordinatorCustomLocations() async throws {
+        let coordinator = try makeIsolatedCoordinator()
         
         // Create custom location
         let customLocation = await coordinator.createCustomLocation(name: "Gym", icon: "dumbbell.fill")
@@ -134,8 +131,8 @@ struct LocationCoordinatorTests {
     }
     
     @Test("LocationCoordinator handles custom location management")
-    @MainActor func testLocationCoordinatorCustomLocationManagement() async {
-        let coordinator = makeIsolatedCoordinator()
+    @MainActor func testLocationCoordinatorCustomLocationManagement() async throws {
+        let coordinator = try makeIsolatedCoordinator()
         
         // Create custom location
         var customLocation = await coordinator.createCustomLocation(name: "Library", icon: "book.fill")
@@ -160,8 +157,8 @@ struct LocationCoordinatorTests {
     }
     
     @Test("LocationCoordinator handles location updates")
-    @MainActor func testLocationCoordinatorLocationUpdates() async {
-        let coordinator = makeIsolatedCoordinator()
+    @MainActor func testLocationCoordinatorLocationUpdates() async throws {
+        let coordinator = try makeIsolatedCoordinator()
         var updateReceived = false
         var receivedLocationType: LocationType?
         var receivedExtendedType: ExtendedLocationType?
@@ -185,8 +182,8 @@ struct LocationCoordinatorTests {
     }
     
     @Test("LocationCoordinator handles permission states correctly")
-    @MainActor func testLocationCoordinatorPermissions() async {
-        let coordinator = makeIsolatedCoordinator()
+    @MainActor func testLocationCoordinatorPermissions() async throws {
+        let coordinator = try makeIsolatedCoordinator()
         
         // Initial state should be unknown
         #expect(coordinator.currentLocationType == .unknown)
@@ -202,8 +199,8 @@ struct LocationCoordinatorTests {
     }
     
     @Test("LocationCoordinator manages background location updates")
-    @MainActor func testLocationCoordinatorBackgroundUpdates() async {
-        let coordinator = makeIsolatedCoordinator()
+    @MainActor func testLocationCoordinatorBackgroundUpdates() async throws {
+        let coordinator = try makeIsolatedCoordinator()
         
         // Start location updates
         await coordinator.startUpdatingLocation()

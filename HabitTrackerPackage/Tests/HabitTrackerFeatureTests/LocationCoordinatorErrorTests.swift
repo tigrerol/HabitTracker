@@ -19,7 +19,7 @@ struct LocationCoordinatorErrorTests {
             Issue.record("Expected error for invalid coordinates")
         } catch let error as LocationError {
             #expect(error.category == .location)
-            #expect(errorService.getErrorHistory().contains { $0.timestamp >= start })
+            expectErrorRecorded(since: start)
         } catch {
             Issue.record("Expected LocationError but got \(error)")
         }
@@ -38,7 +38,7 @@ struct LocationCoordinatorErrorTests {
             Issue.record("Expected error for invalid radius")
         } catch let error as LocationError {
             #expect(error.category == .location)
-            #expect(errorService.getErrorHistory().contains { $0.timestamp >= start })
+            expectErrorRecorded(since: start)
         } catch {
             Issue.record("Expected LocationError but got \(error)")
         }
@@ -58,7 +58,7 @@ struct LocationCoordinatorErrorTests {
             Issue.record("Expected error for invalid name")
         } catch let error as ValidationError {
             #expect(error.category == .validation)
-            #expect(errorService.getErrorHistory().contains { $0.timestamp >= start })
+            expectErrorRecorded(since: start)
         } catch {
             Issue.record("Expected ValidationError but got \(error)")
         }
@@ -117,7 +117,7 @@ struct LocationStorageServiceErrorTests {
         try? await storageService.saveLocation(validLocation, as: .office)
 
         #expect(storageService.hasLocation(for: .office))
-        #expect(errorService.getErrorHistory().contains { $0.timestamp >= start && $0.error.category == .data })
+        expectErrorRecorded(since: start, category: .data)
     }
     
     @Test("LocationStorageService handles data corruption gracefully")
@@ -135,7 +135,7 @@ struct LocationStorageServiceErrorTests {
         for _ in 0..<100 where !errorService.getErrorHistory().contains(where: { $0.timestamp >= start && $0.error.category == .data }) {
             try? await Task.sleep(for: .milliseconds(10))
         }
-        #expect(errorService.getErrorHistory().contains { $0.timestamp >= start && $0.error.category == .data })
+        expectErrorRecorded(since: start, category: .data)
     }
     
     @Test("LocationStorageService validates custom location names")

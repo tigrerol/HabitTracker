@@ -8,10 +8,7 @@ public final class LocationCoordinator: ObservableObject {
     /// migration; the default init below stays UserDefaults-backed for
     /// previews and tests.
     public static let shared = LocationCoordinator(
-        persistenceService: SwiftDataPersistenceService(
-            modelContext: DataModelConfiguration.sharedContainer.mainContext,
-            migratesLegacyUserDefaults: true
-        )
+        persistenceService: DataModelConfiguration.sharedPersistence
     )
     
     /// Individual focused services

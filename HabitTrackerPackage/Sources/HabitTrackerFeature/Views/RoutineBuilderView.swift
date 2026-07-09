@@ -21,7 +21,6 @@ public struct RoutineBuilderView: View {
     @State private var expandedHabits: Set<UUID> = []
     @State private var selectedQuestionHabit: Habit?
     @State private var selectedOption: (habitId: UUID, optionId: UUID)?
-    @State private var contextRule: RoutineContextRule?
     @State private var customLocations: [CustomLocation] = []
     @State private var smartSelectionExpanded = false
     @State private var selectedTimeSlots: Set<TimeSlot> = []
@@ -81,7 +80,6 @@ public struct RoutineBuilderView: View {
                 templateName = template.name
                 templateColor = template.color
                 habits = template.habits
-                contextRule = template.contextRule
                 weeklyTarget = template.weeklyTarget
 
                 // Initialize smart selection state from existing context rule

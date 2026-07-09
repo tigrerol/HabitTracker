@@ -156,7 +156,7 @@ struct PersistenceErrorIntegrationTests {
         try? await locationCoordinator.saveLocation(validLocation, as: .office)
 
         #expect(locationCoordinator.hasLocation(for: .office))
-        #expect(errorService.getErrorHistory().contains { $0.timestamp >= start && $0.error.category == .data })
+        expectErrorRecorded(since: start, category: .data)
     }
     
     @Test("Services handle data corruption gracefully")
@@ -175,7 +175,7 @@ struct PersistenceErrorIntegrationTests {
         #expect(routineService.templates.count > 0)
         
         // Should log data corruption error
-        #expect(errorService.getErrorHistory().contains { $0.timestamp >= start })
+        expectErrorRecorded(since: start)
     }
     
     @Test("Cross-service data consistency during errors")
@@ -221,16 +221,14 @@ struct PersistenceErrorIntegrationTests {
 struct AsyncErrorHandlingIntegrationTests {
     
     @Test("Services safely execute operations concurrently")
-    @MainActor func testServiceConcurrentOperationSafety() async {
+    @MainActor func testServiceConcurrentOperationSafety() async throws {
         let errorService = ErrorHandlingService.shared
         let start = Date()
         
-        let suiteName = "test-concurrent-\(UUID().uuidString)"
-        let defaults = UserDefaults(suiteName: suiteName) ?? .standard
-        defaults.removePersistentDomain(forName: suiteName)
+        let defaults = try makeIsolatedDefaults("test-concurrent")
         let locationCoordinator = LocationCoordinator(persistenceService: UserDefaultsPersistenceService(userDefaults: defaults))
-        // Let the coordinator's async init load settle so it can't overwrite the saves below
-        try? await Task.sleep(for: .milliseconds(200))
+        // Wait for the coordinator's init load deterministically
+        await locationCoordinator.storage.ensureLoaded()
 
         // Execute multiple async operations concurrently
         async let result1 = errorService.safely {

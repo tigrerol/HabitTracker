@@ -12,7 +12,6 @@ struct SmartTemplateSelectionView: View {
     @State private var templateToDelete: RoutineTemplate?
     @State private var showingDeleteAlert = false
     @State private var showingLocationSetup = false
-    @State private var showingContextSettings = false
     @State private var showingAIImport = false
     @Namespace private var templateTransition
     
@@ -63,6 +62,7 @@ struct SmartTemplateSelectionView: View {
                         Image(systemName: "plus")
                             .fontWeight(.semibold)
                     }
+                    .accessibilityLabel("Add Routine")
                 }
             }
         }
@@ -77,9 +77,6 @@ struct SmartTemplateSelectionView: View {
         }
         .sheet(isPresented: $showingLocationSetup) {
             LocationSetupView()
-        }
-        .sheet(isPresented: $showingContextSettings) {
-            SettingsView()
         }
         .sheet(isPresented: $showingAIImport) {
             AIRoutineImportView()
