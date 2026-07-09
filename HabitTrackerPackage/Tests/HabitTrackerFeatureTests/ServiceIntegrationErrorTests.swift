@@ -97,8 +97,9 @@ struct ServiceIntegrationErrorTests {
             // Expected to fail
         }
         
-        #expect(callbackErrors.count == 1)
-        #expect(callbackErrors.first?.category == .location)
+        // Callbacks on shared ErrorHandlingService also receive parallel tests'
+        // errors — assert ours arrived rather than exact counts.
+        #expect(callbackErrors.contains { $0.category == .location })
     }
     
     @Test("Error handling maintains app stability under load")

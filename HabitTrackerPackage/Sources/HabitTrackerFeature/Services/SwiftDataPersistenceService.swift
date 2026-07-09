@@ -16,6 +16,12 @@ public final class SwiftDataPersistenceService: PersistenceServiceProtocol {
 
     private static let legacyMigrationFlagKey = "HasMigratedToSwiftData"
 
+    /// One-shot migration flags must never latch while writing into the
+    /// in-memory fallback container — that would strand the legacy data.
+    private var isPersistentStore: Bool {
+        !modelContext.container.configurations.contains { $0.isStoredInMemoryOnly }
+    }
+
     /// - Parameters:
     ///   - modelContext: the SwiftData context to store relational data in.
     ///   - migratesLegacyUserDefaults: when true, the first templates load
@@ -128,13 +134,20 @@ public final class SwiftDataPersistenceService: PersistenceServiceProtocol {
     /// creates sample templates. Once the flag is set, an empty store is a
     /// deliberate user state and loads as `[]`.
     private func loadTemplatesMigratingIfNeeded() async throws -> [RoutineTemplate]? {
-        if migratesLegacyUserDefaults && !userDefaults.bool(forKey: Self.legacyMigrationFlagKey) {
+        let flagUnset = !userDefaults.bool(forKey: Self.legacyMigrationFlagKey)
+        if migratesLegacyUserDefaults && flagUnset && isPersistentStore {
+            // Throws on legacy decode/save failure — the flag then stays unset
+            // so a later launch retries instead of stranding the legacy data.
             try await migrateLegacyUserDefaultsData()
             userDefaults.set(true, forKey: Self.legacyMigrationFlagKey)
-            let templates = try loadRoutineTemplates()
-            return templates.isEmpty ? nil : templates
         }
-        return try loadRoutineTemplates()
+        let templates = try loadRoutineTemplates()
+        if templates.isEmpty && migratesLegacyUserDefaults && flagUnset {
+            // Fresh install (or in-memory fallback session): signal the caller
+            // to create sample templates without latching any state.
+            return nil
+        }
+        return templates
     }
 
     /// One-shot import of the pre-SwiftData store: routine templates plus each
@@ -142,7 +155,7 @@ public final class SwiftDataPersistenceService: PersistenceServiceProtocol {
     /// intentionally left in place as a rollback safety net.
     private func migrateLegacyUserDefaultsData() async throws {
         let legacy = UserDefaultsPersistenceService(userDefaults: userDefaults)
-        guard let templates = try? await legacy.load([RoutineTemplate].self, forKey: PersistenceKeys.routineTemplates),
+        guard let templates = try await legacy.load([RoutineTemplate].self, forKey: PersistenceKeys.routineTemplates),
               !templates.isEmpty else { return }
 
         try saveRoutineTemplates(templates)
@@ -317,26 +330,51 @@ public final class SwiftDataPersistenceService: PersistenceServiceProtocol {
 
     private static let legacyLocationMigrationFlagKey = "HasMigratedLocationsToSwiftData"
 
+    /// In-flight handle so the two concurrent location loads (saved + custom
+    /// are fetched via async-let) serialize on one migration run.
+    private var locationMigrationTask: Task<Void, Never>?
+
     /// One-shot import of locations from the pre-SwiftData UserDefaults store.
     /// Gated on the same opt-in as the template migration so tests and
-    /// previews never touch real UserDefaults.
+    /// previews never touch real UserDefaults. The flag is set only after the
+    /// migration fully succeeded — a failed run retries on the next launch.
     private func migrateLegacyLocationsIfNeeded() async {
         guard migratesLegacyUserDefaults,
+              isPersistentStore,
               !userDefaults.bool(forKey: Self.legacyLocationMigrationFlagKey) else { return }
-        userDefaults.set(true, forKey: Self.legacyLocationMigrationFlagKey)
 
-        let legacy = UserDefaultsPersistenceService(userDefaults: userDefaults)
-        let saved = (try? await legacy.load([LocationType: SavedLocation].self, forKey: PersistenceKeys.savedLocations)) ?? [:]
-        let custom = (try? await legacy.load([UUID: CustomLocation].self, forKey: PersistenceKeys.customLocations)) ?? [:]
-        guard !saved.isEmpty || !custom.isEmpty else { return }
+        if let inFlight = locationMigrationTask {
+            await inFlight.value
+            return
+        }
+        let task = Task { await self.performLegacyLocationMigration() }
+        locationMigrationTask = task
+        await task.value
+    }
 
-        try? saveSavedLocations(saved)
-        try? saveCustomLocations(custom)
-        LoggingService.shared.info(
-            "Migrated legacy locations to SwiftData",
-            category: .app,
-            metadata: ["saved": String(saved.count), "custom": String(custom.count)]
-        )
+    private func performLegacyLocationMigration() async {
+        do {
+            let legacy = UserDefaultsPersistenceService(userDefaults: userDefaults)
+            let saved = try await legacy.load([LocationType: SavedLocation].self, forKey: PersistenceKeys.savedLocations) ?? [:]
+            let custom = try await legacy.load([UUID: CustomLocation].self, forKey: PersistenceKeys.customLocations) ?? [:]
+
+            if !saved.isEmpty || !custom.isEmpty {
+                try saveSavedLocations(saved)
+                try saveCustomLocations(custom)
+                LoggingService.shared.info(
+                    "Migrated legacy locations to SwiftData",
+                    category: .app,
+                    metadata: ["saved": String(saved.count), "custom": String(custom.count)]
+                )
+            }
+            userDefaults.set(true, forKey: Self.legacyLocationMigrationFlagKey)
+        } catch {
+            LoggingService.shared.error(
+                "Legacy location migration failed — will retry next launch",
+                category: .app,
+                metadata: ["error": String(describing: error)]
+            )
+        }
     }
 
     private func saveSavedLocations(_ locations: [LocationType: SavedLocation]) throws {

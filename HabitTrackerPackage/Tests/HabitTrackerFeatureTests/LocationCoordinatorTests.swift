@@ -221,3 +221,58 @@ struct LocationCoordinatorTests {
         await coordinator.stopUpdatingLocation()
     }
 }
+
+
+// MARK: - Load/Mutation Sequencing
+
+@Suite("Location Load Sequencing Tests")
+struct LocationLoadSequencingTests {
+
+    /// Persistence whose loads are artificially slow, to widen the init-load window.
+    private final class SlowLoadPersistenceService: @unchecked Sendable, PersistenceServiceProtocol {
+        let wrapped: UserDefaultsPersistenceService
+        init(wrapped: UserDefaultsPersistenceService) { self.wrapped = wrapped }
+
+        func save<T: Codable & Sendable>(_ object: T, forKey key: String) async throws {
+            try await wrapped.save(object, forKey: key)
+        }
+
+        func load<T: Codable & Sendable>(_ type: T.Type, forKey key: String) async throws -> T? {
+            try? await Task.sleep(for: .milliseconds(150))
+            return try await wrapped.load(type, forKey: key)
+        }
+
+        func delete(forKey key: String) async { await wrapped.delete(forKey: key) }
+        func exists(forKey key: String) async -> Bool { await wrapped.exists(forKey: key) }
+        func loadRoutineSessions(for templateId: UUID) async -> [RoutineSessionData] { [] }
+        func saveRoutineSession(_ session: RoutineSessionData, for templateId: UUID) async { }
+    }
+
+    @Test("A mutation during the init load does not wipe previously saved locations")
+    @MainActor func mutationDuringLoadPreservesDiskData() async throws {
+        let suiteName = "test-seq-\(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        // Seed disk with an existing saved location
+        let plain = UserDefaultsPersistenceService(userDefaults: defaults)
+        let seeded: [LocationType: SavedLocation] = [
+            .office: SavedLocation(location: CLLocation(latitude: 48.2, longitude: 16.3), name: "Office", radius: 150)
+        ]
+        try await plain.save(seeded, forKey: PersistenceKeys.savedLocations)
+
+        // Storage with slow loads; mutate immediately, inside the load window
+        let storage = LocationStorageService(persistenceService: SlowLoadPersistenceService(wrapped: plain))
+        _ = await storage.createCustomLocation(name: "Gym")
+
+        await storage.ensureLoaded()
+
+        // Both the seeded location AND the new custom location must survive
+        #expect(storage.hasLocation(for: .office))
+        #expect(storage.getAllCustomLocations().contains { $0.name == "Gym" })
+
+        // ...and on disk too
+        let onDisk = try await plain.load([LocationType: SavedLocation].self, forKey: PersistenceKeys.savedLocations)
+        #expect(onDisk?[.office] != nil)
+    }
+}

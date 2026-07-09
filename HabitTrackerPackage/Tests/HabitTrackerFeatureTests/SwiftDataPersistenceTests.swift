@@ -447,9 +447,15 @@ struct SwiftDataPersistenceTests {
 
     // MARK: - Legacy UserDefaults Migration
 
+    /// Migration only runs against persistent stores (the one-shot flags must
+    /// never latch on the in-memory fallback), so migration tests use a
+    /// file-backed throwaway store in the temp directory.
     @MainActor
     private func createMigratingService(defaults: UserDefaults) throws -> TestStore {
-        let container = try DataModelConfiguration.createTestModelContainer()
+        let url = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("MigrationTests-\(UUID().uuidString).store")
+        let schema = Schema(DataModelConfiguration.allModelTypes)
+        let container = try ModelContainer(for: schema, configurations: [ModelConfiguration(schema: schema, url: url)])
         return TestStore(
             container: container,
             service: SwiftDataPersistenceService(
@@ -458,6 +464,45 @@ struct SwiftDataPersistenceTests {
                 userDefaults: defaults
             )
         )
+    }
+
+    @Test("Migration flags never latch against an in-memory store")
+    @MainActor func testMigrationSkippedOnInMemoryStore() async throws {
+        let suiteName = "test-inmemory-guard-\(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        // Seed legacy data
+        let legacy = UserDefaultsPersistenceService(userDefaults: defaults)
+        let template = RoutineTemplate(name: "Legacy", habits: [Habit(name: "H", type: .task(subtasks: []), order: 0)])
+        try await legacy.save([template], forKey: PersistenceKeys.routineTemplates)
+        let saved: [LocationType: SavedLocation] = [
+            .home: SavedLocation(location: CLLocation(latitude: 48.0, longitude: 16.0), name: "Home", radius: 100)
+        ]
+        try await legacy.save(saved, forKey: PersistenceKeys.savedLocations)
+
+        // A migrating service on an IN-MEMORY container (the fallback scenario)
+        let container = try DataModelConfiguration.createTestModelContainer()
+        let service = SwiftDataPersistenceService(
+            modelContext: container.mainContext,
+            migratesLegacyUserDefaults: true,
+            userDefaults: defaults
+        )
+
+        // Loads behave like a fresh install for the session...
+        let templates: [RoutineTemplate]? = try await service.load([RoutineTemplate].self, forKey: PersistenceKeys.routineTemplates)
+        #expect(templates == nil)
+        let locations: [LocationType: SavedLocation]? = try await service.load([LocationType: SavedLocation].self, forKey: PersistenceKeys.savedLocations)
+        #expect(locations == nil)
+
+        // ...but neither one-shot flag latched, and the legacy data is intact
+        // so a later healthy launch can migrate it.
+        #expect(!defaults.bool(forKey: "HasMigratedToSwiftData"))
+        #expect(!defaults.bool(forKey: "HasMigratedLocationsToSwiftData"))
+        let survivingTemplates = try await legacy.load([RoutineTemplate].self, forKey: PersistenceKeys.routineTemplates)
+        #expect(survivingTemplates?.count == 1)
+
+        withExtendedLifetime(container) {}
     }
 
     @Test("Legacy templates and session history migrate on first load, exactly once")
