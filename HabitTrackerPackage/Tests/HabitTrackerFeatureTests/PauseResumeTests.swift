@@ -397,6 +397,33 @@ struct PauseResumeTests {
         #expect(service.pausedSessions.filter { $0.id == sessionId }.count == 1)
     }
 
+    @Test("Recovery skips a snapshot whose session already completed")
+    @MainActor func recoverySkipsCompletedSession() async throws {
+        let persistence = InMemoryPersistenceService()
+        let service = RoutineService(persistenceService: persistence)
+        let template = createTestTemplate()
+        service.addTemplate(template)
+        try service.startSession(with: template)
+        let sessionId = try #require(service.currentSession?.id)
+
+        await service.autosaveCurrentSession()
+        let snapshot = try #require(try await persistence.load(PausedSessionSnapshot.self, forKey: PersistenceKeys.interruptedSession))
+
+        // Complete the session; wait for the history write
+        try service.completeCurrentSession()
+        for _ in 0..<100 where await persistence.loadRoutineSessions(for: template.id).isEmpty {
+            try await Task.sleep(for: .milliseconds(10))
+        }
+
+        // Simulate the crash-before-snapshot-delete window: the snapshot is
+        // still on disk even though the session completed.
+        try await persistence.save(snapshot, forKey: PersistenceKeys.interruptedSession)
+
+        await service.recoverInterruptedSession()
+
+        #expect(!service.pausedSessions.contains { $0.id == sessionId })
+    }
+
     @Test("Recovery is a no-op when no interrupted snapshot exists")
     @MainActor func recoveryNoopWithoutSnapshot() async {
         let persistence = InMemoryPersistenceService()
@@ -442,6 +469,7 @@ struct MoodRatingPersistenceTests {
 
 private actor InMemoryPersistenceService: PersistenceServiceProtocol {
     private var storage: [String: Data] = [:]
+    private var sessions: [UUID: [RoutineSessionData]] = [:]
     private let encoder = JSONEncoder()
     private let decoder = JSONDecoder()
 
@@ -462,6 +490,17 @@ private actor InMemoryPersistenceService: PersistenceServiceProtocol {
         storage[key] != nil
     }
 
-    func loadRoutineSessions(for templateId: UUID) async -> [RoutineSessionData] { [] }
-    func saveRoutineSession(_ session: RoutineSessionData, for templateId: UUID) async { }
+    func loadRoutineSessions(for templateId: UUID) async -> [RoutineSessionData] {
+        sessions[templateId] ?? []
+    }
+
+    func saveRoutineSession(_ session: RoutineSessionData, for templateId: UUID) async {
+        var list = sessions[templateId] ?? []
+        if let index = list.firstIndex(where: { $0.id == session.id }) {
+            list[index] = session
+        } else {
+            list.append(session)
+        }
+        sessions[templateId] = list
+    }
 }

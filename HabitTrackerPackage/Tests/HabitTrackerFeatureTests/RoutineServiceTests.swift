@@ -14,9 +14,7 @@ struct RoutineServiceTests {
         defaults.removePersistentDomain(forName: suiteName)
 
         let service = RoutineService(persistenceService: UserDefaultsPersistenceService(userDefaults: defaults))
-        for _ in 0..<200 where service.templates.isEmpty {
-            try await Task.sleep(for: .milliseconds(10))
-        }
+        await service.ensureLoaded()
         return service
     }
 

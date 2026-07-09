@@ -5,6 +5,7 @@ import SwiftUI
 public struct MorningRoutineView: View {
     @State private var routineService = RoutineService.shared
     @State private var router = Router.shared
+    @State private var showingStorageFailureAlert = false
     @Environment(\.scenePhase) private var scenePhase
 
     public init() {}
@@ -35,12 +36,23 @@ public struct MorningRoutineView: View {
         }
         .task(id: router.pendingDestination) {
             guard router.pendingDestination != nil else { return }
-            // On cold start the deep link can arrive before the async loads in
-            // RoutineService.init finish — wait for templates before acting.
-            for _ in 0..<50 where routineService.templates.isEmpty {
-                try? await Task.sleep(for: .milliseconds(100))
-            }
+            // Cold-start deep links can arrive before the async init loads
+            // finish — wait for templates AND paused sessions before acting.
+            await routineService.ensureLoaded()
+            // A newer destination restarts this task; the cancelled run must
+            // not consume the replacement's destination.
+            guard !Task.isCancelled else { return }
             handlePendingDeepLink()
+        }
+        .task {
+            if DataModelConfiguration.isUsingFallbackStore {
+                showingStorageFailureAlert = true
+            }
+        }
+        .alert("Your data couldn't be loaded", isPresented: $showingStorageFailureAlert) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text("HabitTracker couldn't open its database, so your routines from previous sessions aren't visible and changes made now won't be saved. Please restart the app; if this keeps happening, contact support before reinstalling.")
         }
         .environment(routineService)
         .environment(router)
@@ -52,15 +64,29 @@ public struct MorningRoutineView: View {
         guard let destination = router.consume() else { return }
         LoggingService.shared.info("Handling deep link destination", category: .app, metadata: ["destination": String(describing: destination)])
 
+        guard routineService.currentSession == nil else {
+            LoggingService.shared.info("Deep link ignored — a session is already active", category: .app, metadata: ["destination": String(describing: destination)])
+            return
+        }
+
         switch destination {
         case .startTemplate(let templateId):
-            guard routineService.currentSession == nil,
-                  let template = routineService.templates.first(where: { $0.id == templateId }) else { return }
-            try? routineService.startSession(with: template)
+            guard let template = routineService.templates.first(where: { $0.id == templateId }) else {
+                LoggingService.shared.error("Deep link dropped — template not found (stale widget?)", category: .app, metadata: ["templateId": templateId.uuidString])
+                return
+            }
+            do {
+                try routineService.startSession(with: template)
+            } catch {
+                LoggingService.shared.error("Deep link start failed", category: .app, metadata: ["error": String(describing: error)])
+            }
 
         case .resumeSession(let sessionId):
-            guard routineService.currentSession == nil else { return }
-            try? routineService.resumeSession(withId: sessionId)
+            do {
+                try routineService.resumeSession(withId: sessionId)
+            } catch {
+                LoggingService.shared.error("Deep link resume failed — paused session not found (stale widget?)", category: .app, metadata: ["sessionId": sessionId.uuidString])
+            }
         }
     }
 

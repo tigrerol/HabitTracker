@@ -36,7 +36,19 @@ public final class RoutineService {
     @MainActor public let snippetService = HabitSnippetService()
     
     private let persistenceService: any PersistenceServiceProtocol
-    
+
+    /// Task handles for the async init loads — await ensureLoaded() before
+    /// acting on templates or paused sessions (deep links, tests).
+    private var templatesLoadTask: Task<Void, Never>?
+    private var pausedSessionsLoadTask: Task<Void, Never>?
+
+    /// Serializes mood persistence so rapid ratings can't write out of order.
+    private var moodPersistTask: Task<Void, Never>?
+
+    /// Single-flight debounce so bursts of mutations collapse into one
+    /// (expensive) widget snapshot refresh + timeline reload.
+    private var widgetRefreshTask: Task<Void, Never>?
+
     /// Initialize with dependency injection
     public init(persistenceService: any PersistenceServiceProtocol = UserDefaultsPersistenceService()) {
         self.persistenceService = persistenceService
@@ -49,17 +61,24 @@ public final class RoutineService {
         // RoutineSelector also observes location updates separately for its own context;
         // we register independently so neither observer can break the other.
         routineSelector.locationCoordinator.addLocationUpdateCallback { [weak self] _, _ in
-            await self?.refreshWidgetSnapshot()
+            self?.scheduleWidgetRefresh()
         }
+    }
+
+    /// Suspend until the initial template and paused-session loads (including
+    /// interrupted-session recovery) have completed.
+    public func ensureLoaded() async {
+        await templatesLoadTask?.value
+        await pausedSessionsLoadTask?.value
     }
     
     /// Load templates from persistence, or create sample templates if none exist
     private func loadTemplates() {
-        Task { @MainActor in
+        templatesLoadTask = Task { @MainActor in
             do {
                 if let loadedTemplates = try await persistenceService.load([RoutineTemplate].self, forKey: PersistenceKeys.routineTemplates) {
                     templates = loadedTemplates
-                    await refreshWidgetSnapshot()
+                    scheduleWidgetRefresh()
                     return
                 }
             } catch {
@@ -102,7 +121,7 @@ public final class RoutineService {
                 operation: "save"
             )
         }
-        await refreshWidgetSnapshot()
+        scheduleWidgetRefresh()
     }
     
     /// Start a new routine session with the given template
@@ -159,11 +178,14 @@ public final class RoutineService {
         let templateId = session.template.id
         Task {
             await persistenceService.saveRoutineSession(data, for: templateId)
-            await refreshWidgetSnapshot()
+            // Only after the completion is durably recorded is the interrupted
+            // snapshot safe to discard — a kill before this point leaves the
+            // snapshot behind for recovery instead of silently losing the session.
+            await persistenceService.delete(forKey: PersistenceKeys.interruptedSession)
+            scheduleWidgetRefresh()
         }
 
         currentSession = nil
-        clearInterruptedSessionSnapshot()
     }
     
     /// Cancel the current session
@@ -197,8 +219,13 @@ public final class RoutineService {
         )
         moodRatings.append(rating)
 
+        // Chain persists so consecutive ratings can never write out of order.
         let snapshot = moodRatings
-        Task { await persistenceService.saveMoodRatings(snapshot) }
+        let previous = moodPersistTask
+        moodPersistTask = Task {
+            await previous?.value
+            await persistenceService.saveMoodRatings(snapshot)
+        }
     }
 
     /// Load persisted mood ratings
@@ -392,8 +419,11 @@ public final class RoutineService {
         let snapshot = session.toPausedSnapshot()
         pausedSessions.append(snapshot)
         currentSession = nil
-        clearInterruptedSessionSnapshot()
-        Task { await persistPausedSessions() }
+        Task {
+            await persistPausedSessions()
+            // Delete the autosave only after the paused list is durable.
+            await persistenceService.delete(forKey: PersistenceKeys.interruptedSession)
+        }
 
         LoggingService.shared.info("Routine session paused", category: .routine, metadata: [
             "sessionId": snapshot.id.uuidString,
@@ -436,7 +466,7 @@ public final class RoutineService {
 
     /// Load paused sessions from persistence
     private func loadPausedSessions() {
-        Task { @MainActor in
+        pausedSessionsLoadTask = Task { @MainActor in
             do {
                 if let loaded = try await persistenceService.load([PausedSessionSnapshot].self, forKey: PersistenceKeys.pausedSessions) {
                     // Clean up stale sessions (older than 7 days)
@@ -484,12 +514,33 @@ public final class RoutineService {
         Task { await persistenceService.delete(forKey: PersistenceKeys.interruptedSession) }
     }
 
+    /// Coalesce widget refreshes: bursts of mutations (edits, recovery,
+    /// startup loads) collapse into a single refresh after a short quiet period.
+    public func scheduleWidgetRefresh(callSite: String = #function) {
+        widgetRefreshTask?.cancel()
+        widgetRefreshTask = Task { [callSite] in
+            try? await Task.sleep(for: .milliseconds(300))
+            guard !Task.isCancelled else { return }
+            await refreshWidgetSnapshot(callSite: callSite)
+        }
+    }
+
     /// Move an interrupted-session snapshot (app killed mid-routine) into the
     /// paused list so the user can resume it from the Today tab.
     func recoverInterruptedSession() async {
         guard let snapshot = try? await persistenceService.load(PausedSessionSnapshot.self, forKey: PersistenceKeys.interruptedSession) else { return }
         await persistenceService.delete(forKey: PersistenceKeys.interruptedSession)
         guard !pausedSessions.contains(where: { $0.id == snapshot.id }) else { return }
+
+        // The snapshot delete races app termination, so a finished session can
+        // leave one behind — never resurrect a session that already completed.
+        let history = await persistenceService.loadRoutineSessions(for: snapshot.templateId)
+        if history.contains(where: { $0.id == snapshot.id && $0.completedAt != nil }) {
+            LoggingService.shared.info("Discarded stale interrupted snapshot for completed session", category: .routine, metadata: [
+                "sessionId": snapshot.id.uuidString
+            ])
+            return
+        }
 
         pausedSessions.append(snapshot)
         await persistPausedSessions()
@@ -511,12 +562,12 @@ public final class RoutineService {
                 operation: "save"
             )
         }
-        await refreshWidgetSnapshot()
+        scheduleWidgetRefresh()
     }
 
     /// Build a fresh WidgetSnapshot from current state and persist it to the App Group
     /// container, then ask WidgetKit to reload all timelines.
-    public func refreshWidgetSnapshot(callSite: String = #function) async {
+    private func refreshWidgetSnapshot(callSite: String = #function) async {
         let smartBest = await getSmartTemplateAndSort().best
         let defaultT = defaultTemplate
         let lastUsedT = lastUsedTemplate

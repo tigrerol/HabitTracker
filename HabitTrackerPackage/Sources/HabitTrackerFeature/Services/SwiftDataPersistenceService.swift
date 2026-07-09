@@ -423,17 +423,18 @@ public final class SwiftDataPersistenceService: PersistenceServiceProtocol {
     // MARK: - Mood Rating Operations
 
     /// Save mood ratings (replace semantics), stored as PersistedMoodRating rows.
+    /// Diff-based: ratings are immutable, so unchanged rows are left untouched
+    /// instead of the delete-all/reinsert churn.
     public func saveMoodRatings(_ ratings: [MoodRating]) async {
-        // Remove existing ratings and replace with new ones
-        let existingRatings = getAllPersistedMoodRatings()
-        for rating in existingRatings {
+        let existing = getAllPersistedMoodRatings()
+        let newIds = Set(ratings.map(\.id))
+        for rating in existing where !newIds.contains(rating.id) {
             modelContext.delete(rating)
         }
 
-        // Insert new ratings
-        for rating in ratings {
-            let persistedRating = PersistedMoodRating(from: rating)
-            modelContext.insert(persistedRating)
+        let existingIds = Set(existing.map(\.id))
+        for rating in ratings where !existingIds.contains(rating.id) {
+            modelContext.insert(PersistedMoodRating(from: rating))
         }
 
         do {

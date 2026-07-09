@@ -34,6 +34,12 @@ public enum HabitTrackerMigrationPlan: SchemaMigrationPlan {
 /// Configuration for the SwiftData model container
 public enum DataModelConfiguration {
 
+    /// True when the persistent store failed to open and the app is running on
+    /// the throwaway in-memory fallback — changes made this session won't
+    /// survive a relaunch. Surfaced to the user by MorningRoutineView.
+    @MainActor
+    public private(set) static var isUsingFallbackStore = false
+
     /// The app-wide container backing `RoutineService.shared` and the SwiftUI
     /// environment. Falls back to an in-memory store (with a logged error)
     /// rather than crashing if the persistent store cannot be opened.
@@ -42,6 +48,7 @@ public enum DataModelConfiguration {
         do {
             return try createModelContainer()
         } catch {
+            isUsingFallbackStore = true
             LoggingService.shared.error(
                 "Failed to open persistent SwiftData store — falling back to in-memory (data will not persist this launch)",
                 category: .app,
