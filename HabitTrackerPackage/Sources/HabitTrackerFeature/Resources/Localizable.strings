@@ -256,6 +256,7 @@
 "HabitInteractionView.Measurement.Record" = "Record";
 "HabitInteractionView.Sequence.StepProgress" = "Step %1$d of %2$d";
 "HabitInteractionView.Sequence.Skip" = "Skip";
+"TruncatableText.ShowFullTextHint" = "Double tap to show the full text";
 "HabitInteractionView.Sequence.Complete" = "Sequence Complete!";
 "HabitInteractionView.Sequence.TotalTime" = "Total time: %@";
 "HabitInteractionView.Sequence.Done" = "Done";

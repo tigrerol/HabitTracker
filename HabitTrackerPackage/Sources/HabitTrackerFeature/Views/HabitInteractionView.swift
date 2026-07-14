@@ -229,7 +229,7 @@ struct TimerHabitView: View {
                             .foregroundStyle(.secondary)
                     }
 
-                    Text(step.name)
+                    TruncatableText(text: step.name, lineLimit: 2)
                         .font(.title2)
                         .fontWeight(.semibold)
                         .multilineTextAlignment(.center)
@@ -844,10 +844,13 @@ struct SubtasksHabitView: View {
                                 .font(.title3)
                                 .foregroundStyle(completedSubtasks.contains(subtask.id) ? .green : .secondary)
 
-                            Text(subtask.name)
-                                .font(.body)
-                                .foregroundStyle(.primary)
-                                .strikethrough(completedSubtasks.contains(subtask.id))
+                            TruncatableText(
+                                text: subtask.name,
+                                lineLimit: 2,
+                                strikethrough: completedSubtasks.contains(subtask.id)
+                            )
+                            .font(.body)
+                            .foregroundStyle(.primary)
 
                             Spacer()
 
@@ -1024,13 +1027,13 @@ struct GuidedSequenceHabitView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
 
-                    Text(step.name)
+                    TruncatableText(text: step.name, lineLimit: 2)
                         .font(.title2)
                         .fontWeight(.semibold)
                         .multilineTextAlignment(.center)
 
                     if let instructions = step.instructions {
-                        Text(instructions)
+                        TruncatableText(text: instructions, lineLimit: 3)
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                             .multilineTextAlignment(.center)

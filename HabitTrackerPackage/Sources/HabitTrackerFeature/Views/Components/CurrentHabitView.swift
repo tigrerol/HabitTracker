@@ -44,7 +44,7 @@ struct CurrentHabitView: View {
                 }
 
                 VStack(spacing: 4) {
-                    Text(habit.name)
+                    TruncatableText(text: habit.name, lineLimit: 2)
                         .font(.system(.title2, design: .rounded, weight: .bold))
                         .multilineTextAlignment(.center)
                         .accessibilityAddTraits(.isHeader)
