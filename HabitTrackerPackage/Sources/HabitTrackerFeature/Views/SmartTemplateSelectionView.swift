@@ -4,6 +4,7 @@ import SwiftUI
 struct SmartTemplateSelectionView: View {
     @Environment(RoutineService.self) private var routineService
     @Environment(ThemeManager.self) private var themeManager
+    @Environment(RoutineModeService.self) private var modeService
     @State private var selectedTemplate: RoutineTemplate?
     @State private var sortedTemplates: [RoutineTemplate] = []
     @State private var selectionReason: String = ""
@@ -13,6 +14,7 @@ struct SmartTemplateSelectionView: View {
     @State private var showingDeleteAlert = false
     @State private var showingLocationSetup = false
     @State private var showingAIImport = false
+    @State private var showingModes = false
     @Namespace private var templateTransition
     
     private var timeBasedGreeting: String {
@@ -82,6 +84,11 @@ struct SmartTemplateSelectionView: View {
             AIRoutineImportView()
                 .environment(routineService)
         }
+        .sheet(isPresented: $showingModes) {
+            RoutineModesView()
+                .environment(routineService)
+                .environment(modeService)
+        }
         .alert(String(localized: "SmartTemplateSelectionView.DeleteAlert.Title", bundle: .module), isPresented: $showingDeleteAlert) {
             Button(String(localized: "SmartTemplateSelectionView.DeleteAlert.Cancel", bundle: .module), role: .cancel) { }
             Button(String(localized: "SmartTemplateSelectionView.DeleteAlert.Delete", bundle: .module), role: .destructive) {
@@ -99,9 +106,11 @@ struct SmartTemplateSelectionView: View {
     
     private var headerView: some View {
         VStack(spacing: 12) {
+            modeChip
+
             contextIndicatorView
                 .padding(.bottom, 8)
-            
+
             if !selectionReason.isEmpty {
                 Text(selectionReason)
                     .font(.subheadline)
@@ -113,6 +122,64 @@ struct SmartTemplateSelectionView: View {
         }
     }
     
+    /// Switcher for routine modes (Vacation, Sick Day, …). Always visible so the
+    /// feature is discoverable, but only tinted when a mode is actually on.
+    private var modeChip: some View {
+        let activeMode = modeService.activeMode
+        let selection = Binding<UUID?>(
+            get: { modeService.activeModeId },
+            set: { newValue in
+                if let newValue {
+                    modeService.activate(modeId: newValue)
+                } else {
+                    modeService.deactivate()
+                }
+            }
+        )
+
+        return Menu {
+            Picker("Routine Mode", selection: selection) {
+                Label("All Routines", systemImage: "square.stack.3d.up")
+                    .tag(UUID?.none)
+
+                ForEach(modeService.modes) { mode in
+                    Label(mode.name, systemImage: mode.icon)
+                        .tag(UUID?.some(mode.id))
+                }
+            }
+            .pickerStyle(.inline)
+
+            Divider()
+
+            Button {
+                showingModes = true
+            } label: {
+                Label("Manage Modes…", systemImage: "slider.horizontal.3")
+            }
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: activeMode?.icon ?? "line.3.horizontal.decrease")
+                Text(activeMode?.name ?? "All Routines")
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 9, weight: .semibold))
+            }
+            .font(.system(.caption, design: .rounded, weight: activeMode == nil ? .regular : .semibold))
+            .foregroundStyle(activeMode == nil ? AnyShapeStyle(.secondary) : AnyShapeStyle(themeManager.currentAccentColor))
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .background(
+                Capsule()
+                    .fill(activeMode == nil ? AnyShapeStyle(.regularMaterial) : AnyShapeStyle(themeManager.currentAccentColor.opacity(0.15)))
+            )
+            .overlay(
+                Capsule()
+                    .stroke(activeMode == nil ? Color.clear : themeManager.currentAccentColor.opacity(0.4), lineWidth: 1)
+            )
+        }
+        .accessibilityLabel(activeMode.map { "Routine mode: \($0.name)" } ?? "Routine mode: all routines")
+        .accessibilityHint("Choose which set of routines to show")
+    }
+
     private var contextIndicatorView: some View {
         // Force reactivity by accessing the selector directly in the view
         let selector = routineService.routineSelector
@@ -358,19 +425,56 @@ struct SmartTemplateSelectionView: View {
                 .listRowSeparator(.hidden)
                 .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 4, trailing: 0))
             }
+
+            if let activeMode = modeService.activeMode {
+                modeFooter(activeMode)
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
+                    .listRowInsets(EdgeInsets(top: 12, leading: 0, bottom: 4, trailing: 0))
+            }
         }
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
         .transition(.opacity.combined(with: .scale(scale: 0.95)))
     }
     
+    /// Footer telling the user a mode is trimming the list — and how to get out of it.
+    @ViewBuilder
+    private func modeFooter(_ mode: RoutineMode) -> some View {
+        let total = routineService.templates.count
+        let isFiltering = modeService.isFiltering(routineService.templates)
+
+        VStack(spacing: 6) {
+            Text(isFiltering
+                 ? "Showing \(sortedTemplates.count) of \(total) routines in \(mode.name)"
+                 : "\(mode.name) has no routines yet — showing all \(total)")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            HStack(spacing: 16) {
+                Button("Show All Routines") {
+                    modeService.deactivate()
+                }
+                Button(isFiltering ? "Edit Mode" : "Choose Routines") {
+                    showingModes = true
+                }
+            }
+            .font(.caption.weight(.semibold))
+            .buttonStyle(.plain)
+            .foregroundStyle(themeManager.currentAccentColor)
+        }
+        .frame(maxWidth: .infinity)
+        .multilineTextAlignment(.center)
+    }
+
     private var selectionTrigger: String {
         let context = routineService.routineSelector.currentContext
         let templateHash = routineService.templates.hashValue
         let location = String(describing: context.location)
         let timeSlot = context.timeSlot.rawValue
         let dayCategories = context.dayCategories.map(\.id).sorted().joined(separator: ",")
-        return "\(templateHash)-\(location)-\(timeSlot)-\(dayCategories)"
+        let mode = modeService.activeMode.map { "\($0.id.uuidString)-\($0.templateIds.hashValue)" } ?? "none"
+        return "\(templateHash)-\(location)-\(timeSlot)-\(dayCategories)-\(mode)"
     }
 
     private func selectSmartTemplate() async {
@@ -379,11 +483,11 @@ struct SmartTemplateSelectionView: View {
         selectedTemplate = result.best
         selectionReason = result.reason
 
-        // Fallback to default logic if smart selection fails
+        // Fallback to default logic if smart selection fails. Stay inside the
+        // sorted (already mode-filtered) set so an active mode can't be bypassed.
         if selectedTemplate == nil {
-            selectedTemplate = routineService.defaultTemplate
-                            ?? routineService.lastUsedTemplate
-                            ?? routineService.templates.first
+            selectedTemplate = sortedTemplates.first(where: { $0.isDefault })
+                            ?? sortedTemplates.first
             selectionReason = ""
         }
     }
@@ -552,4 +656,5 @@ private struct CompactTemplateCard: View {
 #Preview {
     SmartTemplateSelectionView()
         .environment(RoutineService())
+        .environment(RoutineModeService())
 }

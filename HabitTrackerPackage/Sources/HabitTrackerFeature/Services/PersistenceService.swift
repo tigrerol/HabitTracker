@@ -111,6 +111,7 @@ public enum PersistenceKeys {
     public static let dayCategorySettings = "DayCategorySettings"
     public static let locationCategorySettings = "LocationCategorySettings"
     public static let routineTemplates = "RoutineTemplates"
+    public static let routineModes = "RoutineModes"
     public static let pausedSessions = "PausedSessions"
     public static let routineSessionHistory = "RoutineSessionHistory"
     public static let interruptedSession = "InterruptedSession"

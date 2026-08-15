@@ -57,6 +57,7 @@ public struct MorningRoutineView: View {
         .environment(routineService)
         .environment(router)
         .environment(DayCategoryManager.shared)
+        .environment(RoutineModeService.shared)
         .withDynamicTheme()
     }
 

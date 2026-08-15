@@ -31,7 +31,10 @@ public final class RoutineService {
     
     /// Habit snippet service for managing reusable habit collections
     @MainActor public let snippetService = HabitSnippetService()
-    
+
+    /// Narrows the visible routine set while a mode (Vacation, Sick Day, …) is active.
+    public let modeService: RoutineModeService
+
     private let persistenceService: any PersistenceServiceProtocol
 
     /// Task handles for the async init loads — await ensureLoaded() before
@@ -48,8 +51,12 @@ public final class RoutineService {
     private var widgetRefreshTask: Task<Void, Never>?
 
     /// Initialize with dependency injection
-    public init(persistenceService: any PersistenceServiceProtocol = UserDefaultsPersistenceService()) {
+    public init(
+        persistenceService: any PersistenceServiceProtocol = UserDefaultsPersistenceService(),
+        modeService: RoutineModeService = .shared
+    ) {
         self.persistenceService = persistenceService
+        self.modeService = modeService
         loadTemplates()
         loadPausedSessions()
         loadMoodRatings()
@@ -250,9 +257,11 @@ public final class RoutineService {
     }
     
     /// Score, sort, and select the best template based on current context — single pass.
+    /// An active routine mode narrows the candidate set first, so both the Today
+    /// list and the widget's Quick Start stay inside the mode.
     @MainActor
     public func getSmartTemplateAndSort() async -> (sorted: [RoutineTemplate], best: RoutineTemplate?, reason: String) {
-        await routineSelector.selectAndSortTemplates(templates)
+        await routineSelector.selectAndSortTemplates(modeService.visibleTemplates(from: templates))
     }
     
     /// Add a new template
@@ -325,6 +334,7 @@ public final class RoutineService {
     /// Delete a template
     public func deleteTemplate(withId id: UUID) {
         templates.removeAll { $0.id == id }
+        modeService.removeTemplateFromAllModes(id)
         Task { await persistTemplates() }
     }
     

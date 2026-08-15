@@ -11,6 +11,7 @@ public struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(ThemeManager.self) private var themeManager
     @Environment(RoutineService.self) private var routineService
+    @Environment(RoutineModeService.self) private var modeService
 
     @AppStorage(FeedbackManager.soundEnabledKey) private var timerSoundEnabled: Bool = true
 
@@ -21,6 +22,7 @@ public struct SettingsView: View {
     @State private var showingDayTypeEditor = false
     @State private var showingLocationSetup = false
     @State private var showingContextCoverage = false
+    @State private var showingRoutineModes = false
     @State private var savedLocationsCount = 0
     @State private var customLocationsCount = 0
 
@@ -79,6 +81,11 @@ public struct SettingsView: View {
         }
         .sheet(isPresented: $showingContextCoverage) {
             ContextCoverageView()
+        }
+        .sheet(isPresented: $showingRoutineModes) {
+            RoutineModesView()
+                .environment(routineService)
+                .environment(modeService)
         }
         .sheet(isPresented: $showingSnippetLibrary) {
             SnippetLibraryView()
@@ -220,6 +227,18 @@ public struct SettingsView: View {
                     subtitle: String(localized: "ContextSettingsView.Locations.Subtitle", bundle: .module),
                     icon: "location",
                     detail: locationSummary
+                )
+            }
+            .buttonStyle(.plain)
+
+            Button {
+                showingRoutineModes = true
+            } label: {
+                SettingsRow(
+                    title: "Routine Modes",
+                    subtitle: "Temporarily show only some routines",
+                    icon: "line.3.horizontal.decrease.circle",
+                    detail: modeSummary
                 )
             }
             .buttonStyle(.plain)
@@ -423,6 +442,13 @@ public struct SettingsView: View {
         return String(format: String(localized: "ContextSettingsView.DayTypeSummary", bundle: .module), names)
     }
 
+    private var modeSummary: String {
+        if let active = modeService.activeMode {
+            return active.name
+        }
+        return modeService.modes.isEmpty ? "None" : "Off"
+    }
+
     private var locationSummary: String {
         let total = savedLocationsCount + customLocationsCount
 
@@ -596,5 +622,6 @@ public struct SettingsButton: View {
 #Preview {
     SettingsView()
         .environment(RoutineService())
+        .environment(RoutineModeService())
         .withDynamicTheme()
 }
