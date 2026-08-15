@@ -139,8 +139,9 @@ public final class RoutineService {
             throw error
         }
         
-        // Validate template
-        guard !template.habits.isEmpty else {
+        // Validate template — a wrapper routine may own no habits of its own,
+        // so measure the resolved (include-expanded) habit list.
+        guard !resolvedTemplate(template).habits.isEmpty else {
             let error = RoutineError.templateValidationFailed(reason: "Template has no habits")
             ErrorHandlingService.shared.handleRoutineError(error, templateId: template.id)
             throw error
@@ -153,8 +154,8 @@ public final class RoutineService {
             throw error
         }
         
-        currentSession = RoutineSession(template: template)
-        
+        currentSession = RoutineSession(template: resolvedTemplate(template))
+
         // Update template's last used date
         if let index = templates.firstIndex(where: { $0.id == template.id }) {
             templates[index].lastUsedAt = Date()
@@ -264,6 +265,17 @@ public final class RoutineService {
         await routineSelector.selectAndSortTemplates(modeService.visibleTemplates(from: templates))
     }
     
+    /// Expand a template's routine includes into a flat, runnable copy.
+    /// Cheap for plain routines — returns them unchanged.
+    public func resolvedTemplate(_ template: RoutineTemplate) -> RoutineTemplate {
+        RoutineComposer.resolve(template, in: templates)
+    }
+
+    /// Routines that include the given routine as a block.
+    public func templatesIncluding(_ templateId: UUID) -> [RoutineTemplate] {
+        RoutineComposer.templatesIncluding(templateId, in: templates)
+    }
+
     /// Add a new template
     public func addTemplate(_ template: RoutineTemplate) {
         templates.append(template)
@@ -335,6 +347,14 @@ public final class RoutineService {
     public func deleteTemplate(withId id: UUID) {
         templates.removeAll { $0.id == id }
         modeService.removeTemplateFromAllModes(id)
+
+        // Drop dangling blocks so wrapper routines don't silently shrink at
+        // start; the composer would skip them anyway, but this keeps the
+        // builder honest about what a routine contains.
+        for index in templates.indices where templates[index].includes.contains(where: { $0.templateId == id }) {
+            templates[index].includes.removeAll { $0.templateId == id }
+        }
+
         Task { await persistTemplates() }
     }
     
@@ -613,7 +633,7 @@ public final class RoutineService {
         let topRoutine = quickStartTemplate.map { template in
             WidgetSnapshot.TopRoutine(
                 name: template.name,
-                habitCount: template.activeHabitsCount,
+                habitCount: resolvedTemplate(template).activeHabitsCount,
                 colorHex: template.color,
                 templateId: template.id
             )

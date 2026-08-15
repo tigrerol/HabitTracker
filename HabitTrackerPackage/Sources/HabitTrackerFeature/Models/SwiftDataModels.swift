@@ -88,6 +88,7 @@ public final class PersistedRoutineTemplate {
     public var modifiedAt: Date
     public var contextRuleData: Data? // Encoded RoutineContextRule
     public var weeklyTarget: Int?
+    public var includesData: Data? // Encoded [RoutineInclude]
 
     // Relationships
     @Relationship(deleteRule: .cascade, inverse: \PersistedHabit.template)
@@ -106,6 +107,7 @@ public final class PersistedRoutineTemplate {
         self.modifiedAt = Date()
         self.contextRuleData = template.contextRule.flatMap { try? JSONEncoder().encode($0) }
         self.weeklyTarget = template.weeklyTarget
+        self.includesData = template.includes.isEmpty ? nil : try? JSONEncoder().encode(template.includes)
         // NOTE: habits are NOT converted here — relationships must only be
         // established after the model is inserted into a ModelContext
         // (SwiftDataPersistenceService.saveRoutineTemplates does this).
@@ -129,7 +131,21 @@ public final class PersistedRoutineTemplate {
         }
 
         let domainHabits = habits.map { $0.toDomainModel() }.sorted { $0.order < $1.order }
-        
+
+        let includes: [RoutineInclude]
+        if let includesData {
+            includes = (try? JSONDecoder().decode([RoutineInclude].self, from: includesData)) ?? []
+            if includes.isEmpty {
+                LoggingService.shared.error(
+                    "Failed to decode routine includes — wrapper routine loses its blocks",
+                    category: .app,
+                    metadata: ["templateId": id.uuidString, "templateName": name]
+                )
+            }
+        } else {
+            includes = []
+        }
+
         return RoutineTemplate(
             id: id,
             name: name,
@@ -140,7 +156,8 @@ public final class PersistedRoutineTemplate {
             createdAt: createdAt,
             lastUsedAt: lastUsedAt,
             contextRule: contextRule,
-            weeklyTarget: weeklyTarget
+            weeklyTarget: weeklyTarget,
+            includes: includes
         )
     }
     
@@ -152,7 +169,8 @@ public final class PersistedRoutineTemplate {
         self.isDefault = template.isDefault
         self.lastUsedAt = template.lastUsedAt
         self.modifiedAt = Date()
-        self.contextRuleData = template.contextRule.flatMap { try? JSONEncoder().encode($0) }
+self.contextRuleData = template.contextRule.flatMap { try? JSONEncoder().encode($0) }
+        self.includesData = template.includes.isEmpty ? nil : try? JSONEncoder().encode(template.includes)
         self.weeklyTarget = template.weeklyTarget
 
         // Update habits

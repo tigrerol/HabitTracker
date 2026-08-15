@@ -32,6 +32,9 @@ public struct RoutineBuilderView: View {
     @State private var isSelectingForSnippet = false
     @State private var showingSnippetBrowser = false
     @State private var weeklyTarget: Int? = nil
+    @State private var includes: [RoutineInclude] = []
+    @State private var showingIncludePicker = false
+    @State private var previewingIncludedTemplate: RoutineTemplate?
 
     enum BuilderStep {
         case naming
@@ -81,6 +84,7 @@ public struct RoutineBuilderView: View {
                 templateColor = template.color
                 habits = template.habits
                 weeklyTarget = template.weeklyTarget
+                includes = template.includes
 
                 // Initialize smart selection state from existing context rule
                 if let rule = template.contextRule {
@@ -479,6 +483,102 @@ public struct RoutineBuilderView: View {
         }
     }
 
+    /// A linked block in the builder list: one row standing in for another
+    /// routine's habits. Editing happens in that routine, not here.
+    private func includedRoutineRow(_ include: RoutineInclude) -> some View {
+        let template = includedTemplate(for: include)
+
+        return HStack(spacing: 12) {
+            Image(systemName: "link")
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(template == nil ? Color.orange : Color.accentColor)
+                .frame(width: 32, height: 32)
+                .background(
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .fill((template == nil ? Color.orange : Color.accentColor).opacity(0.12))
+                )
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(template?.name ?? "Missing routine")
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                    .foregroundStyle(template == nil ? .secondary : .primary)
+
+                if let template {
+                    Text("\(template.activeHabitsCount) habits • \(template.formattedDuration) • linked")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                } else {
+                    Text("This routine was deleted — remove this block")
+                        .font(.caption)
+                        .foregroundStyle(.orange)
+                }
+            }
+
+            Spacer()
+
+            if template != nil {
+                Image(systemName: "chevron.right")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(Theme.cardSurface)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .stroke(Color.accentColor.opacity(0.25), style: StrokeStyle(lineWidth: 1, dash: [4, 3]))
+                )
+        )
+        .contentShape(Rectangle())
+        .onTapGesture {
+            if let template {
+                previewingIncludedTemplate = template
+            }
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(template.map { "Included routine \($0.name), \($0.activeHabitsCount) habits" } ?? "Missing included routine")
+        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+            Button(role: .destructive) {
+                withAnimation(.easeInOut) {
+                    includes.removeAll { $0.id == include.id }
+                    updateHabitOrder()
+                }
+            } label: {
+                Label("Remove", systemImage: "trash")
+            }
+        }
+    }
+
+    /// Entry point for wrapping another routine into this one.
+    private var includeRoutineSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("Include a Routine")
+                    .font(.headline)
+                    .fontWeight(.semibold)
+                Spacer()
+                Button("Include") {
+                    showingIncludePicker = true
+                }
+                .font(.caption)
+                .foregroundStyle(.blue)
+                .disabled(includableTemplates.isEmpty)
+            }
+            .padding(.horizontal)
+
+            Text(includableTemplates.isEmpty
+                 ? "No other routines available to include. Routines that already include another one can't be nested again."
+                 : "Reuse a whole routine as a block — edit it once and every routine that includes it follows.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .padding(.horizontal)
+        }
+    }
+
     private var buildingStepView: some View {
         VStack(spacing: 0) {
             // Enhanced progress header
@@ -494,12 +594,12 @@ public struct RoutineBuilderView: View {
                         .textFieldStyle(.plain)
                         .submitLabel(.done)
 
-                        if habits.isEmpty {
+                        if builderItems.isEmpty {
                             Text(String(localized: "RoutineBuilderView.Building.Question", bundle: .module))
                                 .font(.subheadline)
                                 .foregroundStyle(.secondary)
                         } else {
-                            Text(String(localized: "RoutineBuilderView.Building.HabitsCount", bundle: .module).replacingOccurrences(of: "%lld", with: "\(habits.count)").replacingOccurrences(of: "%@", with: totalDuration.formattedDuration))
+                            Text(String(localized: "RoutineBuilderView.Building.HabitsCount", bundle: .module).replacingOccurrences(of: "%lld", with: "\(resolvedHabitCount)").replacingOccurrences(of: "%@", with: totalDuration.formattedDuration))
                                 .font(.subheadline)
                                 .foregroundStyle(.secondary)
                         }
@@ -519,7 +619,7 @@ public struct RoutineBuilderView: View {
                     .accessibilityLabel(String(localized: "Accessibility.Step2.Building", bundle: .module))
                 }
                 
-                if !habits.isEmpty {
+                if !builderItems.isEmpty {
                     Text(String(localized: "RoutineBuilderView.Building.Instructions", bundle: .module))
                         .font(.caption)
                         .foregroundStyle(.tertiary)
@@ -532,7 +632,7 @@ public struct RoutineBuilderView: View {
             ScrollView {
                 VStack(spacing: 20) {
                     // Current habits section
-                    if !habits.isEmpty {
+                    if !builderItems.isEmpty {
                         VStack(alignment: .leading, spacing: 12) {
                             HStack {
                                 Text(String(localized: "RoutineBuilderView.Building.YourRoutine.Title", bundle: .module))
@@ -541,7 +641,7 @@ public struct RoutineBuilderView: View {
                                 
                                 Spacer()
                                 
-                                if !isSelectingForSnippet {
+                                if !isSelectingForSnippet && !habits.isEmpty {
                                     Button {
                                         isSelectingForSnippet.toggle()
                                         selectedHabitsForSnippet.removeAll()
@@ -552,7 +652,7 @@ public struct RoutineBuilderView: View {
                                     }
                                 }
                                 
-                                Text(habits.count == 1 ? String(localized: "RoutineBuilderView.Building.HabitCount", bundle: .module).replacingOccurrences(of: "%lld", with: "\(habits.count)") : String(localized: "RoutineBuilderView.Building.HabitsCount.Plural", bundle: .module).replacingOccurrences(of: "%lld", with: "\(habits.count)"))
+                                Text(resolvedHabitCount == 1 ? String(localized: "RoutineBuilderView.Building.HabitCount", bundle: .module).replacingOccurrences(of: "%lld", with: "\(resolvedHabitCount)") : String(localized: "RoutineBuilderView.Building.HabitsCount.Plural", bundle: .module).replacingOccurrences(of: "%lld", with: "\(resolvedHabitCount)"))
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
                                     .padding(.horizontal, 8)
@@ -563,13 +663,17 @@ public struct RoutineBuilderView: View {
                             
                             // List with drag-and-drop support
                             List {
-                                ForEach(habits) { habit in
-                                    habitListItem(for: habit)
+                                ForEach(builderItems) { item in
+                                    switch item {
+                                    case .habit(let habit):
+                                        habitListItem(for: habit)
+                                    case .include(let include):
+                                        includedRoutineRow(include)
+                                    }
                                 }
                                 .onMove { source, destination in
                                     withAnimation(.easeInOut) {
-                                        habits.move(fromOffsets: source, toOffset: destination)
-                                        updateHabitOrder()
+                                        moveBuilderItems(from: source, to: destination)
                                     }
                                 }
                                 .listRowBackground(Color.clear)
@@ -578,7 +682,7 @@ public struct RoutineBuilderView: View {
                             }
                             .listStyle(.plain)
                             .scrollContentBackground(.hidden)
-                            .frame(height: min(CGFloat(habits.count) * 60, 360))
+                            .frame(height: min(CGFloat(builderItems.count) * 60, 360))
                             .padding(.horizontal)
                         }
                     }
@@ -624,8 +728,10 @@ public struct RoutineBuilderView: View {
                         // Snippet browser section
                         snippetBrowserSection
                         
+                        includeRoutineSection
+
                         suggestedHabitsSection
-                            .padding(.top, habits.isEmpty ? 20 : 0)
+                            .padding(.top, builderItems.isEmpty ? 20 : 0)
                     }
                     
                     Spacer()
@@ -636,7 +742,7 @@ public struct RoutineBuilderView: View {
             // Bottom actions
             VStack(spacing: 12) {
                 HStack(spacing: 12) {
-                    if habits.isEmpty {
+                    if builderItems.isEmpty {
                         Button {
                             currentStep = .naming
                         } label: {
@@ -672,7 +778,7 @@ public struct RoutineBuilderView: View {
                             // Direct save - no review step needed
                             saveTemplate()
                         } label: {
-                            Text(habits.isEmpty ? "Save Empty Routine" : "Save Routine")
+                            Text(builderItems.isEmpty ? "Save Empty Routine" : "Save Routine")
                                 .font(.headline)
                                 .foregroundStyle(.white)
                                 .frame(maxWidth: .infinity)
@@ -825,10 +931,21 @@ public struct RoutineBuilderView: View {
                 }
             )
         }
+        .sheet(isPresented: $showingIncludePicker) {
+            IncludeRoutinePickerView(templates: includableTemplates) { chosen in
+                withAnimation(.easeInOut) {
+                    includes.append(RoutineInclude(templateId: chosen.id, order: nextOrderSlot()))
+                    updateHabitOrder()
+                }
+            }
+        }
+        .sheet(item: $previewingIncludedTemplate) { template in
+            IncludedRoutinePreviewView(template: template)
+        }
         .sheet(isPresented: $showingSnippetBrowser) {
             SnippetBrowserView(excludedRoutineId: editingTemplate?.id) { selectedHabits in
                 withAnimation(.easeInOut) {
-                    habits.append(contentsOf: selectedHabits.map { $0.withNewIdentity() })
+                    appendHabits(selectedHabits.map { $0.withNewIdentity() })
                 }
             }
         }
@@ -863,7 +980,7 @@ public struct RoutineBuilderView: View {
                             SnippetCard(snippet: snippet) {
                                 // Add snippet habits to current routine
                                 withAnimation(.easeInOut) {
-                                    habits.append(contentsOf: snippet.habits.map { $0.withNewIdentity() })
+                                    appendHabits(snippet.habits.map { $0.withNewIdentity() })
                                 }
                             }
                             .frame(width: 120)
@@ -1009,8 +1126,18 @@ public struct RoutineBuilderView: View {
 
     // MARK: - Helpers
     
+    /// Habits this routine will actually run — its own plus every included block.
+    private var resolvedHabits: [Habit] {
+        let blockHabits = includes
+            .compactMap { includedTemplate(for: $0) }
+            .flatMap { $0.habits.filter(\.isActive) }
+        return habits + blockHabits
+    }
+
+    private var resolvedHabitCount: Int { resolvedHabits.count }
+
     private var totalDuration: TimeInterval {
-        let total = habits.reduce(0) { accum, habit in
+        let total = resolvedHabits.reduce(0) { accum, habit in
             let duration = habit.estimatedDuration
             guard duration.isFinite, !duration.isNaN else { return accum }
             return accum + duration
@@ -1057,10 +1184,82 @@ public struct RoutineBuilderView: View {
         return parts.isEmpty ? "Any time, any day, any location" : parts.joined(separator: " • ")
     }
     
+    /// Habits and included blocks share one ordering space so a block can sit
+    /// between two loose habits. Renumber the merged list 0..n-1, keeping the
+    /// current relative order.
     private func updateHabitOrder() {
-        for (index, _) in habits.enumerated() {
-            habits[index].order = index
+        for (index, item) in builderItems.enumerated() {
+            switch item {
+            case .habit(let habit):
+                if let habitIndex = habits.firstIndex(where: { $0.id == habit.id }) {
+                    habits[habitIndex].order = index
+                }
+            case .include(let include):
+                if let includeIndex = includes.firstIndex(where: { $0.id == include.id }) {
+                    includes[includeIndex].order = index
+                }
+            }
         }
+        habits.sort { $0.order < $1.order }
+        includes.sort { $0.order < $1.order }
+    }
+
+    /// The next free slot at the end of the merged list.
+    private func nextOrderSlot() -> Int {
+        max(habits.map(\.order).max() ?? -1, includes.map(\.order).max() ?? -1) + 1
+    }
+
+    /// Append habits at the end of the merged list (not just the habit array),
+    /// so they land after any included block.
+    private func appendHabits(_ newHabits: [Habit]) {
+        var slot = nextOrderSlot()
+        for habit in newHabits {
+            var copy = habit
+            copy.order = slot
+            habits.append(copy)
+            slot += 1
+        }
+        updateHabitOrder()
+    }
+
+    /// Habits and includes merged into the single list the builder shows.
+    private var builderItems: [BuilderItem] {
+        let habitItems = habits.map { BuilderItem.habit($0) }
+        let includeItems = includes.map { BuilderItem.include($0) }
+        return (habitItems + includeItems).sorted { $0.order < $1.order }
+    }
+
+    private func moveBuilderItems(from source: IndexSet, to destination: Int) {
+        var items = builderItems
+        items.move(fromOffsets: source, toOffset: destination)
+        for (index, item) in items.enumerated() {
+            switch item {
+            case .habit(let habit):
+                if let habitIndex = habits.firstIndex(where: { $0.id == habit.id }) {
+                    habits[habitIndex].order = index
+                }
+            case .include(let include):
+                if let includeIndex = includes.firstIndex(where: { $0.id == include.id }) {
+                    includes[includeIndex].order = index
+                }
+            }
+        }
+        habits.sort { $0.order < $1.order }
+        includes.sort { $0.order < $1.order }
+    }
+
+    /// Routines eligible to be included: not this one, not already included,
+    /// and not wrappers themselves (composition is one level deep).
+    private var includableTemplates: [RoutineTemplate] {
+        routineService.templates.filter { candidate in
+            candidate.id != editingTemplate?.id
+                && candidate.includes.isEmpty
+                && !includes.contains { $0.templateId == candidate.id }
+        }
+    }
+
+    private func includedTemplate(for include: RoutineInclude) -> RoutineTemplate? {
+        routineService.templates.first { $0.id == include.templateId }
     }
     
     /// Single dispatch point for "conditional → ConditionalHabitEditorView,
@@ -1085,8 +1284,7 @@ public struct RoutineBuilderView: View {
     private func newHabitEditorView(for newHabit: Habit) -> some View {
         habitEditor(for: newHabit, conditionalDepth: 0) { updatedHabit in
             withAnimation(.easeInOut) {
-                habits.append(updatedHabit)
-                updateHabitOrder()
+                appendHabits([updatedHabit])
             }
             newHabitBeingCreated = nil // Clear creation state
         }
@@ -1202,6 +1400,7 @@ public struct RoutineBuilderView: View {
             updatedTemplate.isDefault = false
             updatedTemplate.contextRule = finalContextRule
             updatedTemplate.weeklyTarget = weeklyTarget
+            updatedTemplate.includes = includes
 
             routineService.updateTemplate(updatedTemplate)
         } else {
@@ -1212,7 +1411,8 @@ public struct RoutineBuilderView: View {
                 color: templateColor,
                 isDefault: false,
                 contextRule: finalContextRule,
-                weeklyTarget: weeklyTarget
+                weeklyTarget: weeklyTarget,
+                includes: includes
             )
             
             routineService.addTemplate(template)
@@ -1446,4 +1646,126 @@ public struct RoutineBuilderView: View {
 #Preview {
     RoutineBuilderView()
         .environment(RoutineService())
+}
+
+
+// MARK: - Routine Includes
+
+/// One row in the builder list: either a loose habit or a linked routine block.
+enum BuilderItem: Identifiable {
+    case habit(Habit)
+    case include(RoutineInclude)
+
+    var id: UUID {
+        switch self {
+        case .habit(let habit): habit.id
+        case .include(let include): include.id
+        }
+    }
+
+    var order: Int {
+        switch self {
+        case .habit(let habit): habit.order
+        case .include(let include): include.order
+        }
+    }
+}
+
+/// Pick a routine to include as a block.
+struct IncludeRoutinePickerView: View {
+    @Environment(\.dismiss) private var dismiss
+
+    let templates: [RoutineTemplate]
+    let onSelect: (RoutineTemplate) -> Void
+
+    var body: some View {
+        NavigationStack {
+            List {
+                if templates.isEmpty {
+                    Text("No routines available to include.")
+                        .foregroundStyle(.secondary)
+                } else {
+                    Section {
+                        ForEach(templates) { template in
+                            Button {
+                                onSelect(template)
+                                dismiss()
+                            } label: {
+                                HStack {
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(template.name)
+                                            .foregroundStyle(.primary)
+                                        Text("\(template.activeHabitsCount) habits • \(template.formattedDuration)")
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                    }
+                                    Spacer()
+                                    Image(systemName: "plus.circle")
+                                        .foregroundStyle(.blue)
+                                }
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    } footer: {
+                        Text("The block stays linked: edits to the routine you pick show up here automatically.")
+                    }
+                }
+            }
+            .scrollContentBackground(.hidden)
+            .appBackground()
+            .navigationTitle("Include Routine")
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
+            }
+        }
+    }
+}
+
+/// Read-only look at what an included block contributes.
+struct IncludedRoutinePreviewView: View {
+    @Environment(\.dismiss) private var dismiss
+
+    let template: RoutineTemplate
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section {
+                    ForEach(template.habits.filter(\.isActive)) { habit in
+                        HStack(spacing: 10) {
+                            Image(systemName: habit.type.iconName)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .frame(width: 20)
+                            Text(habit.name)
+                            Spacer()
+                            Text(habit.type.description)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                } header: {
+                    Text("\(template.activeHabitsCount) habits • \(template.formattedDuration)")
+                } footer: {
+                    Text("Edit these in the \(template.name) routine — changes apply everywhere it's included.")
+                }
+            }
+            .scrollContentBackground(.hidden)
+            .appBackground()
+            .navigationTitle(template.name)
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") { dismiss() }
+                }
+            }
+        }
+    }
 }

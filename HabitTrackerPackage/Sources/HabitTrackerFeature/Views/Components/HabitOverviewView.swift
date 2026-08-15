@@ -7,12 +7,30 @@ struct HabitOverviewView: View {
 
     @Environment(ThemeManager.self) private var themeManager
 
+    /// True when this routine is composed of more than one block, i.e. worth
+    /// labelling where each block starts.
+    private var showsBlockLabels: Bool {
+        Set(data.activeHabits.compactMap(\.blockName)).count > 1
+    }
+
+    /// The habit at `index` opens a new block (first habit, or the block name
+    /// changed from the previous habit).
+    private func startsBlock(at index: Int) -> Bool {
+        guard showsBlockLabels, let name = data.activeHabits[index].blockName else { return false }
+        guard index > 0 else { return true }
+        return data.activeHabits[index - 1].blockName != name
+    }
+
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
                 ForEach(Array(data.activeHabits.enumerated()), id: \.element.id) { index, habit in
                     let isCompleted = data.completions.contains(where: { $0.habitId == habit.id })
                     let isCurrent = data.currentHabit?.id == habit.id
+
+                    if startsBlock(at: index), let blockName = habit.blockName {
+                        blockDivider(blockName, isFirst: index == 0)
+                    }
 
                     Button {
                         onHabitTap(index)
@@ -66,6 +84,26 @@ struct HabitOverviewView: View {
             .padding(.horizontal, 16)
             .padding(.vertical, 10)
         }
+    }
+
+    /// Small "── Core Morning" marker introducing an included block.
+    private func blockDivider(_ name: String, isFirst: Bool) -> some View {
+        HStack(spacing: 6) {
+            if !isFirst {
+                Rectangle()
+                    .fill(Theme.hairline)
+                    .frame(width: 12, height: 1)
+            }
+
+            Text(name)
+                .font(.system(size: 9, design: .rounded).weight(.semibold))
+                .textCase(.uppercase)
+                .tracking(0.4)
+                .foregroundStyle(.tertiary)
+                .lineLimit(1)
+        }
+        .padding(.leading, isFirst ? 0 : 2)
+        .accessibilityLabel("Block: \(name)")
     }
 
     private func habitStatusLabel(for habit: Habit) -> String {

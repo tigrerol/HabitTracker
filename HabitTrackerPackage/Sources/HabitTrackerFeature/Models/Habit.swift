@@ -12,7 +12,11 @@ public struct Habit: Identifiable, Codable, Hashable, Sendable {
     public var order: Int
     public var isActive: Bool
     public let createdAt: Date
-    
+    /// Name of the routine this habit came from, set only on a resolved
+    /// (composed) template so execution can label included blocks. Never set
+    /// on a stored template.
+    public var blockName: String?
+
     public init(
         id: UUID = UUID(),
         name: String,
@@ -22,7 +26,8 @@ public struct Habit: Identifiable, Codable, Hashable, Sendable {
         color: String = "#007AFF",
         order: Int = 0,
         isActive: Bool = true,
-        createdAt: Date = Date()
+        createdAt: Date = Date(),
+        blockName: String? = nil
     ) {
         self.id = id
         self.name = name
@@ -33,6 +38,7 @@ public struct Habit: Identifiable, Codable, Hashable, Sendable {
         self.order = order
         self.isActive = isActive
         self.createdAt = createdAt
+        self.blockName = blockName
     }
 }
 
@@ -49,7 +55,8 @@ extension Habit {
             color: color,
             order: order,
             isActive: isActive,
-            createdAt: createdAt
+            createdAt: createdAt,
+            blockName: blockName
         )
     }
 

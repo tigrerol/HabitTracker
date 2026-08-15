@@ -99,7 +99,14 @@ struct SmartTemplateSelectionView: View {
             }
         } message: {
             if let template = templateToDelete {
-                Text(String(localized: "SmartTemplateSelectionView.DeleteAlert.Message", bundle: .module).replacingOccurrences(of: "%@", with: template.name))
+                let wrappers = routineService.templatesIncluding(template.id)
+                let base = String(localized: "SmartTemplateSelectionView.DeleteAlert.Message", bundle: .module)
+                    .replacingOccurrences(of: "%@", with: template.name)
+                if wrappers.isEmpty {
+                    Text(base)
+                } else {
+                    Text(base + "\n\nIt's included in \(wrappers.map(\.name).joined(separator: ", ")) — those routines will lose this block.")
+                }
             }
         }
     }
@@ -276,12 +283,17 @@ struct SmartTemplateSelectionView: View {
                     .font(.system(.title3, design: .rounded, weight: .bold))
                     .foregroundStyle(.primary)
 
+                let resolved = routineService.resolvedTemplate(template)
                 HStack(spacing: 10) {
                     Label(
-                        String(format: String(localized: "SmartTemplateSelectionView.HabitsCount", bundle: .module), template.activeHabitsCount),
+                        String(format: String(localized: "SmartTemplateSelectionView.HabitsCount", bundle: .module), resolved.activeHabitsCount),
                         systemImage: "list.bullet"
                     )
-                    Label(template.formattedDuration, systemImage: "clock")
+                    Label(resolved.formattedDuration, systemImage: "clock")
+
+                    if !template.includes.isEmpty {
+                        Image(systemName: "link")
+                    }
 
                     ContextMatchIcons(rule: template.contextRule, context: routineService.routineSelector.currentContext)
                 }
@@ -571,8 +583,13 @@ private struct CompactTemplateCard: View {
                         isSource: true
                     )
 
+                let resolved = routineService.resolvedTemplate(template)
                 HStack(spacing: 6) {
-                    Text("\(String(format: String(localized: "SmartTemplateSelectionView.HabitsCount", bundle: .module), template.activeHabitsCount)) • \(template.formattedDuration)")
+                    if !template.includes.isEmpty {
+                        Image(systemName: "link")
+                            .font(.system(size: 9))
+                    }
+                    Text("\(String(format: String(localized: "SmartTemplateSelectionView.HabitsCount", bundle: .module), resolved.activeHabitsCount)) • \(resolved.formattedDuration)")
                     ContextMatchIcons(rule: template.contextRule, context: routineService.routineSelector.currentContext)
                 }
                 .font(.caption)
@@ -630,7 +647,7 @@ private struct CompactTemplateCard: View {
         )
         .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(template.name), \(template.activeHabitsCount) habits, \(template.formattedDuration)\(isSelected ? ", selected" : "")")
+        .accessibilityLabel("\(template.name), \(routineService.resolvedTemplate(template).activeHabitsCount) habits, \(routineService.resolvedTemplate(template).formattedDuration)\(isSelected ? ", selected" : "")")
         .accessibilityAddTraits(.isButton)
         .onTapGesture {
             onTap()

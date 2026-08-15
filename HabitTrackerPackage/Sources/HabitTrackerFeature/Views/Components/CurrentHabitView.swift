@@ -10,6 +10,11 @@ struct CurrentHabitView: View {
 
     @Environment(ThemeManager.self) private var themeManager
 
+    /// Only worth naming the block when the routine actually has several.
+    private var showsBlockName: Bool {
+        Set(data.activeHabits.compactMap(\.blockName)).count > 1
+    }
+
     init(
         habit: Habit,
         data: RoutineExecutionView.SessionDisplayData,
@@ -44,6 +49,16 @@ struct CurrentHabitView: View {
                 }
 
                 VStack(spacing: 4) {
+                    // Which included block this habit came from, when the
+                    // routine is composed of several.
+                    if let blockName = habit.blockName, showsBlockName {
+                        Text(blockName)
+                            .font(.system(size: 11, design: .rounded).weight(.semibold))
+                            .textCase(.uppercase)
+                            .tracking(0.6)
+                            .foregroundStyle(.tertiary)
+                    }
+
                     TruncatableText(text: habit.name, lineLimit: 2)
                         .font(.system(.title2, design: .rounded, weight: .bold))
                         .multilineTextAlignment(.center)

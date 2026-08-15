@@ -13,7 +13,10 @@ public final class DataExportService {
     /// Export all app data to JSON format
     public func exportData() -> ExportData {
         return ExportData(
-            routines: routineService.templates,
+            // Wrapper routines are flattened on the way out: import re-IDs every
+            // routine, so a reference to another routine can't survive the trip.
+            // Exporting resolved habits keeps files self-contained.
+            routines: routineService.templates.map { routineService.resolvedTemplate($0) },
             customLocations: routineService.routineSelector.locationCoordinator.getAllCustomLocations(),
             savedLocations: routineService.routineSelector.locationCoordinator.getSavedLocations(),
             dayCategories: DayCategoryManager.shared.getAllCategories(),

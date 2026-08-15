@@ -13,6 +13,9 @@ public struct RoutineTemplate: Identifiable, Codable, Hashable, Sendable {
     public var lastUsedAt: Date?
     public var contextRule: RoutineContextRule?
     public var weeklyTarget: Int?
+    /// Live references to other routines whose habits get spliced in at start.
+    /// Resolve with `RoutineComposer` before running or measuring a template.
+    public var includes: [RoutineInclude]
 
     public init(
         id: UUID = UUID(),
@@ -24,8 +27,10 @@ public struct RoutineTemplate: Identifiable, Codable, Hashable, Sendable {
         createdAt: Date = Date(),
         lastUsedAt: Date? = nil,
         contextRule: RoutineContextRule? = nil,
-        weeklyTarget: Int? = nil
+        weeklyTarget: Int? = nil,
+        includes: [RoutineInclude] = []
     ) {
+        self.includes = includes.sorted { $0.order < $1.order }
         self.id = id
         self.name = name
         self.description = description
@@ -36,6 +41,31 @@ public struct RoutineTemplate: Identifiable, Codable, Hashable, Sendable {
         self.lastUsedAt = lastUsedAt
         self.contextRule = contextRule
         self.weeklyTarget = weeklyTarget
+    }
+
+    // MARK: - Codable
+
+    enum CodingKeys: String, CodingKey {
+        case id, name, description, habits, color, isDefault
+        case createdAt, lastUsedAt, contextRule, weeklyTarget, includes
+    }
+
+    /// Hand-written so templates encoded before routine includes existed
+    /// (export files, paused-session snapshots) still decode.
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        name = try container.decode(String.self, forKey: .name)
+        description = try container.decodeIfPresent(String.self, forKey: .description)
+        habits = try container.decode([Habit].self, forKey: .habits).sorted { $0.order < $1.order }
+        color = try container.decode(String.self, forKey: .color)
+        isDefault = try container.decode(Bool.self, forKey: .isDefault)
+        createdAt = try container.decode(Date.self, forKey: .createdAt)
+        lastUsedAt = try container.decodeIfPresent(Date.self, forKey: .lastUsedAt)
+        contextRule = try container.decodeIfPresent(RoutineContextRule.self, forKey: .contextRule)
+        weeklyTarget = try container.decodeIfPresent(Int.self, forKey: .weeklyTarget)
+        includes = (try container.decodeIfPresent([RoutineInclude].self, forKey: .includes) ?? [])
+            .sorted { $0.order < $1.order }
     }
 }
 
