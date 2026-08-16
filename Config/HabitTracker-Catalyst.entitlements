@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Mac Catalyst entitlements. Selected via
+	     CODE_SIGN_ENTITLEMENTS[sdk=macosx*] in Config/Shared.xcconfig, so the
+	     iOS build keeps using Config/HabitTracker.entitlements untouched. -->
+
+	<!-- Required: macOS apps built with Catalyst must be sandboxed. -->
+	<key>com.apple.security.app-sandbox</key>
+	<true/>
+
+	<!-- Context-based routine selection uses CoreLocation, which a sandboxed
+	     Mac app has to ask for by name. -->
+	<key>com.apple.security.personal-information.location</key>
+	<true/>
+
+	<!-- App groups are team-prefixed on macOS, unlike iOS. -->
+	<key>com.apple.security.application-groups</key>
+	<array>
+		<string>$(TeamIdentifierPrefix)group.com.tigrerol.habittracker</string>
+	</array>
+</dict>
+</plist>

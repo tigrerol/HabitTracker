@@ -1,5 +1,9 @@
-import ActivityKit
 import SwiftUI
+
+// Live Activities don't exist on the Mac: ActivityKit's types are marked
+// unavailable in Mac Catalyst, so everything built on them compiles out there.
+#if !targetEnvironment(macCatalyst)
+import ActivityKit
 
 // MARK: - Live Activity Attributes
 
@@ -39,6 +43,7 @@ public struct TimerActivityAttributes: ActivityAttributes {
         self.habitId = habitId
     }
 }
+#endif
 
 // MARK: - Time Formatting Extension
 

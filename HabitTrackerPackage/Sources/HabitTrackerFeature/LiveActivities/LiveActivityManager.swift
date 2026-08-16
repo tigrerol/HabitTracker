@@ -1,6 +1,12 @@
-@preconcurrency import ActivityKit
 import SwiftUI
 import Foundation
+
+// Live Activities are iOS-only — ActivityKit's types are unavailable in Mac
+// Catalyst. The manager keeps its full API on every platform so call sites
+// stay guard-free; on the Mac each entry point is simply a no-op.
+#if !targetEnvironment(macCatalyst)
+@preconcurrency import ActivityKit
+#endif
 
 /// Manages Live Activities for timer habits
 @MainActor
@@ -13,24 +19,29 @@ public final class LiveActivityManager {
 
     // MARK: - Properties
 
+    #if !targetEnvironment(macCatalyst)
     public private(set) var activeActivities: [String: Activity<TimerActivityAttributes>] = [:]
-    
+    #endif
+
     private init() {
+        #if !targetEnvironment(macCatalyst)
         // Load existing activities on init
         loadExistingActivities()
+        #endif
     }
-    
+
     // MARK: - Public Methods
-    
+
     /// Start a Live Activity for a timer habit
     public func startTimerActivity(
         for habit: Habit,
         duration: TimeInterval,
         startTime: Date = Date()
     ) async {
+        #if !targetEnvironment(macCatalyst)
         // Only support timer habits
         guard case .timer = habit.type else { return }
-        
+
         // Check if Live Activities are supported
         guard ActivityAuthorizationInfo().areActivitiesEnabled else {
             LoggingService.shared.warning("Live Activities are not enabled", category: .app)
@@ -64,8 +75,9 @@ public final class LiveActivityManager {
         } catch {
             LoggingService.shared.error("Failed to start Live Activity: \(error.localizedDescription)", category: .app)
         }
+        #endif
     }
-    
+
     /// Update an existing Live Activity with new timer state
     public func updateTimerActivity(
         for habitId: String,
@@ -73,6 +85,7 @@ public final class LiveActivityManager {
         timeRemaining: TimeInterval,
         isRunning: Bool
     ) async {
+        #if !targetEnvironment(macCatalyst)
         guard let activity = activeActivities[habitId] else { return }
         
         let currentState = activity.content.state
@@ -94,10 +107,12 @@ public final class LiveActivityManager {
         // Re-fetch the activity right before the await to avoid data race
         guard let activityToUpdate = activeActivities[habitId] else { return }
         await activityToUpdate.update(updatedContent)
+        #endif
     }
-    
+
     /// Complete a timer habit and end its Live Activity
     public func completeTimerActivity(for habitId: String, actualDuration: TimeInterval? = nil) async {
+        #if !targetEnvironment(macCatalyst)
         guard let activity = activeActivities[habitId] else { return }
         
         let currentState = activity.content.state
@@ -134,34 +149,44 @@ public final class LiveActivityManager {
         } catch {
             LoggingService.shared.error("Failed to complete Live Activity: \(error.localizedDescription)", category: .app)
         }
+        #endif
     }
-    
+
     /// End a Live Activity for a specific habit
     public func endActivity(for habitId: String) async {
+        #if !targetEnvironment(macCatalyst)
         guard let activityToEnd = activeActivities[habitId] else { return }
         await activityToEnd.end(nil, dismissalPolicy: .default)
         activeActivities.removeValue(forKey: habitId)
+        #endif
     }
-    
+
     /// End all active Live Activities
     public func endAllActivities() async {
+        #if !targetEnvironment(macCatalyst)
         // Copy the habit IDs to avoid modifying dictionary while iterating
         let habitIds = Array(activeActivities.keys)
-        
+
         for habitId in habitIds {
             guard let activity = activeActivities[habitId] else { continue }
             await activity.end(nil, dismissalPolicy: .default)
         }
         activeActivities.removeAll()
+        #endif
     }
-    
+
     /// Check if a habit has an active Live Activity
     public func hasActiveActivity(for habitId: String) -> Bool {
+        #if targetEnvironment(macCatalyst)
+        return false
+        #else
         return activeActivities[habitId] != nil
+        #endif
     }
-    
+
     // MARK: - Private Methods
-    
+
+    #if !targetEnvironment(macCatalyst)
     private func loadExistingActivities() {
         Task {
             // Load activities that might still be active from previous app sessions
@@ -170,6 +195,7 @@ public final class LiveActivityManager {
             }
         }
     }
+    #endif
 }
 
 // MARK: - Color Extension for Hex Conversion

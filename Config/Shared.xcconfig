@@ -12,7 +12,7 @@ PRODUCT_BUNDLE_IDENTIFIER = com.pregs.habittracker
 MARKETING_VERSION = 1.0
 // Auto-increment build number based on git commits or timestamp
 // This will be dynamically set by build scripts
-CURRENT_PROJECT_VERSION = 260816.1951
+CURRENT_PROJECT_VERSION = 260816.2000
 
 // ==========================================
 // Platform Configuration
@@ -21,6 +21,12 @@ IPHONEOS_DEPLOYMENT_TARGET = 26.0
 
 // (1 == iPhone, 2 == iPad)
 TARGETED_DEVICE_FAMILY = 1,2
+
+// Mac Catalyst — run the iOS app as a real Mac app (Apple Silicon).
+// Mac idiom renders at 100% with AppKit-style controls rather than the
+// scaled-down iPad idiom.
+SUPPORTS_MACCATALYST = YES
+MACCATALYST_OPTIMIZE_FOR_MAC_IDIOM = YES
 
 // ==========================================
 // Info PLIST
@@ -42,3 +48,7 @@ NSSupportsLiveActivities = YES
 // ==========================================
 // AI agents can modify Config/HabitTracker.entitlements to add capabilities
 CODE_SIGN_ENTITLEMENTS = Config/HabitTracker.entitlements
+
+// Mac Catalyst needs its own set: macOS requires the App Sandbox, and
+// sandboxed Mac apps must declare location access explicitly.
+CODE_SIGN_ENTITLEMENTS[sdk=macosx*] = Config/HabitTracker-Catalyst.entitlements
