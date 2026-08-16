@@ -135,8 +135,7 @@ struct RoutineModeServiceTests {
         service.addMode(mode)
         service.activate(modeId: mode.id)
 
-        // Let the fire-and-forget persist task run.
-        await Task.yield()
+        await service.ensurePersisted()
 
         let reloaded = RoutineModeService(persistenceService: UserDefaultsPersistenceService(userDefaults: defaults))
         await reloaded.ensureLoaded()
@@ -193,5 +192,98 @@ struct RoutineModeServiceTests {
         let result = await routineService.getSmartTemplateAndSort()
         #expect(result.sorted.map(\.id) == [all[0].id])
         #expect(result.best?.id == all[0].id)
+    }
+
+    @Test("A routine built during a mode joins that mode")
+    func newTemplateJoinsActiveMode() async throws {
+        let (service, _) = try makeService()
+        await service.ensureLoaded()
+        let existing = templates(2)
+
+        let mode = RoutineMode(name: "Vacation", templateIds: [existing[0].id])
+        service.addMode(mode)
+        service.activate(modeId: mode.id)
+
+        let new = RoutineTemplate(name: "Beach Stretch")
+        service.addTemplateToActiveMode(new.id, existing: existing)
+
+        #expect(service.modes[0].templateIds == [existing[0].id, new.id])
+        #expect(service.visibleTemplates(from: existing + [new]).map(\.id) == [existing[0].id, new.id])
+    }
+
+    @Test("No active mode leaves membership untouched")
+    func newTemplateWithoutActiveModeChangesNothing() async throws {
+        let (service, _) = try makeService()
+        await service.ensureLoaded()
+        let existing = templates(2)
+
+        let mode = RoutineMode(name: "Vacation", templateIds: [existing[0].id])
+        service.addMode(mode)
+
+        service.addTemplateToActiveMode(UUID(), existing: existing)
+
+        #expect(service.modes[0].templateIds == [existing[0].id])
+    }
+
+    @Test("A fail-open mode doesn't adopt the new routine")
+    func newTemplateSkipsFailOpenMode() async throws {
+        let (service, _) = try makeService()
+        await service.ensureLoaded()
+        let existing = templates(2)
+
+        // Empty mode — shows everything, so adopting would collapse the list.
+        let empty = RoutineMode(name: "Vacation")
+        service.addMode(empty)
+        service.activate(modeId: empty.id)
+
+        let new = RoutineTemplate(name: "Beach Stretch")
+        service.addTemplateToActiveMode(new.id, existing: existing)
+
+        #expect(service.modes[0].templateIds.isEmpty)
+        #expect(service.visibleTemplates(from: existing + [new]).count == 3)
+    }
+
+    @Test("A mode whose routines were all deleted doesn't adopt the new routine")
+    func newTemplateSkipsStaleMode() async throws {
+        let (service, _) = try makeService()
+        await service.ensureLoaded()
+        let existing = templates(2)
+
+        let stale = RoutineMode(name: "Travel", templateIds: [UUID()])
+        service.addMode(stale)
+        service.activate(modeId: stale.id)
+
+        let new = RoutineTemplate(name: "Airport Walk")
+        service.addTemplateToActiveMode(new.id, existing: existing)
+
+        #expect(service.modes[0].templateIds.contains(new.id) == false)
+    }
+
+    @Test("Adding a routine through RoutineService enrolls it in the active mode")
+    func addTemplateEnrollsInActiveMode() async throws {
+        let (modeService, _) = try makeService("add-mode")
+        await modeService.ensureLoaded()
+
+        let defaults = try makeIsolatedDefaults("add-mode-templates")
+        let routineService = RoutineService(
+            persistenceService: UserDefaultsPersistenceService(userDefaults: defaults),
+            modeService: modeService
+        )
+        await routineService.ensureLoaded()
+
+        let existing = routineService.templates
+        try #require(existing.count > 1)
+
+        let mode = RoutineMode(name: "Vacation", templateIds: [existing[0].id])
+        modeService.addMode(mode)
+        modeService.activate(modeId: mode.id)
+
+        let new = RoutineTemplate(name: "Beach Stretch")
+        routineService.addTemplate(new)
+
+        #expect(modeService.modes[0].templateIds.contains(new.id))
+
+        let result = await routineService.getSmartTemplateAndSort()
+        #expect(result.sorted.contains { $0.id == new.id })
     }
 }

@@ -43,8 +43,8 @@ struct RoutineServiceStreaksTests {
         let untracked = RoutineTemplate(name: "Untracked", habits: [Habit(name: "y", type: .task(subtasks: []))])
         await stub.setTemplates([tracked, untracked])
         let service = RoutineService(persistenceService: stub)
-        // Let the async loader finish.
-        try await Task.sleep(for: .milliseconds(50))
+        // Let the async loader finish (a fixed sleep flaked under parallel load).
+        await service.ensureLoaded()
 
         let streaks = await service.computeStreaks(now: Date())
         #expect(streaks.count == 1)

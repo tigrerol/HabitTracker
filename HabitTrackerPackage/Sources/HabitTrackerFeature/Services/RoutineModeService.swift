@@ -14,6 +14,7 @@ public final class RoutineModeService {
 
     private let persistenceService: any PersistenceServiceProtocol
     private var loadTask: Task<Void, Never>?
+    private var persistTask: Task<Void, Never>?
 
     public init(persistenceService: any PersistenceServiceProtocol = UserDefaultsPersistenceService()) {
         self.persistenceService = persistenceService
@@ -23,6 +24,11 @@ public final class RoutineModeService {
     /// Suspend until the initial load finished (tests, deep links).
     public func ensureLoaded() async {
         await loadTask?.value
+    }
+
+    /// Suspend until the last mutation has been written (tests).
+    public func ensurePersisted() async {
+        await persistTask?.value
     }
 
     /// The active mode, or nil when every routine is visible.
@@ -67,6 +73,28 @@ public final class RoutineModeService {
         if activeModeId == id {
             activeModeId = nil
         }
+        persist()
+    }
+
+    /// Enroll a freshly built routine in the active mode so it shows up right away.
+    ///
+    /// A routine created during Vacation belongs to Vacation — without this it
+    /// would be filtered out the moment it was saved.
+    ///
+    /// Skipped when the active mode isn't actually filtering (it has no
+    /// surviving members, so it shows everything): enrolling there would
+    /// collapse the Today list to just the new routine.
+    ///
+    /// - Parameters:
+    ///   - templateId: The new routine.
+    ///   - templates: The routines that existed *before* this one.
+    public func addTemplateToActiveMode(_ templateId: UUID, existing templates: [RoutineTemplate]) {
+        guard let activeModeId,
+              let index = modes.firstIndex(where: { $0.id == activeModeId }),
+              templates.contains(where: { modes[index].templateIds.contains($0.id) }),
+              !modes[index].templateIds.contains(templateId)
+        else { return }
+        modes[index].templateIds.insert(templateId)
         persist()
     }
 
@@ -125,7 +153,10 @@ public final class RoutineModeService {
 
     private func persist() {
         let settings = RoutineModeSettings(modes: modes, activeModeId: activeModeId)
-        Task { @MainActor in
+        let previous = persistTask
+        persistTask = Task { @MainActor in
+            // Serialize writes so a burst of edits can't land out of order.
+            await previous?.value
             do {
                 try await persistenceService.save(settings, forKey: PersistenceKeys.routineModes)
             } catch {

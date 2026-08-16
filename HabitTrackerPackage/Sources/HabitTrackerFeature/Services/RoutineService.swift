@@ -278,6 +278,9 @@ public final class RoutineService {
 
     /// Add a new template
     public func addTemplate(_ template: RoutineTemplate) {
+        // A routine built while a mode is active belongs to that mode —
+        // otherwise it would disappear the moment it was saved.
+        modeService.addTemplateToActiveMode(template.id, existing: templates)
         templates.append(template)
         
         // If this is the first template or marked as default, make it default
