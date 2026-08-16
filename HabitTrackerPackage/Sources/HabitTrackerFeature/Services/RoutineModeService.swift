@@ -21,6 +21,12 @@ public final class RoutineModeService {
         load()
     }
 
+    /// Re-read from storage. Called by `UbiquitousSettingsSync` when iCloud
+    /// delivers modes edited on another device, since modes live in memory here.
+    public func reload() {
+        load()
+    }
+
     /// Suspend until the initial load finished (tests, deep links).
     public func ensureLoaded() async {
         await loadTask?.value

@@ -15,6 +15,12 @@ public final class LocationCategoryManager: Sendable {
         loadSettings()
     }
     
+    /// Re-read from storage. Called by `UbiquitousSettingsSync` when iCloud
+    /// delivers categories edited on another device.
+    public func reload() {
+        loadSettings()
+    }
+
     /// Get current location category settings
     public func getLocationCategorySettings() -> LocationCategorySettings {
         settings

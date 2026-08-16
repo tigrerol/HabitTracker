@@ -15,6 +15,12 @@ public final class DayCategoryManager: Sendable {
         loadSettings()
     }
 
+    /// Re-read from storage. Called by `UbiquitousSettingsSync` when iCloud
+    /// delivers categories edited on another device.
+    public func reload() {
+        loadSettings()
+    }
+
     /// Get current day category settings
     public func getDayCategorySettings() -> DayCategorySettings {
         settings

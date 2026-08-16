@@ -48,6 +48,9 @@ public struct MorningRoutineView: View {
             if DataModelConfiguration.isUsingFallbackStore {
                 showingStorageFailureAlert = true
             }
+            // Preference data rides iCloud's key-value store rather than the
+            // SwiftData/CloudKit store; this starts that mirroring.
+            UbiquitousSettingsSync.shared.start()
         }
         .alert("Your data couldn't be loaded", isPresented: $showingStorageFailureAlert) {
             Button("OK", role: .cancel) { }
