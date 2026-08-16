@@ -34,6 +34,10 @@
 	<key>com.apple.developer.ubiquity-kvstore-identifier</key>
 	<string>$(TeamIdentifierPrefix)$(CFBundleIdentifier)</string>
 
+	<!-- CloudKit's silent push, development/production per build config. -->
+	<key>aps-environment</key>
+	<string>$(APS_ENVIRONMENT)</string>
+
 	<!-- A sandboxed Mac app needs outgoing network access to reach CloudKit. -->
 	<key>com.apple.security.network.client</key>
 	<true/>

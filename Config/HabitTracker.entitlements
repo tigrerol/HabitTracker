@@ -20,6 +20,12 @@
 	<key>com.apple.developer.ubiquity-kvstore-identifier</key>
 	<string>$(TeamIdentifierPrefix)$(CFBundleIdentifier)</string>
 
+	<!-- CloudKit tells the other device to sync via a silent push, which needs
+	     this. development/production is picked per build configuration in
+	     Debug.xcconfig and Release.xcconfig. -->
+	<key>aps-environment</key>
+	<string>$(APS_ENVIRONMENT)</string>
+
 	<!-- AI agents can safely modify this file to add capabilities -->
 	
 	<!-- Example entitlements (commented out by default):

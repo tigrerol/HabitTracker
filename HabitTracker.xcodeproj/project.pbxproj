@@ -67,6 +67,7 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Debug.xcconfig,
+				HabitTrackerInfo.plist,
 				Release.xcconfig,
 				Shared.xcconfig,
 				Tests.xcconfig,
@@ -252,7 +253,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 2640;
-				LastUpgradeCheck = 2630;
+				LastUpgradeCheck = 2660;
 				TargetAttributes = {
 					0D8820582F9810CE0038289B = {
 						CreatedOnToolsVersion = 26.4.1;

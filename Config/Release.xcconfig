@@ -4,6 +4,10 @@
 
 #include "Shared.xcconfig"
 
+// Expanded into the aps-environment entitlement, which CloudKit's silent
+// pushes require. Distribution builds talk to the production APNs.
+APS_ENVIRONMENT = production
+
 // Release-specific optimizations
 SWIFT_OPTIMIZATION_LEVEL = -O
 ENABLE_TESTABILITY = NO

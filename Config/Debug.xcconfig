@@ -4,5 +4,9 @@
 
 #include "Shared.xcconfig"
 
+// Expanded into the aps-environment entitlement, which CloudKit's silent
+// pushes require.
+APS_ENVIRONMENT = development
+
 // No additional debug-specific overrides needed
 // All debug settings use Xcode project defaults
