@@ -1,8 +1,59 @@
 import Foundation
+#if targetEnvironment(macCatalyst)
+import Security
+#endif
 
 public enum WidgetSharedConstants {
     public static let appGroupIdentifier = "group.com.tigrerol.habittracker"
     public static let snapshotFileName = "widget_snapshot.json"
+
+    /// Locate the shared container, working on both iOS and Mac Catalyst.
+    ///
+    /// macOS app groups are team-prefixed (`ABCDE12345.group.foo`) while iOS
+    /// uses the bare identifier, so one string can't serve both. Rather than
+    /// hardcode a team ID, the Mac build reads the group out of the entitlements
+    /// the binary was actually signed with — exact by construction, and it keeps
+    /// working if the signing team ever changes.
+    ///
+    /// Candidates are tried in order and the first that resolves wins, so a
+    /// wrong guess degrades to "try the other one" rather than a missing
+    /// container.
+    public static func containerURL(forAppGroup identifier: String) -> URL? {
+        for candidate in containerCandidates(for: identifier) {
+            if let url = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: candidate) {
+                return url
+            }
+        }
+        return nil
+    }
+
+    static func containerCandidates(for identifier: String) -> [String] {
+        #if targetEnvironment(macCatalyst)
+        // Prefer a signed group that matches this identifier — bare on the
+        // off-chance macOS ever stops prefixing, prefixed as it works today.
+        let signed = signedAppGroups().filter {
+            $0 == identifier || $0.hasSuffix("." + identifier)
+        }
+        return signed + [identifier]
+        #else
+        return [identifier]
+        #endif
+    }
+
+    #if targetEnvironment(macCatalyst)
+    /// The `com.apple.security.application-groups` entitlement of the running
+    /// binary, with `$(TeamIdentifierPrefix)` already expanded by codesign.
+    static func signedAppGroups() -> [String] {
+        guard let task = SecTaskCreateFromSelf(nil),
+              let value = SecTaskCopyValueForEntitlement(
+                  task,
+                  "com.apple.security.application-groups" as CFString,
+                  nil
+              ) as? [String]
+        else { return [] }
+        return value
+    }
+    #endif
 }
 
 public struct WidgetSnapshot: Codable, Sendable, Equatable {

@@ -15,8 +15,7 @@ public struct WidgetSnapshotStore: Sendable {
     }
 
     private var fileURL: URL? {
-        FileManager.default
-            .containerURL(forSecurityApplicationGroupIdentifier: appGroupIdentifier)?
+        WidgetSharedConstants.containerURL(forAppGroup: appGroupIdentifier)?
             .appendingPathComponent(fileName, isDirectory: false)
     }
 
