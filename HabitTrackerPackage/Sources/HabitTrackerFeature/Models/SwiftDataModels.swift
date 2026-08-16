@@ -3,21 +3,27 @@ import SwiftData
 import CoreLocation
 
 // MARK: - SwiftData Models
+//
+// CloudKit shapes these declarations: it rejects `@Attribute(.unique)`, and
+// every non-optional attribute needs a default value so a record synced from
+// another device can always be materialized. Identity is therefore enforced in
+// code — SwiftDataPersistenceService does diff-based upserts keyed by `id`,
+// which is what `.unique` was doing for us before.
 
 /// Persistent habit model for SwiftData
 @Model
 public final class PersistedHabit {
-    @Attribute(.unique) public var id: UUID
-    public var name: String
-    public var typeData: Data // Encoded HabitType
-    public var isOptional: Bool
+    public var id: UUID = UUID()
+    public var name: String = ""
+    public var typeData: Data = Data() // Encoded HabitType
+    public var isOptional: Bool = false
     public var notes: String?
-    public var colorHex: String
-    public var order: Int
-    public var isActive: Bool
-    public var createdAt: Date
-    public var modifiedAt: Date
-    
+    public var colorHex: String = "#000000"
+    public var order: Int = 0
+    public var isActive: Bool = true
+    public var createdAt: Date = Date()
+    public var modifiedAt: Date = Date()
+
     // Relationships
     public var template: PersistedRoutineTemplate?
 
@@ -78,14 +84,14 @@ public final class PersistedHabit {
 /// Persistent routine template model for SwiftData
 @Model
 public final class PersistedRoutineTemplate {
-    @Attribute(.unique) public var id: UUID
-    public var name: String
+    public var id: UUID = UUID()
+    public var name: String = ""
     public var templateDescription: String?
-    public var colorHex: String
-    public var isDefault: Bool
-    public var createdAt: Date
+    public var colorHex: String = "#000000"
+    public var isDefault: Bool = false
+    public var createdAt: Date = Date()
     public var lastUsedAt: Date?
-    public var modifiedAt: Date
+    public var modifiedAt: Date = Date()
     public var contextRuleData: Data? // Encoded RoutineContextRule
     public var weeklyTarget: Int?
     public var includesData: Data? // Encoded [RoutineInclude]
@@ -93,7 +99,11 @@ public final class PersistedRoutineTemplate {
     // Relationships
     @Relationship(deleteRule: .cascade, inverse: \PersistedHabit.template)
     public var habits: [PersistedHabit] = []
-    
+
+    /// Nullify, not cascade: deleting a routine has always left its session
+    /// history behind. The inverse is spelled out because CloudKit requires
+    /// every relationship to have one.
+    @Relationship(deleteRule: .nullify, inverse: \PersistedRoutineSession.template)
     public var sessions: [PersistedRoutineSession] = []
     
     public init(from template: RoutineTemplate) {
@@ -199,11 +209,11 @@ self.contextRuleData = template.contextRule.flatMap { try? JSONEncoder().encode(
 /// Persistent routine session model for SwiftData
 @Model
 public final class PersistedRoutineSession {
-    @Attribute(.unique) public var id: UUID
-    public var startedAt: Date
+    public var id: UUID = UUID()
+    public var startedAt: Date = Date()
     public var completedAt: Date?
-    public var currentHabitIndex: Int
-    public var modificationsData: Data // Encoded [SessionModification]
+    public var currentHabitIndex: Int = 0
+    public var modificationsData: Data = Data() // Encoded [SessionModification]
     
     // Relationships
     public var template: PersistedRoutineTemplate?
@@ -257,11 +267,11 @@ public final class PersistedRoutineSession {
 /// Persistent habit completion model for SwiftData
 @Model
 public final class PersistedHabitCompletion {
-    @Attribute(.unique) public var id: UUID
-    public var habitId: UUID
-    public var completedAt: Date
+    public var id: UUID = UUID()
+    public var habitId: UUID = UUID()
+    public var completedAt: Date = Date()
     public var duration: TimeInterval?
-    public var isSkipped: Bool
+    public var isSkipped: Bool = false
     public var notes: String?
     
     // Relationships
@@ -292,11 +302,11 @@ public final class PersistedHabitCompletion {
 /// Persistent mood rating model for SwiftData
 @Model
 public final class PersistedMoodRating {
-    @Attribute(.unique) public var id: UUID
-    public var sessionId: UUID
-    public var ratingValue: String // Mood.rawValue
+    public var id: UUID = UUID()
+    public var sessionId: UUID = UUID()
+    public var ratingValue: String = "" // Mood.rawValue
     public var notes: String?
-    public var createdAt: Date
+    public var createdAt: Date = Date()
     
     public init(from moodRating: MoodRating) {
         self.id = moodRating.id
@@ -322,11 +332,14 @@ public final class PersistedMoodRating {
 /// Persistent location data for SwiftData
 @Model
 public final class PersistedSavedLocation {
-    @Attribute(.unique) public var locationTypeRawValue: String
-    public var coordinateData: Data // Encoded LocationCoordinate
+    /// Identity, deduplicated by SwiftDataPersistenceService.saveSavedLocations
+    /// rather than a unique constraint — so if two devices each create a row for
+    /// the same type, the next save collapses them.
+    public var locationTypeRawValue: String = ""
+    public var coordinateData: Data = Data() // Encoded LocationCoordinate
     public var name: String?
-    public var radius: Double
-    public var dateCreated: Date
+    public var radius: Double = 0
+    public var dateCreated: Date = Date()
     
     public init(from savedLocation: SavedLocation, locationType: LocationType) {
         self.locationTypeRawValue = locationType.rawValue
@@ -356,13 +369,13 @@ public final class PersistedSavedLocation {
 /// Persistent custom location data for SwiftData
 @Model
 public final class PersistedCustomLocation {
-    @Attribute(.unique) public var id: UUID
-    public var name: String
-    public var icon: String
+    public var id: UUID = UUID()
+    public var name: String = ""
+    public var icon: String = ""
     public var coordinateData: Data? // Encoded LocationCoordinate?
-    public var radius: Double
-    public var dateCreated: Date
-    public var modifiedAt: Date
+    public var radius: Double = 0
+    public var dateCreated: Date = Date()
+    public var modifiedAt: Date = Date()
     
     public init(from customLocation: CustomLocation) {
         self.id = customLocation.id
