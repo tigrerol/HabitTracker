@@ -82,14 +82,38 @@ public enum DataModelConfiguration {
         PersistedCustomLocation.self
     ]
 
-    /// Create the model container with schema versioning and migration plan
+    /// The CloudKit container backing sync between the user's devices.
+    /// Must match the identifier in both entitlements files.
+    public static let cloudKitContainerIdentifier = "iCloud.com.tigrerol.habittracker"
+
+    /// CloudKit *traps* rather than throws when the running process has no
+    /// entitlement for the container, which takes down the whole test runner —
+    /// the graceful fallback below can't catch a SIGTRAP. The xctest host has
+    /// no iCloud entitlement, so tests always run against a local store.
+    static var isRunningTests: Bool {
+        ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
+            || NSClassFromString("XCTestCase") != nil
+    }
+
+    private static var cloudKitDatabase: ModelConfiguration.CloudKitDatabase {
+        isRunningTests ? .none : .private(cloudKitContainerIdentifier)
+    }
+
+    /// Create the model container with schema versioning and migration plan.
+    ///
+    /// Routines, sessions, completions, mood, and locations sync through the
+    /// user's private CloudKit database. Preference data (modes, day
+    /// categories, time slots) isn't in this store — it travels via
+    /// `UbiquitousSettingsSync` instead. Paused and interrupted sessions stay
+    /// deliberately device-local: resuming a half-finished routine on a
+    /// different device isn't meaningful.
     public static func createModelContainer() throws -> ModelContainer {
         let schema = Schema(allModelTypes)
 
         let modelConfiguration = ModelConfiguration(
             schema: schema,
             isStoredInMemoryOnly: false,
-            cloudKitDatabase: .none
+            cloudKitDatabase: cloudKitDatabase
         )
 
         return try ModelContainer(

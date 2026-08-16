@@ -20,5 +20,22 @@
 	<array>
 		<string>$(TeamIdentifierPrefix)group.com.tigrerol.habittracker</string>
 	</array>
+
+	<!-- iCloud sync, same container as iOS — that shared identifier is what
+	     makes routines show up on both devices. -->
+	<key>com.apple.developer.icloud-services</key>
+	<array>
+		<string>CloudKit</string>
+	</array>
+	<key>com.apple.developer.icloud-container-identifiers</key>
+	<array>
+		<string>iCloud.com.tigrerol.habittracker</string>
+	</array>
+	<key>com.apple.developer.ubiquity-kvstore-identifier</key>
+	<string>$(TeamIdentifierPrefix)$(CFBundleIdentifier)</string>
+
+	<!-- A sandboxed Mac app needs outgoing network access to reach CloudKit. -->
+	<key>com.apple.security.network.client</key>
+	<true/>
 </dict>
 </plist>

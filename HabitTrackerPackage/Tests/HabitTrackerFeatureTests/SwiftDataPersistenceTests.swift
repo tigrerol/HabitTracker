@@ -113,7 +113,7 @@ struct SwiftDataPersistenceTests {
         for habit in habits {
             let persistedHabit = PersistedHabit(from: habit)
             persistedHabit.template = persisted
-            persisted.habits.append(persistedHabit)
+            persisted.habitList.append(persistedHabit)
         }
 
         let restored = persisted.toDomainModel()

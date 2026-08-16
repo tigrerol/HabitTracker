@@ -97,14 +97,23 @@ public final class PersistedRoutineTemplate {
     public var includesData: Data? // Encoded [RoutineInclude]
 
     // Relationships
+    //
+    // Optional because CloudKit demands it of every relationship; the
+    // non-optional accessors below keep call sites free of `?? []`.
     @Relationship(deleteRule: .cascade, inverse: \PersistedHabit.template)
-    public var habits: [PersistedHabit] = []
+    public var habits: [PersistedHabit]? = []
 
     /// Nullify, not cascade: deleting a routine has always left its session
     /// history behind. The inverse is spelled out because CloudKit requires
     /// every relationship to have one.
     @Relationship(deleteRule: .nullify, inverse: \PersistedRoutineSession.template)
-    public var sessions: [PersistedRoutineSession] = []
+    public var sessions: [PersistedRoutineSession]? = []
+
+    /// The habits of this routine, treating a nil relationship as empty.
+    public var habitList: [PersistedHabit] {
+        get { habits ?? [] }
+        set { habits = newValue }
+    }
     
     public init(from template: RoutineTemplate) {
         self.id = template.id
@@ -140,7 +149,7 @@ public final class PersistedRoutineTemplate {
             contextRule = nil
         }
 
-        let domainHabits = habits.map { $0.toDomainModel() }.sorted { $0.order < $1.order }
+        let domainHabits = habitList.map { $0.toDomainModel() }.sorted { $0.order < $1.order }
 
         let includes: [RoutineInclude]
         if let includesData {
@@ -188,21 +197,25 @@ self.contextRuleData = template.contextRule.flatMap { try? JSONEncoder().encode(
     }
     
     private func updateHabits(from newHabits: [Habit]) {
+        var current = habitList
+
         // Remove habits that no longer exist
-        habits.removeAll { persistedHabit in
+        current.removeAll { persistedHabit in
             !newHabits.contains { $0.id == persistedHabit.id }
         }
-        
+
         // Update or add habits
         for habit in newHabits {
-            if let existingHabit = habits.first(where: { $0.id == habit.id }) {
+            if let existingHabit = current.first(where: { $0.id == habit.id }) {
                 existingHabit.update(from: habit)
             } else {
                 let newPersistedHabit = PersistedHabit(from: habit)
                 newPersistedHabit.template = self
-                habits.append(newPersistedHabit)
+                current.append(newPersistedHabit)
             }
         }
+
+        habitList = current
     }
 }
 
@@ -218,8 +231,15 @@ public final class PersistedRoutineSession {
     // Relationships
     public var template: PersistedRoutineTemplate?
 
+    /// Optional for CloudKit; use `completionList` for a plain array.
     @Relationship(deleteRule: .cascade, inverse: \PersistedHabitCompletion.session)
-    public var completions: [PersistedHabitCompletion] = []
+    public var completions: [PersistedHabitCompletion]? = []
+
+    /// The completions of this session, treating a nil relationship as empty.
+    public var completionList: [PersistedHabitCompletion] {
+        get { completions ?? [] }
+        set { completions = newValue }
+    }
     
     /// NOTE: the `template` relationship is deliberately not an init parameter —
     /// set it only after the session is inserted into a ModelContext.
@@ -248,19 +268,23 @@ public final class PersistedRoutineSession {
     }
     
     private func updateCompletions(from newCompletions: [HabitCompletion]) {
+        var current = completionList
+
         // Remove completions that no longer exist
-        completions.removeAll { persistedCompletion in
+        current.removeAll { persistedCompletion in
             !newCompletions.contains { $0.id == persistedCompletion.id }
         }
-        
+
         // Add new completions
         for completion in newCompletions {
-            if !completions.contains(where: { $0.id == completion.id }) {
+            if !current.contains(where: { $0.id == completion.id }) {
                 let persistedCompletion = PersistedHabitCompletion(from: completion)
                 persistedCompletion.session = self
-                completions.append(persistedCompletion)
+                current.append(persistedCompletion)
             }
         }
+
+        completionList = current
     }
 }
 

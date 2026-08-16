@@ -257,7 +257,7 @@ public final class SwiftDataPersistenceService: PersistenceServiceProtocol {
                 modifications = []
             }
 
-            let completions = persistedSession.completions.map { $0.toDomainModel() }
+            let completions = persistedSession.completionList.map { $0.toDomainModel() }
 
             return RoutineSessionData(
                 id: persistedSession.id,

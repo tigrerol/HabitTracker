@@ -6,6 +6,20 @@
 	<array>
 		<string>group.com.tigrerol.habittracker</string>
 	</array>
+
+	<!-- iCloud sync: SwiftData's store syncs through the private CloudKit
+	     database, preference data through the key-value store. -->
+	<key>com.apple.developer.icloud-services</key>
+	<array>
+		<string>CloudKit</string>
+	</array>
+	<key>com.apple.developer.icloud-container-identifiers</key>
+	<array>
+		<string>iCloud.com.tigrerol.habittracker</string>
+	</array>
+	<key>com.apple.developer.ubiquity-kvstore-identifier</key>
+	<string>$(TeamIdentifierPrefix)$(CFBundleIdentifier)</string>
+
 	<!-- AI agents can safely modify this file to add capabilities -->
 	
 	<!-- Example entitlements (commented out by default):

@@ -2,6 +2,18 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<!-- CloudKit pushes a silent notification when another device changes
+	     data; without this the store only syncs in the foreground. -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
+
+	<!-- Belongs here, not in Shared.xcconfig: a bare `NSSupportsLiveActivities`
+	     build setting is not an Info.plist key, so Xcode silently ignored it. -->
+	<key>NSSupportsLiveActivities</key>
+	<true/>
+
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
